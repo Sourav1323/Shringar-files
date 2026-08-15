@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--cream,#fdf6ec);}
+.loader{font-family:'Jost',sans-serif;color:var(--tl,#8a6040);font-size:14px;}
+</style>
+</head>
+<body>
+<div class="loader">Loading Shringar Admin…</div>
+<script src="js/admin-api.js"></script>
+<script>
+// Entry point — sends the admin straight to the right place instead of
+// showing a raw directory listing at localhost:5501.
+window.location.replace(
+  (window.ShringarAdmin && ShringarAdmin.isLoggedIn()) ? 'dashboard.html' : 'login.html'
+);
+</script>
+</body>
+</html>

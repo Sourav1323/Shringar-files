@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>My Profile — Shringar</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="stylesheet" href="css/responsive.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400&family=Cinzel:wght@600&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--m:#493313;--ml:#6b4a1e;--mr:#7a2c1a;--cream:#fdf6ec;--cd:#f5e8d0;--cdd:#e8d0b0;--gold:#c9a227;--goldd:#a07e18;--td:#2a1a08;--tm:#5c3d1e;--tl:#8a6040;--white:#fff;--green:#0f6e56;--greenl:#e1f5ee;--red:#a32d2d;--redl:#fcebeb;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--td);}
+a{text-decoration:none;}
+
+nav{background:var(--m);padding:0 5%;display:flex;justify-content:space-between;align-items:center;height:64px;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--cream);letter-spacing:0.06em;}
+.nav-logo span{font-family:'Jost',sans-serif;font-size:9px;display:block;letter-spacing:0.22em;color:rgba(253,246,236,0.5);text-transform:uppercase;}
+.nav-right{display:flex;gap:10px;align-items:center;}
+.nav-icon{width:36px;height:36px;border-radius:50%;border:1px solid rgba(253,246,236,0.28);display:flex;align-items:center;justify-content:center;color:var(--cream);font-size:15px;}
+
+.profile-shell{max-width:960px;margin:0 auto;padding:32px 5% 60px;}
+
+/* ── HEADER ── */
+.profile-header{background:linear-gradient(135deg,var(--m),var(--ml));border-radius:18px;padding:36px 32px;display:flex;align-items:center;gap:24px;margin-bottom:28px;position:relative;overflow:hidden;}
+.profile-header::before{content:'✦';position:absolute;right:28px;top:50%;transform:translateY(-50%);font-size:80px;opacity:0.06;color:var(--cream);}
+.profile-avatar{width:80px;height:80px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:var(--td);flex-shrink:0;border:3px solid rgba(201,162,39,0.4);}
+.profile-name{font-family:'Cinzel',Georgia,serif;font-size:24px;color:var(--cream);margin-bottom:4px;}
+.profile-email{font-size:13px;color:rgba(253,246,236,0.6);}
+.profile-since{font-size:11.5px;color:rgba(201,162,39,0.7);margin-top:6px;}
+
+/* ── CARDS ── */
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;}
+.info-card{background:var(--white);border:1px solid var(--cd);border-radius:14px;padding:22px;}
+.info-card-title{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--tl);font-weight:600;margin-bottom:16px;}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--cd);font-size:13.5px;}
+.info-row:last-child{border-bottom:none;padding-bottom:0;}
+.info-label{color:var(--tl);}
+.info-value{font-weight:600;color:var(--td);text-align:right;max-width:60%;}
+.edit-btn{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:9px 18px;background:transparent;border:1.5px solid var(--cd);border-radius:9px;font-family:'Jost',sans-serif;font-size:12.5px;color:var(--m);cursor:pointer;transition:all 0.2s;}
+.edit-btn:hover{border-color:var(--gold);background:rgba(201,162,39,0.05);}
+
+/* ── ORDERS ── */
+.orders-panel{background:var(--white);border:1px solid var(--cd);border-radius:14px;overflow:hidden;margin-bottom:24px;}
+.orders-header{padding:18px 22px;border-bottom:1px solid var(--cd);display:flex;justify-content:space-between;align-items:center;}
+.orders-title{font-family:'Cinzel',Georgia,serif;font-size:16px;}
+.order-card{padding:18px 22px;border-bottom:1px solid var(--cd);display:flex;align-items:center;gap:16px;transition:background 0.15s;}
+.order-card:last-child{border-bottom:none;}
+.order-card:hover{background:rgba(253,246,236,0.6);}
+.order-ref{font-family:monospace;font-size:12px;font-weight:700;color:var(--m);letter-spacing:0.05em;}
+.order-info{flex:1;}
+.order-date{font-size:12px;color:var(--tl);margin-top:2px;}
+.order-designs{font-size:13px;color:var(--tm);margin-top:3px;}
+.order-amount{text-align:right;}
+.order-total{font-size:16px;font-weight:700;color:var(--td);}
+.order-advance{font-size:11.5px;color:var(--tl);margin-top:2px;}
+.status-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;padding:4px 10px;border-radius:20px;}
+.status-CONFIRMED{background:var(--greenl);color:var(--green);}
+.status-PENDING{background:#fdf0db;color:#7a5000;}
+.status-COMPLETED{background:#e8f4fd;color:#1a5f8a;}
+.status-CANCELLED{background:var(--redl);color:var(--red);}
+.view-order-btn{padding:7px 14px;border:1.5px solid var(--cd);border-radius:8px;font-family:'Jost',sans-serif;font-size:12px;color:var(--m);cursor:pointer;background:transparent;white-space:nowrap;transition:all 0.2s;}
+.view-order-btn:hover{border-color:var(--gold);color:var(--goldd);}
+.empty-orders{padding:48px 24px;text-align:center;color:var(--tl);}
+.empty-orders .icon{font-size:40px;margin-bottom:12px;}
+
+/* ── LOGOUT ── */
+.logout-btn{width:100%;padding:14px;background:transparent;border:1.5px solid #f0c8c8;border-radius:12px;font-family:'Jost',sans-serif;font-size:14px;font-weight:600;color:var(--red);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.logout-btn:hover{background:var(--redl);border-color:var(--red);}
+
+/* Loading skeleton */
+.skeleton{background:linear-gradient(90deg,var(--cd) 25%,var(--cream) 50%,var(--cd) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:640px){
+  .profile-grid{grid-template-columns:1fr;}
+  .profile-header{flex-direction:column;text-align:center;padding:28px 20px;}
+  .profile-name{font-size:20px;}
+  .order-card{flex-wrap:wrap;gap:10px;}
+  .view-order-btn{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">
+    <div class="nav-logo">✦ Shringar<span>मेहंदी कला</span></div>
+  </a>
+  <div class="nav-right">
+    <a href="cart.html" class="nav-icon">🛒</a>
+    <a href="index.html" class="nav-icon" title="Home">🏠</a>
+  </div>
+</nav>
+
+<div class="profile-shell">
+
+  <!-- HEADER -->
+  <div class="profile-header" id="profile-header">
+    <div class="profile-avatar" id="profile-avatar">👤</div>
+    <div>
+      <div class="profile-name" id="profile-name">Loading…</div>
+      <div class="profile-email" id="profile-email"></div>
+      <div class="profile-since" id="profile-since"></div>
+    </div>
+  </div>
+
+  <!-- INFO CARDS -->
+  <div class="profile-grid">
+    <div class="info-card">
+      <div class="info-card-title">Personal Details</div>
+      <div class="info-row"><span class="info-label">Full Name</span><span class="info-value" id="detail-name">—</span></div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="detail-email">—</span></div>
+      <div class="info-row"><span class="info-label">Phone</span><span class="info-value" id="detail-phone">—</span></div>
+      <div class="info-row"><span class="info-label">Account Type</span><span class="info-value" id="detail-role">Customer</span></div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title">Account Summary</div>
+      <div class="info-row"><span class="info-label">Total Bookings</span><span class="info-value" id="summary-total">—</span></div>
+      <div class="info-row"><span class="info-label">Confirmed</span><span class="info-value" id="summary-confirmed">—</span></div>
+      <div class="info-row"><span class="info-label">Completed</span><span class="info-value" id="summary-completed">—</span></div>
+      <div class="info-row"><span class="info-label">Cancelled</span><span class="info-value" id="summary-cancelled">—</span></div>
+      <button class="edit-btn" onclick="window.location.href='booking.html'">📅 Book New Appointment</button>
+    </div>
+  </div>
+
+  <!-- ORDERS SHORTCUT -->
+  <div class="orders-panel" style="margin-bottom:24px;">
+    <div class="orders-header">
+      <div class="orders-title">My Bookings</div>
+      <a href="orders.html" class="btn-sm btn-outline" style="font-size:12.5px;">View All →</a>
+    </div>
+    <div id="orders-preview">
+      <div class="loading-state">Loading…</div>
+    </div>
+  </div>
+
+  <!-- LOGOUT -->
+  <button class="logout-btn" onclick="handleLogout()">🚪 Log Out of Shringar</button>
+
+</div>
+
+<script src="js/api.js"></script>
+<script>
+// Redirect to login if not logged in
+if (!Shringar.isLoggedIn()) {
+  window.location.href = 'login.html?redirect=profile.html';
+}
+
+const user = Shringar.getUser();
+
+function formatDate(str) {
+  if (!str) return '—';
+  return new Date(str).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function paintProfile(user) {
+  if (!user) return;
+  const initials = ((user.firstName?.[0] || '') + (user.lastName?.[0] || '')).toUpperCase() || '👤';
+  document.getElementById('profile-avatar').textContent = initials;
+  document.getElementById('profile-name').textContent = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Shringar Customer';
+  document.getElementById('profile-email').textContent = user.email || '';
+  document.getElementById('profile-since').textContent = user.createdAt ? `Member since ${formatDate(user.createdAt)}` : 'Shringar Member';
+  document.getElementById('detail-name').textContent = `${user.firstName || ''} ${user.lastName || ''}`.trim() || '—';
+  document.getElementById('detail-email').textContent = user.email || '—';
+  document.getElementById('detail-phone').textContent = user.phone || 'Not added';
+  document.getElementById('detail-role').textContent = (user.role === 'ADMIN') ? '⭐ Admin' : 'Customer';
+}
+
+async function loadOrders() {
+  const preview = document.getElementById('orders-preview');
+  try {
+    const bookings = await Shringar.Bookings.myBookings();
+
+    // Update summary cards
+    document.getElementById('summary-total').textContent = bookings.length;
+    document.getElementById('summary-confirmed').textContent = bookings.filter(b => b.status === 'CONFIRMED').length;
+    document.getElementById('summary-completed').textContent = bookings.filter(b => b.status === 'COMPLETED').length;
+    document.getElementById('summary-cancelled').textContent = bookings.filter(b => b.status === 'CANCELLED').length;
+
+    if (bookings.length === 0) {
+      preview.innerHTML = `
+        <div class="empty-orders">
+          <div class="icon">🎨</div>
+          <div style="font-size:14px;font-weight:600;color:var(--tm);margin-bottom:6px;">No bookings yet</div>
+          <a href="booking.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--gold);color:var(--td);border-radius:10px;font-weight:700;font-size:13.5px;">📅 Book Now</a>
+        </div>`;
+      return;
+    }
+
+    // Show latest 3, with link to full orders page
+    const recent = bookings.slice(0, 3);
+    preview.innerHTML = recent.map(b => {
+      const designNames = (b.items || []).map(i => i.designName || '🤲').join(', ') || 'Mehendi booking';
+      const badgeMap = { CONFIRMED:'badge-green', PENDING:'badge-amber', COMPLETED:'badge-gold', CANCELLED:'badge-red', RESCHEDULED:'badge-purple' };
+      return `
+        <div class="order-card" style="cursor:pointer;" onclick="location.href='order.html?ref=${encodeURIComponent(b.bookingReference)}'">
+          <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;">
+            <div style="flex:1;">
+              <div style="font-family:monospace;font-size:12px;font-weight:700;color:var(--m);">${b.bookingReference}</div>
+              <div style="font-size:13.5px;font-weight:600;margin-top:3px;">${designNames}</div>
+              <div style="font-size:12px;color:var(--tl);margin-top:2px;">📅 ${formatDate(b.appointmentDate)} · ${b.city}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:16px;font-weight:700;">${Shringar.formatINR(b.grandTotal)}</div>
+              <span class="badge ${badgeMap[b.status]||'badge-gray'}" style="margin-top:5px;">${b.status}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('') + `
+      <div style="text-align:center;padding:14px 20px;border-top:1px solid var(--cd);">
+        <a href="orders.html" style="font-size:13px;font-weight:600;color:var(--m);text-decoration:none;">View all ${bookings.length} bookings →</a>
+      </div>`;
+  } catch (err) {
+    preview.innerHTML = `<div class="empty-orders"><div class="icon">⚠️</div><div style="font-size:13px;color:var(--tl);">${err.message}</div></div>`;
+  }
+}
+
+function statusEmoji(s) {
+  return { CONFIRMED:'✓', PENDING:'⏳', COMPLETED:'🌿', CANCELLED:'✕' }[s] || '📦';
+}
+
+function handleLogout() {
+  if (confirm('Log out of Shringar?')) {
+    Shringar.logout();
+  }
+}
+
+// Paint from local cache first, then load orders
+paintProfile(user);
+loadOrders();
+
+// Try to get fresh user details from backend
+(async () => {
+  try {
+    const fresh = await Shringar.Auth.me();
+    if (fresh) paintProfile(fresh);
+  } catch {}
+})();
+</script>
+</body>
+</html>

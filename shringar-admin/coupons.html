@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+<title>Coupons — Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div><div class="sidebar-logo-text">✦ Shringar</div><div class="sidebar-logo-sub">Admin Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin"><div class="sidebar-admin-avatar" id="admin-avatar">A</div><div><div class="sidebar-admin-name" data-admin-name>Admin</div><div class="sidebar-admin-role">Administrator</div></div></div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title">Coupons</div><div class="topbar-sub">Generate discount codes shown on the website and usable at checkout</div></div>
+      <button class="btn btn-primary" onclick="openCreateModal()">+ Generate Coupon</button>
+    </div>
+    <div class="content">
+
+      <!-- ACTIVE COUPONS -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">All Coupons</div></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min Order</th><th>Valid Until</th><th>Used</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="coupons-tbody"><tr><td colspan="8" class="loading-state">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal-box">
+    <div class="modal-header"><div class="modal-title">Generate New Coupon</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="modal-error" style="display:none;color:var(--red);font-size:12.5px;background:var(--redl);border:1px solid #f0c8c8;border-radius:8px;padding:10px 12px;margin-bottom:14px;"></div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Coupon Code</label>
+          <input class="form-input" id="c-code" placeholder="Leave blank to auto-generate"/>
+          <div class="form-hint">Letters and numbers only, will be UPPERCASED</div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Discount Type</label>
+          <select class="form-select" id="c-type">
+            <option value="PERCENT">Percentage (e.g. 10%)</option>
+            <option value="FLAT">Flat Amount (e.g. ₹200)</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Discount Value *</label>
+          <input class="form-input" type="number" min="1" id="c-value" placeholder="10"/>
+          <div class="form-hint" id="c-value-hint">Percentage off (1–100)</div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Min Order Value (₹)</label>
+          <input class="form-input" type="number" min="0" id="c-min-order" placeholder="0"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Max Discount Cap (₹, optional)</label>
+          <input class="form-input" type="number" min="0" id="c-max-discount" placeholder="Leave blank for no cap"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Valid For (days)</label>
+          <input class="form-input" type="number" min="1" id="c-valid-days" placeholder="365"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Usage Limit</label>
+          <input class="form-input" type="number" min="1" id="c-usage-limit" placeholder="Leave blank for unlimited"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Description</label>
+          <input class="form-input" id="c-description" placeholder="e.g. 10% Bridal Discount"/>
+        </div>
+      </div>
+      <!-- PREVIEW -->
+      <div id="coupon-preview" style="margin-top:16px;background:linear-gradient(135deg,var(--m),var(--ml));border-radius:14px;padding:18px 22px;color:var(--cream);display:none;">
+        <div style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.6;margin-bottom:6px;">Preview — how it looks on the website</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="font-family:'Cinzel Decorative',serif;font-size:22px;color:var(--gold);" id="preview-code">CODE</div>
+            <div style="font-size:13px;opacity:0.8;margin-top:4px;" id="preview-desc">Description</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:28px;font-weight:700;color:var(--gold);" id="preview-value">10% OFF</div>
+            <div style="font-size:11px;opacity:0.6;" id="preview-min"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="create-btn" onclick="createCoupon()">🏷️ Generate Coupon</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script src="js/admin-api-extra.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) throw new Error('redirect');
+ShringarAdmin.paintAdminName(); ShringarAdmin.paintActiveNav();
+document.getElementById('admin-avatar').textContent = (ShringarAdmin.getAdmin()?.firstName?.[0]||'A').toUpperCase();
+
+// Live preview
+['c-code','c-type','c-value','c-min-order','c-description'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', updatePreview);
+});
+document.getElementById('c-type').addEventListener('change', function() {
+  document.getElementById('c-value-hint').textContent = this.value === 'PERCENT' ? 'Percentage off (1–100)' : 'Fixed rupee amount off';
+  updatePreview();
+});
+
+function updatePreview() {
+  const code = document.getElementById('c-code').value.trim().toUpperCase() || 'YOURCODE';
+  const type = document.getElementById('c-type').value;
+  const val  = document.getElementById('c-value').value;
+  const min  = document.getElementById('c-min-order').value;
+  const desc = document.getElementById('c-description').value.trim() || 'Special discount';
+  if (!val) { document.getElementById('coupon-preview').style.display='none'; return; }
+  document.getElementById('coupon-preview').style.display='block';
+  document.getElementById('preview-code').textContent = code;
+  document.getElementById('preview-desc').textContent = desc;
+  document.getElementById('preview-value').textContent = type === 'PERCENT' ? val + '% OFF' : '₹' + val + ' OFF';
+  document.getElementById('preview-min').textContent = min && min > 0 ? `Min order ₹${min}` : 'No minimum order';
+}
+
+async function loadCoupons() {
+  const tbody = document.getElementById('coupons-tbody');
+  try {
+    const coupons = await ShringarAdmin.Coupons.all();
+    if (!coupons.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><div class="icon">🏷️</div>No coupons yet. Generate your first one!</td></tr>`; return; }
+    tbody.innerHTML = coupons.map(c => {
+      const validUntil = c.validUntil ? new Date(c.validUntil).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+      const isExpired = c.validUntil && new Date(c.validUntil) < new Date();
+      return `<tr>
+        <td><strong style="font-family:monospace;font-size:13px;letter-spacing:0.05em;color:var(--m);">${c.code}</strong></td>
+        <td>${c.type === 'PERCENT' ? '% Percent' : '₹ Flat'}</td>
+        <td><strong>${c.type === 'PERCENT' ? c.value + '%' : '₹' + c.value}</strong></td>
+        <td>${c.minOrderValue > 0 ? ShringarAdmin.formatINR(c.minOrderValue) : '—'}</td>
+        <td style="${isExpired ? 'color:var(--red);' : ''}">${validUntil}</td>
+        <td>${c.timesUsed ?? 0}${c.usageLimit ? ' / ' + c.usageLimit : ''}</td>
+        <td>${c.isActive && !isExpired ? '<span class="badge badge-green">Active</span>' : isExpired ? '<span class="badge badge-red">Expired</span>' : '<span class="badge badge-gray">Disabled</span>'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm ${c.isActive ? 'btn-outline' : 'btn-primary'}" onclick="toggleCoupon(${c.id})">${c.isActive ? 'Disable' : 'Enable'}</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteCoupon(${c.id},'${c.code}')">Delete</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(err) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">⚠️ ${err.message}</td></tr>`; }
+}
+
+function openCreateModal() {
+  ['c-code','c-value','c-min-order','c-max-discount','c-description'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('c-type').value = 'PERCENT';
+  document.getElementById('c-valid-days').value = 365;
+  document.getElementById('c-usage-limit').value = '';
+  document.getElementById('coupon-preview').style.display = 'none';
+  document.getElementById('modal-error').style.display = 'none';
+  document.getElementById('create-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('create-modal').classList.remove('open'); }
+
+async function createCoupon() {
+  const errEl = document.getElementById('modal-error');
+  errEl.style.display = 'none';
+  const val = parseFloat(document.getElementById('c-value').value);
+  if (!val || val <= 0) { errEl.textContent = 'Please enter a discount value.'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('create-btn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    const payload = {
+      type: document.getElementById('c-type').value,
+      value: val,
+      minOrderValue: parseFloat(document.getElementById('c-min-order').value)||0,
+      description: document.getElementById('c-description').value.trim()||undefined,
+      validDays: parseInt(document.getElementById('c-valid-days').value)||365,
+    };
+    const code = document.getElementById('c-code').value.trim();
+    if (code) payload.code = code;
+    const maxD = parseFloat(document.getElementById('c-max-discount').value);
+    if (maxD > 0) payload.maxDiscount = maxD;
+    const limit = parseInt(document.getElementById('c-usage-limit').value);
+    if (limit > 0) payload.usageLimit = limit;
+    await ShringarAdmin.Coupons.create(payload);
+    ShringarAdmin.toast('Coupon created — now visible on the website','success');
+    closeModal();
+    loadCoupons();
+  } catch(err) { errEl.textContent = err.message; errEl.style.display='block'; }
+  finally { btn.disabled=false; btn.textContent='🏷️ Generate Coupon'; }
+}
+
+async function toggleCoupon(id) {
+  try { await ShringarAdmin.Coupons.toggle(id); loadCoupons(); }
+  catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+async function deleteCoupon(id, code) {
+  if (!confirm(`Delete coupon "${code}"? This cannot be undone.`)) return;
+  try { await ShringarAdmin.Coupons.delete(id); ShringarAdmin.toast('Coupon deleted','success'); loadCoupons(); }
+  catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+document.addEventListener('DOMContentLoaded', loadCoupons);
+</script>
+</body>
+</html>

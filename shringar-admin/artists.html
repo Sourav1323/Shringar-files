@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Artists — Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="admin-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">✦ Shringar</div>
+        <div class="sidebar-logo-sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin">
+        <div class="sidebar-admin-avatar" id="admin-avatar">A</div>
+        <div>
+          <div class="sidebar-admin-name" data-admin-name>Admin</div>
+          <div class="sidebar-admin-role">Administrator</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Artists</div>
+        <div class="topbar-sub">Add, edit, or remove mehendi artists available for booking</div>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateModal()">+ Add New Artist</button>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">All Artists</div>
+          <div class="filter-row">
+            <select class="filter-select" id="status-filter" onchange="renderTable()">
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Removed only</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Artist</th><th>City</th><th>Areas</th><th>Rating</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="artists-table-body">
+              <tr><td colspan="6" class="loading-state">Loading artists…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD / EDIT MODAL ══ -->
+<div class="modal-overlay" id="artist-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add New Artist</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="form-error" style="display:none;color:var(--red);font-size:12.5px;background:var(--redl);border:1px solid #f0c8c8;border-radius:8px;padding:10px 12px;margin-bottom:16px;"></div>
+
+      <div class="form-grid">
+        <div class="form-field full">
+          <label class="form-label">Artist Name *</label>
+          <input class="form-input" id="f-name" placeholder="e.g. Sunita Verma"/>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Specialization</label>
+          <input class="form-input" id="f-specialization" placeholder="e.g. Rajasthani & Bridal Specialist"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">City *</label>
+          <input class="form-input" id="f-city" list="city-options" placeholder="e.g. Mumbai" onchange="loadAreaSuggestions()" onblur="loadAreaSuggestions()"/>
+          <datalist id="city-options">
+            <option value="Mumbai"><option value="Pune"><option value="Nashik">
+          </datalist>
+        </div>
+
+        <div class="form-field full">
+          <label class="form-label">Service Areas</label>
+          <div class="chip-input-wrap" id="areas-wrap">
+            <input class="chip-input" id="areas-input" list="area-suggestions" placeholder="Type an area and press Enter (e.g. Andheri)" onkeydown="handleChipInput(event)"/>
+          </div>
+          <datalist id="area-suggestions"></datalist>
+          <div class="form-hint" id="areas-hint">Set the city first — real area names for that city will be suggested here, so booking-page filtering matches exactly.</div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Rating</label>
+          <input class="form-input" type="number" step="0.1" min="0" max="5" id="f-rating" placeholder="e.g. 4.9"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Review Count</label>
+          <input class="form-input" type="number" min="0" id="f-review-count" placeholder="e.g. 218"/>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Years of Experience</label>
+          <input class="form-input" type="number" min="0" id="f-experience" placeholder="e.g. 9"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Avatar Emoji (fallback)</label>
+          <input class="form-input" id="f-avatar-emoji" placeholder="👩‍🎨" maxlength="4"/>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Badge Label</label>
+          <input class="form-input" id="f-badge" placeholder="e.g. Top Artist 2025"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Instagram Handle</label>
+          <input class="form-input" id="f-instagram" placeholder="without @, e.g. sunita.mehendi.art"/>
+        </div>
+
+        <div class="form-field full">
+          <label class="form-label">YouTube Channel URL</label>
+          <input class="form-input" id="f-youtube" placeholder="https://www.youtube.com/@..."/>
+        </div>
+
+        <div class="form-field full">
+          <label class="form-label">Email *</label>
+          <input class="form-input" type="email" id="f-email" placeholder="artist@shringar.in"/>
+          <div class="form-hint">Used to send this artist their booking-assignment notifications. Never shown publicly.</div>
+        </div>
+
+        <!-- PROFILE IMAGE -->
+        <div class="form-field full">
+          <label class="form-label">Profile Photo</label>
+          <div class="upload-box" onclick="document.getElementById('f-profile-input').click()">
+            <input type="file" id="f-profile-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleProfileUpload(this)"/>
+            <div id="profile-upload-label">📸 Click to upload a profile photo (JPG/PNG/WEBP, max 10MB)</div>
+          </div>
+          <div class="upload-preview" id="profile-preview"></div>
+        </div>
+
+        <!-- PORTFOLIO IMAGES -->
+        <div class="form-field full">
+          <label class="form-label">Portfolio Photos</label>
+          <div class="upload-box" onclick="document.getElementById('f-portfolio-input').click()">
+            <input type="file" id="f-portfolio-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handlePortfolioUpload(this)"/>
+            <div>📸 Click to add a portfolio photo</div>
+          </div>
+          <div class="upload-preview" id="portfolio-preview"></div>
+        </div>
+
+        <div class="form-field">
+          <div class="form-check"><input type="checkbox" id="f-active" checked/> <label for="f-active">Active (available for booking)</label></div>
+        </div>
+        <div class="form-field">
+          <div class="form-check"><input type="checkbox" id="f-top-artist"/> <label for="f-top-artist">Top Artist (highlighted on homepage)</label></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveArtist()">Save Artist</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
+ShringarAdmin.paintAdminName();
+ShringarAdmin.paintActiveNav();
+const admin = ShringarAdmin.getAdmin();
+if (admin) document.getElementById('admin-avatar').textContent = (admin.firstName?.[0] || 'A').toUpperCase();
+
+let allArtists = [];
+let editingId = null;
+let areasList = [];
+let profileImageUrl = null;
+let portfolioImageUrls = [];
+let citiesCache = null;
+
+async function loadAreaSuggestions() {
+  const cityInput = document.getElementById('f-city').value.trim();
+  const hint = document.getElementById('areas-hint');
+  const datalist = document.getElementById('area-suggestions');
+  if (!cityInput) return;
+
+  try {
+    if (!citiesCache) citiesCache = await ShringarAdmin.Cities.all();
+    const match = citiesCache.find(c => c.displayName.toLowerCase() === cityInput.toLowerCase() || c.name.toLowerCase() === cityInput.toLowerCase());
+
+    if (match && match.areas && match.areas.length > 0) {
+      datalist.innerHTML = match.areas.map(a => `<option value="${a}">`).join('');
+      hint.textContent = `Suggestions loaded for ${match.displayName} — pick from these to guarantee they match the booking page exactly.`;
+      hint.style.color = 'var(--green)';
+    } else {
+      datalist.innerHTML = '';
+      hint.textContent = `No existing area list found for "${cityInput}" — type areas manually, but double-check spelling/capitalization against the booking page.`;
+      hint.style.color = 'var(--amber)';
+    }
+  } catch {
+    // non-critical — suggestions just won't populate, admin can still type freely
+  }
+}
+
+async function loadArtists() {
+  const tbody = document.getElementById('artists-table-body');
+  try {
+    allArtists = await ShringarAdmin.Artists.all();
+    renderTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="icon">⚠️</div>${err.message}</td></tr>`;
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('artists-table-body');
+  const filter = document.getElementById('status-filter').value;
+
+  let filtered = allArtists;
+  if (filter === 'active') filtered = allArtists.filter(a => a.isActive);
+  if (filter === 'inactive') filtered = allArtists.filter(a => !a.isActive);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="icon">👩‍🎨</div>No artists found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(a => {
+    const imgCell = a.profileImageUrl
+      ? `<img class="cell-img" src="${ShringarAdmin.resolveUploadUrl(a.profileImageUrl)}" alt="${a.name}"/>`
+      : `<div class="cell-emoji">${a.avatarEmoji || '👩‍🎨'}</div>`;
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            ${imgCell}
+            <div>
+              <div class="cell-name">${a.name} ${a.isTopArtist ? '★' : ''}</div>
+              <div class="cell-sub">${a.specialization || ''}</div>
+            </div>
+          </div>
+        </td>
+        <td>${a.city}</td>
+        <td style="max-width:180px;font-size:12px;color:var(--tl);">${(a.serviceAreas||[]).join(', ') || '—'}</td>
+        <td>${a.rating ? '★ ' + a.rating : '—'} <span class="cell-sub">(${a.reviewCount ?? 0})</span></td>
+        <td>${a.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Removed</span>'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm btn-outline" onclick="openEditModal(${a.id})">Edit</button>
+            ${a.isActive
+              ? `<button class="btn btn-sm btn-danger" onclick="deleteArtist(${a.id},'${a.name.replace(/'/g,"\\'")}')">Delete</button>`
+              : `<button class="btn btn-sm btn-primary" onclick="restoreArtist(${a.id})">Restore</button>`}
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ───────────────────────── Modal open/close ─────────────────────────
+
+function openCreateModal() {
+  editingId = null;
+  areasList = [];
+  profileImageUrl = null;
+  portfolioImageUrls = [];
+  document.getElementById('modal-title').textContent = 'Add New Artist';
+  clearForm();
+  document.getElementById('artist-modal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const a = allArtists.find(x => x.id === id);
+  if (!a) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Edit Artist';
+
+  document.getElementById('f-name').value = a.name || '';
+  document.getElementById('f-specialization').value = a.specialization || '';
+  document.getElementById('f-city').value = a.city || '';
+  loadAreaSuggestions();
+  document.getElementById('f-rating').value = a.rating ?? '';
+  document.getElementById('f-review-count').value = a.reviewCount ?? '';
+  document.getElementById('f-experience').value = a.experienceYears ?? '';
+  document.getElementById('f-avatar-emoji').value = a.avatarEmoji || '';
+  document.getElementById('f-badge').value = a.badgeLabel || '';
+  document.getElementById('f-instagram').value = a.instagramHandle || '';
+  document.getElementById('f-youtube').value = a.youtubeChannelUrl || '';
+  document.getElementById('f-email').value = a.email || '';
+  document.getElementById('f-active').checked = !!a.isActive;
+  document.getElementById('f-top-artist').checked = !!a.isTopArtist;
+
+  areasList = [...(a.serviceAreas || [])];
+  renderChips(areasList);
+
+  profileImageUrl = a.profileImageUrl || null;
+  renderProfilePreview();
+
+  portfolioImageUrls = [...(a.portfolioImageUrls || [])];
+  renderPortfolioPreview();
+
+  document.getElementById('artist-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('artist-modal').classList.remove('open');
+  document.getElementById('form-error').style.display = 'none';
+}
+
+function clearForm() {
+  ['f-name','f-specialization','f-city','f-rating','f-review-count','f-experience',
+   'f-avatar-emoji','f-badge','f-instagram','f-youtube','f-email'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-active').checked = true;
+  document.getElementById('f-top-artist').checked = false;
+  document.getElementById('area-suggestions').innerHTML = '';
+  document.getElementById('areas-hint').textContent = 'Set the city first — real area names for that city will be suggested here, so booking-page filtering matches exactly.';
+  document.getElementById('areas-hint').style.color = 'var(--tl)';
+  renderChips([]);
+  renderProfilePreview();
+  renderPortfolioPreview();
+}
+
+// ───────────────────────── Service area chip input ─────────────────────────
+
+function handleChipInput(e) {
+  if (e.key === 'Enter' && e.target.value.trim()) {
+    e.preventDefault();
+    areasList.push(e.target.value.trim());
+    e.target.value = '';
+    renderChips(areasList);
+  }
+}
+
+function renderChips(list) {
+  const wrap = document.getElementById('areas-wrap');
+  const input = document.getElementById('areas-input');
+  wrap.querySelectorAll('.chip').forEach(c => c.remove());
+  list.forEach((area, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = `${area} <span class="remove" onclick="removeChip(${i})">✕</span>`;
+    wrap.insertBefore(chip, input);
+  });
+}
+
+function removeChip(index) {
+  areasList.splice(index, 1);
+  renderChips(areasList);
+}
+
+// ───────────────────────── Image upload ─────────────────────────
+
+async function handleProfileUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const label = document.getElementById('profile-upload-label');
+  label.textContent = 'Uploading…';
+  try {
+    const result = await ShringarAdmin.uploadImage(input.files[0]);
+    profileImageUrl = result.url;
+    renderProfilePreview();
+    ShringarAdmin.toast('Profile photo uploaded', 'success');
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  } finally {
+    label.textContent = '📸 Click to upload a profile photo (JPG/PNG/WEBP, max 10MB)';
+    input.value = '';
+  }
+}
+
+function renderProfilePreview() {
+  const preview = document.getElementById('profile-preview');
+  if (!profileImageUrl) { preview.innerHTML = ''; return; }
+  preview.innerHTML = `
+    <div class="upload-preview-item">
+      <img src="${ShringarAdmin.resolveUploadUrl(profileImageUrl)}" alt="Profile"/>
+      <div class="remove-img" onclick="profileImageUrl=null;renderProfilePreview();">✕</div>
+    </div>`;
+}
+
+async function handlePortfolioUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  try {
+    const result = await ShringarAdmin.uploadImage(input.files[0]);
+    portfolioImageUrls.push(result.url);
+    renderPortfolioPreview();
+    ShringarAdmin.toast('Photo added to portfolio', 'success');
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  } finally {
+    input.value = '';
+  }
+}
+
+function renderPortfolioPreview() {
+  const preview = document.getElementById('portfolio-preview');
+  preview.innerHTML = portfolioImageUrls.map((url, i) => `
+    <div class="upload-preview-item">
+      <img src="${ShringarAdmin.resolveUploadUrl(url)}" alt="Portfolio ${i+1}"/>
+      <div class="remove-img" onclick="removePortfolioImage(${i})">✕</div>
+    </div>`).join('');
+}
+
+function removePortfolioImage(i) {
+  portfolioImageUrls.splice(i, 1);
+  renderPortfolioPreview();
+}
+
+// ───────────────────────── Save / Delete / Restore ─────────────────────────
+
+async function saveArtist() {
+  const errorEl = document.getElementById('form-error');
+  errorEl.style.display = 'none';
+
+  const name = document.getElementById('f-name').value.trim();
+  const city = document.getElementById('f-city').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+
+  if (!name || !city || !email) {
+    errorEl.textContent = 'Please fill in Name, City and Email.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorEl.textContent = 'Please enter a valid email address.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const payload = {
+    name,
+    specialization: document.getElementById('f-specialization').value.trim(),
+    city,
+    serviceAreas: areasList,
+    rating: parseFloatOrNull('f-rating'),
+    reviewCount: parseIntOrNull('f-review-count'),
+    avatarEmoji: document.getElementById('f-avatar-emoji').value.trim() || '👩‍🎨',
+    profileImageUrl,
+    portfolioImageUrls,
+    instagramHandle: document.getElementById('f-instagram').value.trim() || null,
+    youtubeChannelUrl: document.getElementById('f-youtube').value.trim() || null,
+    email,
+    experienceYears: parseIntOrNull('f-experience'),
+    isActive: document.getElementById('f-active').checked,
+    isTopArtist: document.getElementById('f-top-artist').checked,
+    badgeLabel: document.getElementById('f-badge').value.trim() || null,
+  };
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    if (editingId) {
+      await ShringarAdmin.Artists.update(editingId, payload);
+      ShringarAdmin.toast('Artist updated', 'success');
+    } else {
+      await ShringarAdmin.Artists.create(payload);
+      ShringarAdmin.toast('Artist added', 'success');
+    }
+    closeModal();
+    loadArtists();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Artist';
+  }
+}
+
+function parseFloatOrNull(id) {
+  const val = document.getElementById(id).value;
+  return val === '' ? null : parseFloat(val);
+}
+function parseIntOrNull(id) {
+  const val = document.getElementById(id).value;
+  return val === '' ? null : parseInt(val);
+}
+
+async function deleteArtist(id, name) {
+  if (!confirm(`Remove "${name}" from the website? They will disappear from artist selection during booking immediately, but past orders are unaffected. You can restore them anytime.`)) return;
+  try {
+    await ShringarAdmin.Artists.delete(id);
+    ShringarAdmin.toast('Artist removed from website', 'success');
+    loadArtists();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+async function restoreArtist(id) {
+  try {
+    await ShringarAdmin.Artists.restore(id);
+    ShringarAdmin.toast('Artist restored to website', 'success');
+    loadArtists();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadArtists);
+</script>
+</body>
+</html>

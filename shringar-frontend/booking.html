@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Book Your Slot — Shringar</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Sans+Devanagari:wght@400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--m:#493313;--ml:#6b4a1e;--mr:#7a2c1a;--cream:#fdf6ec;--cd:#f5e8d0;--cdd:#e8d0b0;--gold:#c9a227;--goldd:#a07e18;--td:#2a1a08;--tm:#5c3d1e;--tl:#8a6040;--white:#fff;--green:#0f6e56;}
+body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--td);padding-bottom:40px;}
+
+/* ── NAV ── */
+nav{background:var(--m);padding:0 5%;height:66px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(201,162,39,0.18);position:relative;}
+.nav-left{display:flex;align-items:center;gap:14px;}
+/* ── Back Button ── */
+.nav-back-btn{display:flex;align-items:center;gap:9px;text-decoration:none;padding:9px 14px 9px 11px;border:1px solid rgba(201,162,39,0.28);border-radius:2px;transition:all 0.24s;cursor:pointer;background:transparent;position:relative;color:rgba(253,246,236,0.6);}
+.nav-back-btn::before{content:'';position:absolute;top:-1px;left:-1px;width:8px;height:8px;border-top:1.5px solid rgba(201,162,39,0.6);border-left:1.5px solid rgba(201,162,39,0.6);}
+.nav-back-btn::after{content:'';position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-bottom:1.5px solid rgba(201,162,39,0.6);border-right:1.5px solid rgba(201,162,39,0.6);}
+.nav-back-btn .back-arrow{flex-shrink:0;transition:transform 0.24s;}
+.nav-back-btn .back-label{font-family:'Cinzel',Georgia,serif;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;font-weight:400;}
+.nav-back-btn:hover{color:#c9a227;border-color:rgba(201,162,39,0.5);background:rgba(201,162,39,0.06);}
+.nav-back-btn:hover .back-arrow{transform:translateX(-3px);}
+.nav-back-btn:hover .back-arrow{transform:translateX(-3px);}
+.nav-right{display:flex;gap:10px;align-items:center;}
+.nav-icon{width:34px;height:34px;border-radius:50%;border:1px solid rgba(253,246,236,0.28);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;font-size:15px;text-decoration:none;transition:all 0.2s;}
+.nav-icon:hover{background:rgba(201,162,39,0.2);}
+
+/* ── STEPS ── */
+.steps-bar{background:var(--m);padding:10px 5% 22px;}
+.steps{display:flex;align-items:center;max-width:640px;}
+.step{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(253,246,236,0.4);letter-spacing:0.04em;}
+.step.active{color:var(--cream);}
+.step.done{color:var(--gold);}
+.step-num{width:24px;height:24px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.step.done .step-num{background:var(--gold);border-color:var(--gold);color:var(--td);}
+.step.active .step-num{background:var(--cream);color:var(--m);border-color:var(--cream);}
+.step-line{flex:1;height:1px;background:rgba(253,246,236,0.15);margin:0 10px;}
+
+/* ── LAYOUT ── */
+.booking-main{max-width:1100px;margin:0 auto;padding:32px 5%;display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:start;}
+.panel{background:var(--white);border-radius:16px;border:1px solid var(--cd);padding:26px;margin-bottom:20px;box-shadow:0 4px 18px rgba(73,51,19,0.06);}
+.panel-title{font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--m);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+
+/* ── LOCATION ── */
+.map-visual{background:linear-gradient(135deg,#e8d0b0,#f5e8d0);border-radius:12px;height:160px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid var(--cd);overflow:hidden;}
+.city-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.city-card{border:1.5px solid var(--cd);border-radius:12px;padding:13px 10px;cursor:pointer;background:var(--white);transition:all 0.2s;position:relative;text-align:center;}
+.city-card:hover:not(.unavailable){border-color:var(--gold);background:rgba(201,162,39,0.04);}
+.city-card.selected{border-color:var(--m);background:rgba(73,51,19,0.04);}
+.city-card.unavailable{opacity:0.45;cursor:not-allowed;}
+.city-name{font-size:14px;font-weight:600;color:var(--td);margin-bottom:3px;}
+.city-meta{font-size:10px;color:var(--tl);}
+.city-artists{font-size:10px;color:var(--green);margin-top:3px;font-weight:600;}
+.city-badge{font-size:9px;padding:2px 7px;border-radius:8px;font-weight:600;display:inline-block;margin-bottom:6px;}
+.cb-available{background:rgba(15,110,86,0.12);color:var(--green);}
+.cb-soon{background:rgba(186,117,23,0.12);color:#7a5000;}
+.city-tick{display:none;position:absolute;top:8px;right:8px;width:16px;height:16px;border-radius:50%;background:var(--m);color:var(--cream);align-items:center;justify-content:center;font-size:9px;font-weight:700;}
+.city-card.selected .city-tick{display:flex;}
+.city-card.selected .city-badge{display:none;}
+.area-wrap{display:none;}
+.area-wrap.visible{display:block;}
+.area-title{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--tl);margin-bottom:10px;font-weight:600;}
+.area-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.area-chip{padding:7px 8px;border:1px solid var(--cd);border-radius:8px;font-size:12px;text-align:center;cursor:pointer;background:var(--white);color:var(--tm);transition:all 0.15s;}
+.area-chip:hover{border-color:var(--m);color:var(--m);}
+.area-chip.selected{background:var(--m);color:var(--cream);border-color:var(--m);}
+
+/* ── CALENDAR ── */
+.cal-wrap{background:var(--cream);border-radius:12px;padding:18px;border:1px solid var(--cd);}
+.cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.cal-month{font-family:'Playfair Display',serif;font-size:15px;color:var(--td);}
+.cal-arrow{width:28px;height:28px;border-radius:50%;border:1px solid var(--cd);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;background:var(--white);user-select:none;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;}
+.cal-dn{font-size:10px;color:var(--tl);padding:5px 2px;text-transform:uppercase;letter-spacing:0.04em;}
+.cal-d{font-size:13px;padding:8px 3px;border-radius:7px;cursor:pointer;color:var(--td);transition:all 0.14s;}
+.cal-d:hover:not(.past){background:var(--cd);}
+.cal-d.past{color:var(--cdd);cursor:not-allowed;}
+.cal-d.today{color:var(--mr);font-weight:600;}
+.cal-d.selected{background:var(--m);color:var(--cream);font-weight:600;}
+.cal-d.has-slots::after{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--gold);margin:2px auto 0;}
+.cal-d.selected::after{background:rgba(253,246,236,0.5);}
+.legend{display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--tl);}
+.ldot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle;}
+
+/* ── PREFERRED TIME ── */
+.time-pref-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+.tpref{border:1.5px solid var(--cd);border-radius:12px;padding:14px 12px;cursor:pointer;background:var(--white);transition:all 0.2s;text-align:center;}
+.tpref:hover{border-color:var(--gold);background:rgba(201,162,39,0.05);}
+.tpref.selected{border-color:var(--m);background:rgba(73,51,19,0.05);}
+.tpref-icon{font-size:22px;margin-bottom:6px;}
+.tpref-label{font-size:13px;font-weight:600;color:var(--td);margin-bottom:2px;}
+.tpref-range{font-size:11px;color:var(--tl);}
+.tpref.selected .tpref-label{color:var(--m);}
+.time-note{background:rgba(201,162,39,0.1);border:1px solid rgba(201,162,39,0.3);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--tm);line-height:1.7;display:flex;gap:8px;align-items:flex-start;}
+
+/* ── ARTIST ── */
+.artist-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--cd);border-radius:10px;cursor:pointer;background:var(--white);transition:all 0.2s;margin-bottom:8px;}
+.artist-opt:hover{border-color:var(--gold);}
+.artist-opt.selected{border-color:var(--m);background:rgba(73,51,19,0.03);}
+.artist-avatar{width:40px;height:40px;border-radius:50%;background:var(--m);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.artist-info{flex:1;}
+.artist-name{font-size:14px;font-weight:600;color:var(--td);}
+.artist-spec{font-size:11px;color:var(--tl);}
+.artist-city{font-size:10px;color:var(--green);margin-top:2px;font-weight:500;}
+.artist-rating{font-size:13px;color:var(--gold);margin-left:auto;flex-shrink:0;}
+
+/* ── FORM ── */
+.field{margin-bottom:16px;}
+.field-label{display:block;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--tl);margin-bottom:6px;font-weight:600;}
+.field-input,.field-select,.field-textarea{width:100%;padding:11px 14px;border:1.5px solid var(--cd);border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;background:var(--cream);color:var(--td);outline:none;transition:border-color 0.2s;}
+.field-input:focus,.field-select:focus,.field-textarea:focus{border-color:var(--m);}
+.field-textarea{resize:none;line-height:1.6;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ── SUMMARY ── */
+.sum-panel{position:sticky;top:80px;}
+.sum-card{background:var(--white);border-radius:16px;border:1px solid var(--cd);padding:22px;margin-bottom:16px;box-shadow:0 4px 18px rgba(73,51,19,0.06);}
+.sum-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--td);margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--cd);}
+.ss-box{background:var(--cream);border-radius:10px;padding:12px;margin-bottom:14px;}
+.ss-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--tm);}
+.ss-row span:last-child{font-weight:600;color:var(--td);}
+.d-chip{display:inline-flex;align-items:center;gap:7px;background:var(--cream);border:1px solid var(--cd);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--tm);margin-bottom:6px;width:100%;}
+.sum-row2{display:flex;justify-content:space-between;font-size:13px;color:var(--tm);padding:5px 0;}
+.sum-div{height:1px;background:var(--cd);margin:10px 0;}
+.sum-total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:var(--td);}
+.adv-card{background:linear-gradient(135deg,rgba(201,162,39,0.13),rgba(201,162,39,0.04));border:1px solid rgba(201,162,39,0.4);border-radius:12px;padding:16px;margin-bottom:16px;}
+.adv-label{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--tl);margin-bottom:3px;}
+.adv-amt{font-size:28px;font-weight:700;color:var(--td);}
+.adv-note{font-size:12px;color:var(--tl);margin-top:5px;line-height:1.7;}
+.pay-btn{display:block;width:100%;padding:16px;background:var(--gold);color:var(--td);border:none;border-radius:12px;font-family:'Jost',sans-serif;font-size:15px;font-weight:700;cursor:pointer;text-align:center;letter-spacing:0.03em;transition:all 0.2s;margin-bottom:8px;}
+.pay-btn:hover{background:var(--goldd);transform:translateY(-1px);}
+@media(max-width:768px){.booking-main{grid-template-columns:1fr;}.sum-panel{position:static;}.field-row{grid-template-columns:1fr;}.city-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="stylesheet" href="css/responsive.css"/>
+</head>
+<body>
+<nav>
+  <div class="nav-left">
+    <a href="javascript:history.back()" class="nav-back-btn">
+      <svg class="back-arrow" width="17" height="12" viewBox="0 0 17 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 5.5,1 L 1,6 L 5.5,11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="15.2" cy="6" r="1.8" fill="currentColor" opacity="0.5"/>
+      </svg>
+      <span class="back-label">Back</span>
+    </a>
+  </div>
+  <a href="index.html" style="display:flex;align-items:center;text-decoration:none;position:absolute;left:50%;transform:translateX(-50%);" title="Shringar — Home">
+    <svg width="238" height="52" viewBox="0 0 238 52" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;">
+      <g transform="translate(27,26)">
+        <circle r="22" fill="none" stroke="#c9a227" stroke-width="0.8" opacity="0.45"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(45)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(90)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(135)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(180)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(225)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(270)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(315)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(45)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(90)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(135)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(180)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(225)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(270)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(315)"/>
+        <circle r="12" fill="none" stroke="#c9a227" stroke-width="0.5" opacity="0.45"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(22.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(67.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(112.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(157.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(202.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(247.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(292.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(337.5)"/>
+        <circle r="6.5" fill="rgba(253,246,236,0.88)"/>
+        <circle r="4"   fill="#c9a227"/>
+        <circle r="2"   fill="rgba(20,10,4,0.85)"/>
+      </g>
+      <line x1="57" y1="9" x2="57" y2="43" stroke="rgba(201,162,39,0.22)" stroke-width="0.6"/>
+      <text x="149" y="23" font-family="'Cinzel Decorative','Cinzel',Georgia,serif" font-size="17" fill="#fdf6ec" font-weight="400" letter-spacing="0.1em" text-anchor="middle">SHRINGAR</text>
+      <line x1="74"  y1="30" x2="137" y2="30" stroke="rgba(201,162,39,0.4)" stroke-width="0.65"/>
+      <polygon points="149,26.5 154,30 149,33.5 144,30" fill="rgba(201,162,39,0.55)"/>
+      <line x1="161" y1="30" x2="224" y2="30" stroke="rgba(201,162,39,0.4)" stroke-width="0.65"/>
+      <text x="149" y="44" font-family="'Noto Sans Devanagari','Arial Unicode MS',sans-serif" font-size="10" fill="rgba(201,162,39,0.62)" letter-spacing="0.06em" text-anchor="middle">मेहंदी कला</text>
+    </svg>
+  </a>
+  <div class="nav-right">
+    <a href="login.html" class="nav-icon">👤</a>
+  </div>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><span style="font-size:18px;">🏠</span> Home</a>
+  <a href="cart.html"><span style="font-size:18px;">🛒</span> Cart</a>
+  <div class="menu-divider"></div>
+  <a href="booking.html"><span style="font-size:18px;">📅</span> Book a Design</a>
+  <a href="help.html"><span style="font-size:18px;">❓</span> Help & Support</a>
+  <div class="menu-divider"></div>
+  <a href="login.html" id="mobile-auth-link"><span style="font-size:18px;">👤</span> Sign In</a>
+</div>
+<script>
+(function() {
+  // Update auth link text if already logged in
+  var user = null;
+  try { user = typeof Shringar !== 'undefined' ? Shringar.getUser() : JSON.parse(localStorage.getItem('shringar_user')); } catch(e) {}
+  if (user) {
+    var link = document.getElementById('mobile-auth-link');
+    if (link) {
+      link.innerHTML = '<span style="font-size:18px;">👤</span> ' + user.firstName;
+      link.href = '#';
+      link.onclick = function(e) {
+        e.preventDefault();
+        if (confirm('Log out of Shringar?')) {
+          localStorage.removeItem('shringar_token');
+          localStorage.removeItem('shringar_user');
+          window.location.href = 'login.html';
+        }
+      };
+    }
+  }
+})();
+
+function toggleMobileMenu() {
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('mobile-menu');
+  if (!btn || !menu) return;
+  btn.classList.toggle('open');
+  menu.classList.toggle('open');
+  document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+}
+
+// Close menu when tapping a link inside it
+document.querySelectorAll('.mobile-menu a').forEach(function(a) {
+  a.addEventListener('click', function() {
+    var btn = document.getElementById('hamburger-btn');
+    var menu = document.getElementById('mobile-menu');
+    if (btn) btn.classList.remove('open');
+    if (menu) menu.classList.remove('open');
+    document.body.style.overflow = '';
+  });
+});
+</script>
+
+<div class="steps-bar">
+  <div class="steps">
+    <div class="step done"><div class="step-num">✓</div><span>Designs</span></div>
+    <div class="step-line"></div>
+    <div class="step done"><div class="step-num">✓</div><span>Cart</span></div>
+    <div class="step-line"></div>
+    <div class="step active"><div class="step-num">3</div><span>Book Slot</span></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-num">4</div><span>Payment</span></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="step-num">5</div><span>Confirmed</span></div>
+  </div>
+</div>
+
+<div class="booking-main">
+  <div>
+
+    <!-- LOCATION -->
+    <div class="panel">
+      <div class="panel-title">📍 Select Your City & Service Area</div>
+      <div class="map-visual">
+        <svg width="100%" height="100%" viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <path d="M80 120 Q120 60 180 50 Q240 40 300 55 Q360 70 400 60 Q450 50 500 80 Q520 100 490 130 Q450 150 380 140 Q300 145 220 138 Q150 132 80 120Z" fill="rgba(73,51,19,0.07)" stroke="rgba(73,51,19,0.2)" stroke-width="1.5"/>
+          <circle cx="185" cy="105" r="13" fill="rgba(73,51,19,0.13)" stroke="#493313" stroke-width="1.5"/>
+          <text x="185" y="109" text-anchor="middle" font-size="9" fill="#493313" font-family="Jost,sans-serif" font-weight="700">MUM</text>
+          <circle cx="265" cy="120" r="10" fill="rgba(73,51,19,0.11)" stroke="#493313" stroke-width="1.5"/>
+          <text x="265" y="124" text-anchor="middle" font-size="8" fill="#493313" font-family="Jost,sans-serif" font-weight="700">PNE</text>
+          <circle cx="338" cy="92" r="8" fill="rgba(73,51,19,0.11)" stroke="#493313" stroke-width="1.5"/>
+          <text x="338" y="96" text-anchor="middle" font-size="7" fill="#493313" font-family="Jost,sans-serif" font-weight="700">NSK</text>
+          <circle cx="400" cy="110" r="7" fill="rgba(186,117,23,0.18)" stroke="rgba(186,117,23,0.6)" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="400" y="114" text-anchor="middle" font-size="7" fill="#7a5000" font-family="Jost,sans-serif">AUR</text>
+          <circle cx="450" cy="90" r="7" fill="rgba(186,117,23,0.18)" stroke="rgba(186,117,23,0.6)" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="450" y="94" text-anchor="middle" font-size="7" fill="#7a5000" font-family="Jost,sans-serif">NGP</text>
+          <circle cx="185" cy="105" r="20" fill="none" stroke="rgba(201,162,39,0.5)" stroke-width="1.5"><animate attributeName="r" from="13" to="28" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.7" to="0" dur="2s" repeatCount="indefinite"/></circle>
+          <circle cx="30" cy="140" r="4" fill="rgba(73,51,19,0.13)" stroke="#493313" stroke-width="1"/>
+          <text x="40" y="144" font-size="9" fill="#8a6040" font-family="Jost,sans-serif">Available</text>
+          <circle cx="110" cy="140" r="4" fill="rgba(186,117,23,0.18)" stroke="rgba(186,117,23,0.6)" stroke-width="1" stroke-dasharray="2,2"/>
+          <text x="120" y="144" font-size="9" fill="#8a6040" font-family="Jost,sans-serif">Coming Soon</text>
+        </svg>
+      </div>
+      <div class="city-grid" id="city-grid">
+        <!-- Populated dynamically from GET /api/cities -->
+        <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--tl);font-size:13px;">Loading cities…</div>
+      </div>
+      <div class="area-wrap visible" id="area-wrap" style="display:none;">
+        <div class="area-title" id="area-section-title">📍 Select your area</div>
+        <div class="area-grid" id="area-grid"></div>
+      </div>
+    </div>
+
+    <!-- DATE PICKER -->
+    <div class="panel">
+      <div class="panel-title">📅 Select Your Date</div>
+      <div class="cal-wrap">
+        <div class="cal-nav">
+          <div class="cal-arrow" onclick="prevMonth()">‹</div>
+          <div class="cal-month" id="cal-month-label">June 2026</div>
+          <div class="cal-arrow" onclick="nextMonth()">›</div>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="legend">
+          <span><span class="ldot" style="background:var(--gold);"></span>Slots available</span>
+          <span><span class="ldot" style="background:var(--m);"></span>Selected</span>
+          <span><span class="ldot" style="background:var(--cdd);"></span>Unavailable</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREFERRED TIME (replacing time slots grid) -->
+    <div class="panel">
+      <div class="panel-title">🕐 Preferred Appointment Time</div>
+      <p style="font-size:13px;color:var(--tl);line-height:1.8;margin-bottom:18px;">Our artist will confirm availability for your preferred time within 2 hours of booking. Choose what works best for you.</p>
+
+      <div class="time-pref-grid">
+        <div class="tpref selected" id="tp-morning" onclick="selectTimePref(this,'Morning (9 AM – 12 PM)')">
+          <div class="tpref-icon">🌅</div>
+          <div class="tpref-label">Morning</div>
+          <div class="tpref-range">9 AM – 12 PM</div>
+        </div>
+        <div class="tpref" id="tp-afternoon" onclick="selectTimePref(this,'Afternoon (12 PM – 3 PM)')">
+          <div class="tpref-icon">☀️</div>
+          <div class="tpref-label">Afternoon</div>
+          <div class="tpref-range">12 PM – 3 PM</div>
+        </div>
+        <div class="tpref" id="tp-evening" onclick="selectTimePref(this,'Evening (3 PM – 6 PM)')">
+          <div class="tpref-icon">🌇</div>
+          <div class="tpref-label">Evening</div>
+          <div class="tpref-range">3 PM – 6 PM</div>
+        </div>
+        <div class="tpref" id="tp-flexible" onclick="selectTimePref(this,'Flexible — Artist\'s choice')">
+          <div class="tpref-icon">🕊️</div>
+          <div class="tpref-label">Flexible</div>
+          <div class="tpref-range">Artist's choice</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Exact Time Preference (optional)</label>
+        <input type="time" class="field-input" id="specific-time" onchange="updateTimeInSummary(this.value)" style="max-width:200px;"/>
+        <div style="font-size:11px;color:var(--tl);margin-top:6px;">If you have a specific time in mind, enter it here.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Any Time-Related Notes</label>
+        <input class="field-input" id="time-note-input" placeholder="e.g. Must start before 10 AM, avoid lunch hours, after school pick-up..."/>
+      </div>
+
+      <div class="time-note">
+        <span>💡</span>
+        <span>Our team will call you to confirm the exact time before your appointment. You can also reach us on WhatsApp at +91 98765 43210.</span>
+      </div>
+    </div>
+
+    <!-- ARTIST -->
+    <div class="panel">
+      <div class="panel-title">👩‍🎨 Choose Your Artist</div>
+      <div id="artist-list">
+        <div style="text-align:center;padding:20px;color:var(--tl);font-size:13px;">Select a city above to see available artists</div>
+      </div>
+    </div>
+
+    <!-- DETAILS -->
+    <div class="panel">
+      <div class="panel-title">👤 Your Details</div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Full Name</label><input class="field-input" id="customer-name" placeholder="Your full name"/></div>
+        <div class="field"><label class="field-label">Phone *</label>
+          <div style="display:flex;border:1.5px solid var(--cd);border-radius:10px;overflow:hidden;background:var(--cream);" id="booking-phone-wrap">
+            <select id="booking-country-code" style="border:none;background:transparent;font-family:'Jost',sans-serif;font-size:14px;color:var(--td);padding:11px 8px 11px 12px;cursor:pointer;outline:none;flex-shrink:0;">
+              <option value="+91">🇮🇳 +91</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+971">🇦🇪 +971</option>
+              <option value="+61">🇦🇺 +61</option>
+            </select>
+            <div style="width:1px;background:var(--cd);flex-shrink:0;"></div>
+            <input type="tel" class="field-input" id="customer-phone" placeholder="98765 43210"
+              style="border:none;flex:1;border-radius:0;min-width:0;"
+              maxlength="12"
+              oninput="this.value=this.value.replace(/[^0-9 ]/g,'')"
+              onfocus="document.getElementById('booking-phone-wrap').style.borderColor='var(--gold)'"
+              onblur="document.getElementById('booking-phone-wrap').style.borderColor='var(--cd)'"/>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">Email</label><input class="field-input" type="email" id="customer-email" placeholder="you@email.com"/></div>
+      <div class="field">
+        <label class="field-label">City</label>
+        <select class="field-select" id="city-select" onchange="syncCityDropdown(this.value)">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+      <div class="field"><label class="field-label">Full Address / Venue</label><input class="field-input" id="full-address" placeholder="House no., street, landmark"/></div>
+      <div class="field"><label class="field-label">Pincode</label><input class="field-input" id="pincode" placeholder="e.g. 400053" maxlength="6" style="max-width:180px;"/></div>
+      <div class="field"><label class="field-label">Special Requests (optional)</label><textarea class="field-textarea" id="special-requests" rows="3" placeholder="e.g. prefer natural henna, no black cone, design variation..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR SUMMARY -->
+  <div class="sum-panel">
+    <div class="sum-card">
+      <div class="sum-title">Booking Summary</div>
+      <div class="ss-box">
+        <div class="ss-row"><span>Date</span><span id="disp-date">Not selected</span></div>
+        <div class="ss-row"><span>Preferred Time</span><span id="disp-time">Morning (9 AM – 12 PM)</span></div>
+        <div class="ss-row"><span>City</span><span id="disp-city">—</span></div>
+        <div class="ss-row"><span>Area</span><span id="disp-area">—</span></div>
+        <div class="ss-row"><span>Artist</span><span id="disp-artist">Not selected</span></div>
+        <div class="ss-row"><span>Duration</span><span>~6 hours</span></div>
+      </div>
+      <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--tl);margin-bottom:8px;font-weight:600;">Designs</div>
+      <div style="margin-bottom:12px;" id="design-chips-container">
+        <!-- Populated dynamically from cart -->
+      </div>
+      <div class="sum-row2"><span>Designs total</span><span id="designs-total-display">₹0</span></div>
+      <div class="sum-row2"><span>Artist visit fee</span><span id="visit-fee-display-2">₹200</span></div>
+      <div class="sum-div"></div>
+      <div class="sum-total"><span>Grand Total</span><span id="grand-total-display">₹0</span></div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-label">Pay Now · 30% Advance</div>
+      <div class="adv-amt" id="adv-amt-display">₹0</div>
+      <div class="adv-note">Balance <strong id="balance-amt-display">₹0</strong> paid to artist after design completion.</div>
+    </div>
+    <div id="booking-error" style="display:none;color:#a32d2d;font-size:12.5px;background:#fcebeb;border:1px solid #f7c1c1;border-radius:8px;padding:10px 12px;margin-bottom:12px;"></div>
+
+    <!-- LIVE COUPONS from admin portal -->
+    <div id="booking-coupons-section" style="margin-bottom:14px;display:none;">
+      <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--tl);font-weight:600;margin-bottom:8px;">🏷️ Available Offers</div>
+      <div id="booking-coupon-chips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+
+    <button class="pay-btn" id="pay-btn" onclick="handleConfirmBooking()">🔒 Pay & Confirm</button>
+    <div style="font-size:11px;color:var(--tl);text-align:center;line-height:1.8;">🔒 Secured by Razorpay · Free cancellation 48 hrs before</div>
+  </div>
+</div>
+
+<!-- Razorpay Checkout script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="js/api.js"></script>
+<script>
+if (!Shringar.requireAuth()) { throw new Error('redirecting to login'); }
+
+let CITY_DATA = {};       // populated from backend: { mumbai: { label, areas:[], artists:[] }, ... }
+let cartSnapshot = null;  // current cart, used to compute totals
+let selectedCity = null, selectedArea = null, selectedDate = null, selectedTimePref = 'MORNING';
+let selectedArtistId = null, selectedArtistLabel = null;
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let selectedDateISO = null;   // yyyy-MM-dd, sent to backend
+
+const TIME_PREF_LABELS = {
+  MORNING:   'Morning (9 AM – 12 PM)',
+  AFTERNOON: 'Afternoon (12 PM – 3 PM)',
+  EVENING:   'Evening (3 PM – 6 PM)',
+  FLEXIBLE:  "Flexible — Artist's choice",
+};
+
+// ───────────────────────── Cities (loaded from backend) ─────────────────────────
+
+async function loadCities() {
+  try {
+    const cities = await Shringar.Cities.all();
+    const grid = document.getElementById('city-grid');
+    const citySelect = document.getElementById('city-select');
+
+    citySelect.innerHTML = '';
+    grid.innerHTML = '';
+
+    cities.forEach((c, idx) => {
+      CITY_DATA[c.name] = { label: c.displayName, areas: c.areas, artists: [] };
+
+      if (!c.isComingSoon) {
+        const card = document.createElement('div');
+        card.className = 'city-card' + (idx === 0 ? ' selected' : '');
+        card.id = 'city-' + c.name;
+        card.innerHTML = `
+          <div class="city-badge cb-available">Available</div>
+          <div class="city-tick">✓</div>
+          <div class="city-name">🏙️ ${c.displayName}</div>
+          <div class="city-meta">Home service · ${c.areas.length} areas</div>
+          <div class="city-artists">${c.artistCount || 0} artists</div>`;
+        card.onclick = () => selectCity(c.name, card);
+        grid.appendChild(card);
+
+        const opt = document.createElement('option');
+        opt.value = c.name; opt.textContent = c.displayName;
+        citySelect.appendChild(opt);
+      } else {
+        const card = document.createElement('div');
+        card.className = 'city-card unavailable';
+        card.innerHTML = `
+          <div class="city-badge cb-soon">Coming Soon</div>
+          <div class="city-name" style="color:var(--tl);">🏛️ ${c.displayName}</div>
+          <div class="city-meta">Launching ${c.launchQuarter || 'soon'}</div>`;
+        grid.appendChild(card);
+      }
+    });
+
+    const firstActive = cities.find(c => !c.isComingSoon);
+    if (firstActive) {
+      selectedCity = firstActive.name;
+      document.getElementById('city-select').value = firstActive.name;
+      await renderAreas(firstActive.name);
+      await renderArtists(firstActive.name);
+      document.getElementById('disp-city').textContent = firstActive.displayName;
+    }
+  } catch (err) {
+    Shringar.toast('Could not load cities: ' + err.message, 'error');
+  }
+}
+
+async function selectCity(city, cardEl) {
+  document.querySelectorAll('.city-card:not(.unavailable)').forEach(c => c.classList.remove('selected'));
+  cardEl.classList.add('selected');
+  selectedCity = city;
+  document.getElementById('city-select').value = city;
+  await renderAreas(city);
+  await renderArtists(city);
+  document.getElementById('disp-city').textContent = CITY_DATA[city].label;
+}
+
+async function syncCityDropdown(val) {
+  if (!CITY_DATA[val]) return;
+  document.querySelectorAll('.city-card:not(.unavailable)').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('city-' + val);
+  if (card) card.classList.add('selected');
+  selectedCity = val;
+  await renderAreas(val);
+  await renderArtists(val);
+  document.getElementById('disp-city').textContent = CITY_DATA[val].label;
+}
+
+async function renderAreas(city) {
+  const data = CITY_DATA[city];
+  if (!data) return;
+  document.getElementById('area-wrap').style.display = 'block';
+  document.getElementById('area-section-title').textContent = `📍 Select your area in ${data.label}`;
+  const grid = document.getElementById('area-grid');
+  grid.innerHTML = '';
+  selectedArea = data.areas[0] || null;
+
+  data.areas.forEach((a, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'area-chip' + (i === 0 ? ' selected' : '');
+    chip.textContent = a;
+    chip.onclick = function () {
+      document.querySelectorAll('.area-chip').forEach(c => c.classList.remove('selected'));
+      this.classList.add('selected');
+      selectedArea = a;
+      document.getElementById('disp-area').textContent = a;
+      renderArtists(city, a);   // narrow artist list to the chosen area too
+    };
+    grid.appendChild(chip);
+  });
+  document.getElementById('disp-area').textContent = selectedArea || '—';
+}
+
+// ───────────────────────── Artists (loaded from backend) ─────────────────────────
+
+async function renderArtists(city, area = null) {
+  const list = document.getElementById('artist-list');
+  list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--tl);font-size:13px;">Loading artists…</div>`;
+
+  try {
+    const artists = area
+      ? await Shringar.Artists.search(city, area)
+      : await Shringar.Artists.byCity(city);
+
+    if (artists.length === 0) {
+      list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--tl);font-size:13px;">No artists available here yet — try another area.</div>`;
+      selectedArtistId = null;
+      document.getElementById('disp-artist').textContent = 'Not selected';
+      return;
+    }
+
+    list.innerHTML = '';
+    artists.forEach((a, i) => {
+      const div = document.createElement('div');
+      div.className = 'artist-opt' + (i === 0 ? ' selected' : '');
+      div.innerHTML = `
+        <div class="artist-avatar">${a.avatarEmoji || '👩‍🎨'}</div>
+        <div class="artist-info">
+          <div class="artist-name">${a.name}</div>
+          <div class="artist-spec">${a.specialization || ''}</div>
+          <div class="artist-city">📍 ${CITY_DATA[city].label} · ${(a.serviceAreas || []).join(', ')}</div>
+        </div>
+        <div class="artist-rating">★ ${a.rating ?? '—'}</div>`;
+      div.onclick = () => selectArtist(div, a.id, `${a.name} ⭐ ${a.rating ?? ''}`);
+      list.appendChild(div);
+    });
+
+    selectedArtistId = artists[0].id;
+    selectedArtistLabel = `${artists[0].name} ⭐ ${artists[0].rating ?? ''}`;
+    document.getElementById('disp-artist').textContent = selectedArtistLabel;
+
+  } catch (err) {
+    list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--mr);font-size:13px;">Could not load artists — ${err.message}</div>`;
+  }
+}
+
+function selectArtist(el, artistId, label) {
+  document.querySelectorAll('.artist-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedArtistId = artistId;
+  selectedArtistLabel = label;
+  document.getElementById('disp-artist').textContent = label;
+}
+
+// ───────────────────────── Preferred time ─────────────────────────
+
+function selectTimePref(el, label) {
+  document.querySelectorAll('.tpref').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  const key = el.id.replace('tp-', '').toUpperCase();
+  selectedTimePref = key === 'FLEXIBLE' ? 'FLEXIBLE'
+                    : key === 'MORNING' ? 'MORNING'
+                    : key === 'AFTERNOON' ? 'AFTERNOON'
+                    : key === 'EVENING' ? 'EVENING' : 'MORNING';
+  document.getElementById('disp-time').textContent = label;
+}
+
+function updateTimeInSummary(val) {
+  if (val) {
+    const [h, m] = val.split(':');
+    const hr = parseInt(h);
+    const ampm = hr >= 12 ? 'PM' : 'AM';
+    const hr12 = hr % 12 || 12;
+    document.getElementById('disp-time').textContent = `${hr12}:${m} ${ampm} (specific time)`;
+  }
+}
+
+// ───────────────────────── Calendar ─────────────────────────
+
+function renderCalendar() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent = MONTHS[currentMonth] + ' ' + currentYear;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+    const dn = document.createElement('div'); dn.className = 'cal-dn'; dn.textContent = d; grid.appendChild(dn);
+  });
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-d';
+    cell.textContent = d;
+    const cellDate = new Date(currentYear, currentMonth, d);
+    const isToday = cellDate.toDateString() === today.toDateString();
+    const isPast = cellDate < today;
+
+    if (isPast) {
+      cell.classList.add('past');
+    } else {
+      cell.classList.add('has-slots');
+      if (isToday) cell.classList.add('today');
+
+      const iso = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      cell.onclick = function () {
+        document.querySelectorAll('.cal-d').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedDateISO = iso;
+        selectedDate = `${MONTHS[currentMonth]} ${d}, ${currentYear}`;
+        document.getElementById('disp-date').textContent = selectedDate;
+      };
+
+      // auto-select the first available (non-today, future) date by default
+      if (!selectedDateISO && !isToday) {
+        selectedDateISO = iso;
+        selectedDate = `${MONTHS[currentMonth]} ${d}, ${currentYear}`;
+      }
+    }
+    grid.appendChild(cell);
+  }
+
+  // reflect the auto/just-set selection visually
+  if (selectedDateISO && selectedDateISO.startsWith(`${currentYear}-${String(currentMonth+1).padStart(2,'0')}`)) {
+    const dayNum = parseInt(selectedDateISO.split('-')[2]);
+    [...grid.children].forEach(c => {
+      if (c.textContent == dayNum && !c.classList.contains('past') && !c.classList.contains('cal-dn')) {
+        c.classList.add('selected');
+      }
+    });
+    document.getElementById('disp-date').textContent = selectedDate;
+  }
+}
+
+function prevMonth() { if (currentMonth === 0) { currentMonth = 11; currentYear--; } else currentMonth--; renderCalendar(); }
+function nextMonth() { if (currentMonth === 11) { currentMonth = 0; currentYear++; } else currentMonth++; renderCalendar(); }
+
+// ───────────────────────── Cart summary (designs + totals) ─────────────────────────
+
+async function loadCartSummary() {
+  try {
+    const cart = await Shringar.Cart.get();
+    cartSnapshot = cart;
+
+    if (!cart.items || cart.items.length === 0) {
+      document.getElementById('booking-error').style.display = 'block';
+      document.getElementById('booking-error').textContent = 'Your cart is empty — add a design before booking.';
+      document.getElementById('pay-btn').style.opacity = '0.5';
+      document.getElementById('pay-btn').style.pointerEvents = 'none';
+      document.getElementById('design-chips-container').innerHTML =
+        `<div style="font-size:12px;color:var(--tl);">No designs in cart — <a href="index.html" style="color:var(--m);">browse designs</a></div>`;
+      return;
+    }
+
+    document.getElementById('design-chips-container').innerHTML = cart.items.map(item =>
+      `<div class="d-chip">${item.emojiIcon || '🤲'} ${item.designName}</div>`
+    ).join('');
+
+    document.getElementById('designs-total-display').textContent = Shringar.formatINR(cart.subtotal);
+    document.getElementById('visit-fee-display-2').textContent = Shringar.formatINR(cart.artistVisitFee);
+    document.getElementById('grand-total-display').textContent = Shringar.formatINR(cart.total);
+    document.getElementById('adv-amt-display').textContent = Shringar.formatINR(cart.advanceAmount);
+    document.getElementById('balance-amt-display').textContent = Shringar.formatINR(cart.balanceAmount);
+    document.getElementById('pay-btn').textContent = `🔒 Pay ${Shringar.formatINR(cart.advanceAmount)} & Confirm`;
+
+  } catch (err) {
+    Shringar.toast('Could not load your cart: ' + err.message, 'error');
+  }
+}
+
+// ───────────────────────── Submit booking + Razorpay checkout ─────────────────────────
+
+function showBookingError(msg) {
+  const el = document.getElementById('booking-error');
+  el.style.display = 'block';
+  el.textContent = msg;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Brief flash to draw the eye, since this fires after async steps where the
+  // user's attention may have drifted from the button they clicked.
+  el.style.animation = 'none';
+  requestAnimationFrame(() => { el.style.animation = 'shringar-error-flash 0.6s ease'; });
+}
+function hideBookingError() {
+  document.getElementById('booking-error').style.display = 'none';
+}
+
+async function handleConfirmBooking() {
+  hideBookingError();
+
+  const customerName = document.getElementById('customer-name').value.trim();
+  const countryCode = document.getElementById('booking-country-code').value;
+  const phoneRaw = document.getElementById('customer-phone').value.replace(/\s/g, '');
+  const customerPhone = countryCode + phoneRaw;
+  const customerEmail = document.getElementById('customer-email').value.trim();
+  const fullAddress = document.getElementById('full-address').value.trim();
+  const pincode = document.getElementById('pincode').value.trim();
+  const specialRequests = document.getElementById('special-requests').value.trim();
+  const specificTimeVal = document.getElementById('specific-time').value;
+  const timeNotes = document.getElementById('time-note-input').value.trim();
+
+  if (!selectedDateISO) return showBookingError('Please select an appointment date.');
+  if (!selectedArtistId) return showBookingError('Please select an artist.');
+  if (!selectedCity || !selectedArea) return showBookingError('Please select your city and area.');
+  if (!customerName) return showBookingError('Please enter your name.');
+  if (!phoneRaw || !/^[0-9]{7,12}$/.test(phoneRaw)) return showBookingError('Please enter a valid phone number (digits only).');
+  if (!fullAddress) return showBookingError('Please enter your full address.');
+  if (pincode && !/^[0-9]{6}$/.test(pincode)) return showBookingError('Pincode must be exactly 6 digits.');
+
+  const payBtn = document.getElementById('pay-btn');
+  payBtn.disabled = true;
+  payBtn.textContent = 'Creating booking…';
+
+  try {
+    // ── Step 1: create the booking (status PENDING until advance paid) ──
+    const booking = await Shringar.Bookings.create({
+      artistId: selectedArtistId,
+      appointmentDate: selectedDateISO,
+      preferredTime: selectedTimePref,
+      specificTime: specificTimeVal || null,
+      timeNotes: timeNotes || null,
+      city: selectedCity,
+      area: selectedArea,
+      fullAddress,
+      pincode: pincode || null,
+      customerName,
+      customerPhone,
+      customerEmail: customerEmail || null,
+      specialRequests: specialRequests || null,
+    });
+
+    // ── Step 2: create Razorpay order for the 30% advance ──
+    payBtn.textContent = 'Opening payment…';
+    const order = await Shringar.Payments.createAdvanceOrder(booking.id);
+
+    // ── Guard: Razorpay checkout.js failed to load (e.g. ad-blocker, offline) ──
+    if (typeof Razorpay === 'undefined') {
+      throw new Error('Payment system could not load (Razorpay script blocked or offline). Please disable any ad-blocker for this site and check your internet connection, then try again. Your booking reference is ' + booking.bookingReference + ' if you need to retry.');
+    }
+
+    // ── Guard: backend is still using placeholder Razorpay test keys ──
+    if (!order.razorpayKeyId || order.razorpayKeyId.includes('YOUR_KEY')) {
+      throw new Error('Payment is not yet configured by the site admin (Razorpay test keys are still placeholders in application.properties). Your booking reference ' + booking.bookingReference + ' has been saved — please contact support to complete payment.');
+    }
+
+    // ── Step 3: open Razorpay Checkout ──
+    const options = {
+      key: order.razorpayKeyId,
+      amount: order.amountInPaise,
+      currency: order.currency,
+      name: 'Shringar',
+      description: `Advance for booking ${booking.bookingReference}`,
+      order_id: order.razorpayOrderId,
+      prefill: { name: customerName, contact: customerPhone, email: customerEmail || '' },
+      theme: { color: '#493313' },
+      handler: async function (response) {
+        // ── Step 4: verify payment with backend ──
+        try {
+          await Shringar.Payments.verify({
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+            bookingId: booking.id,
+          });
+          Shringar.toast('Booking confirmed! 🎉');
+          window.location.href = `order.html?ref=${encodeURIComponent(booking.bookingReference)}`;
+        } catch (verifyErr) {
+          showBookingError('Payment succeeded but verification failed: ' + verifyErr.message + ' — contact support with reference ' + booking.bookingReference);
+          payBtn.disabled = false;
+          payBtn.textContent = '🔒 Retry Payment';
+        }
+      },
+      modal: {
+        ondismiss: function () {
+          payBtn.disabled = false;
+          payBtn.textContent = '🔒 Pay & Confirm';
+          showBookingError('Payment was cancelled. Your booking is saved — you can retry payment.');
+        }
+      }
+    };
+
+    let rzp;
+    try {
+      rzp = new Razorpay(options);
+      rzp.on('payment.failed', function (resp) {
+        payBtn.disabled = false;
+        payBtn.textContent = '🔒 Retry Payment';
+        showBookingError('Payment failed: ' + (resp.error?.description || 'unknown error') + '. Your booking reference is ' + booking.bookingReference + ' — you can retry.');
+      });
+      rzp.open();
+    } catch (rzpErr) {
+      console.error('Razorpay checkout failed to open:', rzpErr);
+      throw new Error('Could not open the payment window (' + rzpErr.message + '). Your booking reference is ' + booking.bookingReference + ' — please refresh and try again, or contact support.');
+    }
+
+  } catch (err) {
+    console.error('Booking/payment error:', err);
+    showBookingError(err.message);
+    payBtn.disabled = false;
+    payBtn.textContent = '🔒 Pay & Confirm';
+  }
+}
+
+// ───────────────────────── Init ─────────────────────────
+
+document.addEventListener('DOMContentLoaded', async () => {
+  renderCalendar();
+  await loadCities();
+  await loadCartSummary();
+
+  // Load live coupons from admin portal and show as chips
+  try {
+    const coupons = await Shringar.Public.coupons();
+    if (coupons && coupons.length > 0) {
+      const section = document.getElementById('booking-coupons-section');
+      const chips = document.getElementById('booking-coupon-chips');
+      if (section && chips) {
+        chips.innerHTML = coupons.map(c => {
+          const label = c.type === 'PERCENT' ? `${c.value}% off` : `₹${c.value} off`;
+          const min = c.minOrderValue > 0 ? ` · min ₹${c.minOrderValue}` : '';
+          return `<span onclick="applyBookingCoupon('${c.code}')" style="
+            display:inline-flex;align-items:center;gap:6px;padding:6px 13px;
+            background:linear-gradient(135deg,rgba(73,51,19,0.06),rgba(73,51,19,0.03));
+            border:1.5px dashed var(--gold);border-radius:20px;font-family:'Jost',sans-serif;
+            font-size:12px;font-weight:600;color:var(--m);cursor:pointer;transition:all 0.2s;"
+            onmouseover="this.style.background='rgba(201,162,39,0.12)'"
+            onmouseout="this.style.background='linear-gradient(135deg,rgba(73,51,19,0.06),rgba(73,51,19,0.03))'">
+            🏷️ <strong>${c.code}</strong> — ${label}${min}
+          </span>`;
+        }).join('');
+        section.style.display = 'block';
+      }
+    }
+  } catch { /* non-critical — booking works without coupons */ }
+});
+
+function applyBookingCoupon(code) {
+  // Route to cart page with coupon pre-filled, since the booking flow starts from cart
+  Shringar.toast(`Code "${code}" copied — apply it in your cart before booking`);
+  navigator.clipboard?.writeText(code).catch(() => {});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Orders — Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="admin-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">✦ Shringar</div>
+        <div class="sidebar-logo-sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin">
+        <div class="sidebar-admin-avatar" id="admin-avatar">A</div>
+        <div>
+          <div class="sidebar-admin-name" data-admin-name>Admin</div>
+          <div class="sidebar-admin-role">Administrator</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Orders</div>
+        <div class="topbar-sub">Every booking placed on the website, newest first</div>
+      </div>
+      <button class="btn btn-outline" onclick="loadOrders()">↻ Refresh</button>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">All Orders</div>
+          <div class="filter-row">
+            <select class="filter-select" id="status-filter" onchange="currentPage=0;loadOrders()">
+              <option value="">All statuses</option>
+              <option value="PENDING">Pending (unpaid)</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Reference</th><th>Customer</th><th>Date</th><th>Artist</th><th>Total</th><th>Advance</th><th>Status</th></tr>
+            </thead>
+            <tbody id="orders-table-body">
+              <tr><td colspan="7" class="loading-state">Loading orders…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination-wrap" style="display:none;">
+          <div class="pagination-info" id="pagination-info"></div>
+          <div class="pagination-controls">
+            <button class="page-btn" id="prev-btn" onclick="changePage(-1)">‹</button>
+            <button class="page-btn" id="next-btn" onclick="changePage(1)">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
+ShringarAdmin.paintAdminName();
+ShringarAdmin.paintActiveNav();
+const admin = ShringarAdmin.getAdmin();
+if (admin) document.getElementById('admin-avatar').textContent = (admin.firstName?.[0] || 'A').toUpperCase();
+
+let currentPage = 0;
+const PAGE_SIZE = 20;
+
+const STATUS_BADGE = {
+  PENDING: '<span class="badge badge-amber">⏳ Pending</span>',
+  CONFIRMED: '<span class="badge badge-green">✓ Confirmed</span>',
+  IN_PROGRESS: '<span class="badge badge-gold">🎨 In Progress</span>',
+  COMPLETED: '<span class="badge badge-gold">🌿 Completed</span>',
+  CANCELLED: '<span class="badge badge-red">✕ Cancelled</span>',
+  RESCHEDULED: '<span class="badge badge-amber">↻ Rescheduled</span>',
+};
+
+async function loadOrders() {
+  const tbody = document.getElementById('orders-table-body');
+  const status = document.getElementById('status-filter').value || null;
+
+  try {
+    const result = await ShringarAdmin.Dashboard.orders(currentPage, PAGE_SIZE, status);
+
+    if (result.content.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">📦</div>No orders found${status ? ' with this status' : ''}.</td></tr>`;
+      document.getElementById('pagination-wrap').style.display = 'none';
+      return;
+    }
+
+    tbody.innerHTML = result.content.map(o => `
+      <tr>
+        <td><strong style="font-family:monospace;font-size:12px;">${o.bookingReference}</strong></td>
+        <td>
+          <div class="cell-name">${o.customerName}</div>
+          <div class="cell-sub">${o.customerPhone}</div>
+        </td>
+        <td>${ShringarAdmin.formatDate(o.appointmentDate)}</td>
+        <td>${o.artistName || 'Unassigned'}</td>
+        <td><strong>${ShringarAdmin.formatINR(o.grandTotal)}</strong></td>
+        <td>
+          ${o.isAdvancePaid ? '<span class="badge badge-green">✓ Paid</span>' : '<span class="badge badge-amber">Pending</span>'}
+          <div class="cell-sub">${ShringarAdmin.formatINR(o.advanceAmount)}</div>
+        </td>
+        <td>${STATUS_BADGE[o.status] || o.status}</td>
+      </tr>`).join('');
+
+    // Pagination controls
+    document.getElementById('pagination-wrap').style.display = 'flex';
+    document.getElementById('pagination-info').textContent =
+      `Page ${result.page + 1} of ${result.totalPages} · ${result.totalElements} total orders`;
+    document.getElementById('prev-btn').disabled = result.page === 0;
+    document.getElementById('next-btn').disabled = !result.hasNext;
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">⚠️</div>${err.message}</td></tr>`;
+    document.getElementById('pagination-wrap').style.display = 'none';
+  }
+}
+
+function changePage(delta) {
+  currentPage += delta;
+  if (currentPage < 0) currentPage = 0;
+  loadOrders();
+}
+
+document.addEventListener('DOMContentLoaded', loadOrders);
+</script>
+</body>
+</html>

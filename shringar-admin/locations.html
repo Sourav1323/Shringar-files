@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+<title>Locations — Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+<style>
+.city-card{background:var(--white);border:1px solid var(--cd);border-radius:14px;margin-bottom:20px;overflow:hidden;}
+.city-header{padding:16px 20px;background:linear-gradient(135deg,rgba(73,51,19,0.06),rgba(73,51,19,0.02));border-bottom:1px solid var(--cd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.city-name{font-family:'Cinzel',Georgia,serif;font-size:16px;color:var(--td);}
+.areas-wrap{padding:16px 20px;display:flex;flex-wrap:wrap;gap:8px;}
+.area-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:500;border:1.5px solid var(--cd);background:var(--cream);color:var(--tm);}
+.area-chip.inactive{opacity:0.45;text-decoration:line-through;}
+.area-chip-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:0;line-height:1;}
+.add-area-row{padding:12px 20px;border-top:1px solid var(--cd);display:flex;gap:8px;}
+.add-area-input{flex:1;padding:9px 13px;border:1.5px solid var(--cd);border-radius:9px;font-family:'Jost',sans-serif;font-size:13px;color:var(--td);background:var(--cream);outline:none;}
+.add-area-input:focus{border-color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div><div class="sidebar-logo-text">✦ Shringar</div><div class="sidebar-logo-sub">Admin Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin"><div class="sidebar-admin-avatar" id="admin-avatar">A</div><div><div class="sidebar-admin-name" data-admin-name>Admin</div><div class="sidebar-admin-role">Administrator</div></div></div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title">Locations</div><div class="topbar-sub">Manage serviceable cities and areas shown on the booking page</div></div>
+      <button class="btn btn-primary" onclick="openAddCityModal()">+ Add City</button>
+    </div>
+    <div class="content">
+      <div style="background:#fdf0db;border:1px solid #f0d89e;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#7a5000;">
+        <strong>⚡ Live updates:</strong> Any change here takes effect on the booking page immediately — no restart needed. Area names must match exactly what artists list in their service areas.
+      </div>
+      <div id="cities-container"><div class="loading-state">Loading locations…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CITY MODAL -->
+<div class="modal-overlay" id="city-modal">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header"><div class="modal-title">Add New City</div><button class="modal-close" onclick="closeCityModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="city-error" style="display:none;color:var(--red);font-size:12.5px;background:var(--redl);border:1px solid #f0c8c8;border-radius:8px;padding:10px 12px;margin-bottom:14px;"></div>
+      <div class="form-field">
+        <label class="form-label">Search Indian City *</label>
+        <input class="form-input" id="city-search-input" list="india-cities-datalist" placeholder="Start typing e.g. Mumbai, Jaipur, Kochi…" oninput="handleCitySearchInput()"/>
+        <datalist id="india-cities-datalist"></datalist>
+        <div class="form-hint" id="city-state-hint">Suggestions are limited to Indian cities — pick one to auto-fill the fields below.</div>
+      </div>
+      <div class="form-field"><label class="form-label">City Name (internal, lowercase)</label><input class="form-input" id="city-name-input" placeholder="e.g. mumbai" readonly style="background:var(--cd);cursor:not-allowed;"/></div>
+      <div class="form-field"><label class="form-label">Display Name</label><input class="form-input" id="city-display-input" placeholder="e.g. Mumbai" readonly style="background:var(--cd);cursor:not-allowed;"/></div>
+      <div class="form-field">
+        <label class="form-label">State</label>
+        <input class="form-input" id="city-state-input" placeholder="Auto-filled from selection" readonly style="background:var(--cd);cursor:not-allowed;"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="city-status">
+          <option value="active">Active (bookings open)</option>
+          <option value="coming_soon">Coming Soon</option>
+        </select>
+      </div>
+      <div class="form-field" id="launch-quarter-wrap" style="display:none;">
+        <label class="form-label">Launch Quarter</label>
+        <input class="form-input" id="city-launch-quarter" placeholder="e.g. Q3 2026"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeCityModal()">Cancel</button>
+      <button class="btn btn-primary" id="city-save-btn" onclick="saveCity()">Add City</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/india-cities.js"></script>
+<script src="js/admin-api.js"></script>
+<script src="js/admin-api-extra.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) throw new Error('redirect');
+ShringarAdmin.paintAdminName(); ShringarAdmin.paintActiveNav();
+document.getElementById('admin-avatar').textContent = (ShringarAdmin.getAdmin()?.firstName?.[0]||'A').toUpperCase();
+
+document.getElementById('city-status').addEventListener('change', function() {
+  document.getElementById('launch-quarter-wrap').style.display = this.value === 'coming_soon' ? '' : 'none';
+});
+
+let allCities = [];
+
+async function loadCities() {
+  const container = document.getElementById('cities-container');
+  try {
+    allCities = await ShringarAdmin.Locations.cities();
+    if (!allCities.length) { container.innerHTML = '<div class="empty-state"><div class="icon">📍</div>No cities configured yet.</div>'; return; }
+    container.innerHTML = allCities.map(c => renderCityCard(c)).join('');
+  } catch(err) { container.innerHTML = `<div class="empty-state">⚠️ ${err.message}</div>`; }
+}
+
+function renderCityCard(c) {
+  const areas = (c.areas || []);
+  const statusBadge = c.isActive
+    ? '<span class="badge badge-green">Active</span>'
+    : c.isComingSoon ? '<span class="badge badge-amber">Coming Soon</span>'
+    : '<span class="badge badge-gray">Inactive</span>';
+
+  return `<div class="city-card" id="city-card-${c.id}">
+    <div class="city-header">
+      <div>
+        <span class="city-name">${c.displayName}</span>
+        <span style="font-size:11px;color:var(--tl);margin-left:8px;font-family:monospace;">${c.name}</span>
+        ${statusBadge}
+        ${c.isComingSoon && c.launchQuarter ? `<span style="font-size:11px;color:var(--tl);margin-left:6px;">· ${c.launchQuarter}</span>` : ''}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm btn-outline" onclick="toggleCityStatus(${c.id},${!!c.isActive})">${c.isActive ? 'Deactivate' : 'Activate'}</button>
+      </div>
+    </div>
+    <div class="areas-wrap" id="areas-${c.id}">
+      ${areas.length === 0 ? '<span style="font-size:13px;color:var(--tl);">No areas yet — add below</span>' : ''}
+      ${areas.map(a => `
+        <span class="area-chip ${!a.isActive ? 'inactive' : ''}">
+          ${a.name}
+          <button class="area-chip-btn" title="${a.isActive ? 'Disable' : 'Enable'} area" onclick="toggleArea(${c.id},'${a.name.replace(/'/g,"\\'")}')">
+            ${a.isActive ? '👁' : '🚫'}
+          </button>
+          <button class="area-chip-btn" title="Remove area" onclick="removeArea(${c.id},'${a.name.replace(/'/g,"\\'")}')">✕</button>
+        </span>`).join('')}
+    </div>
+    <div class="add-area-row">
+      <input class="add-area-input" id="area-input-${c.id}" placeholder="Type new area name and press Enter (e.g. Andheri)" onkeydown="if(event.key==='Enter') addArea(${c.id})"/>
+      <button class="btn btn-sm btn-primary" onclick="addArea(${c.id})">+ Add Area</button>
+    </div>
+  </div>`;
+}
+
+async function addArea(cityId) {
+  const input = document.getElementById(`area-input-${cityId}`);
+  const name = input.value.trim();
+  if (!name) return;
+  try {
+    await ShringarAdmin.Locations.addArea(cityId, name);
+    input.value = '';
+    ShringarAdmin.toast(`"${name}" added`, 'success');
+    loadCities();
+  } catch(err) { ShringarAdmin.toast(err.message, 'error'); }
+}
+
+async function removeArea(cityId, name) {
+  if (!confirm(`Remove "${name}" from this city? Artists listing this area will still exist, but won't show for new bookings.`)) return;
+  try { await ShringarAdmin.Locations.removeArea(cityId, name); loadCities(); ShringarAdmin.toast('Area removed'); }
+  catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+async function toggleArea(cityId, name) {
+  try { await ShringarAdmin.Locations.toggleArea(cityId, name); loadCities(); }
+  catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+async function toggleCityStatus(cityId, currentlyActive) {
+  try {
+    await ShringarAdmin.Locations.updateCity(cityId, { isActive: !currentlyActive, isComingSoon: currentlyActive });
+    ShringarAdmin.toast(currentlyActive ? 'City deactivated' : 'City activated', 'success');
+    loadCities();
+  } catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+let indiaCitiesLookup = new Map();
+
+function openAddCityModal() {
+  document.getElementById('city-search-input').value = '';
+  document.getElementById('city-name-input').value = '';
+  document.getElementById('city-display-input').value = '';
+  document.getElementById('city-state-input').value = '';
+  document.getElementById('city-status').value = 'active';
+  document.getElementById('city-launch-quarter').value = '';
+  document.getElementById('launch-quarter-wrap').style.display = 'none';
+  document.getElementById('city-error').style.display = 'none';
+  document.getElementById('city-state-hint').textContent = 'Suggestions are limited to Indian cities — pick one to auto-fill the fields below.';
+  document.getElementById('city-state-hint').style.color = 'var(--tl)';
+  indiaCitiesLookup = populateIndiaCitiesDatalist('india-cities-datalist');
+  document.getElementById('city-modal').classList.add('open');
+}
+function closeCityModal() { document.getElementById('city-modal').classList.remove('open'); }
+
+/** Fires as the admin types in the India-city search box. When the typed text
+ *  exactly matches a suggestion (i.e. they picked one from the datalist, or
+ *  typed it out in full), auto-fills the internal name, display name and
+ *  state fields — keeping data consistent and restricted to real Indian cities. */
+function handleCitySearchInput() {
+  const typed = document.getElementById('city-search-input').value.trim();
+  const match = indiaCitiesLookup.get(typed);
+  const hint = document.getElementById('city-state-hint');
+
+  if (match) {
+    document.getElementById('city-name-input').value = match.city.toLowerCase().replace(/\s+/g, '_');
+    document.getElementById('city-display-input').value = match.city;
+    document.getElementById('city-state-input').value = match.state;
+    hint.textContent = `✓ Matched to ${match.city}, ${match.state}`;
+    hint.style.color = 'var(--green)';
+  } else {
+    document.getElementById('city-name-input').value = '';
+    document.getElementById('city-display-input').value = '';
+    document.getElementById('city-state-input').value = '';
+    hint.textContent = typed
+      ? 'No exact match yet — pick a suggestion from the dropdown to continue.'
+      : 'Suggestions are limited to Indian cities — pick one to auto-fill the fields below.';
+    hint.style.color = typed ? 'var(--amber, #ba7517)' : 'var(--tl)';
+  }
+}
+
+async function saveCity() {
+  const errEl = document.getElementById('city-error');
+  errEl.style.display = 'none';
+  const name = document.getElementById('city-name-input').value.trim();
+  const displayName = document.getElementById('city-display-input').value.trim();
+  if (!name || !displayName) {
+    errEl.textContent = 'Please pick a city from the suggestions — start typing and choose a match.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const status = document.getElementById('city-status').value;
+  const btn = document.getElementById('city-save-btn');
+  btn.disabled = true; btn.textContent = 'Adding…';
+  try {
+    await ShringarAdmin.Locations.createCity({ name, displayName, isActive: status==='active', isComingSoon: status==='coming_soon', launchQuarter: document.getElementById('city-launch-quarter').value.trim()||null });
+    ShringarAdmin.toast(`${displayName} added!`, 'success');
+    closeCityModal(); loadCities();
+  } catch(err) { errEl.textContent=err.message; errEl.style.display='block'; }
+  finally { btn.disabled=false; btn.textContent='Add City'; }
+}
+
+document.getElementById('city-modal').addEventListener('click', e => { if(e.target===document.getElementById('city-modal')) closeCityModal(); });
+document.addEventListener('DOMContentLoaded', loadCities);
+</script>
+</body>
+</html>

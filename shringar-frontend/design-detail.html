@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Rajasthani Bridal — Shringar</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Sans+Devanagari:wght@400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--m:#493313;--ml:#6b4a1e;--mr:#7a2c1a;--cream:#fdf6ec;--cd:#f5e8d0;--cdd:#e8d0b0;--gold:#c9a227;--td:#2a1a08;--tm:#5c3d1e;--tl:#8a6040;--white:#fff;}
+body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--td);}
+/* NAV */
+nav{background:var(--m);padding:0 5%;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--cream);text-decoration:none;}
+.logo span{color:var(--gold);}
+.nav-right{display:flex;gap:10px;align-items:center;}
+.nav-icon{width:34px;height:34px;border-radius:50%;border:1px solid rgba(253,246,236,0.3);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;font-size:15px;text-decoration:none;}
+/* BREADCRUMB */
+.breadcrumb{padding:16px 5%;font-size:12px;color:var(--tl);display:flex;align-items:center;gap:8px;}
+.breadcrumb a{color:var(--tl);text-decoration:none;cursor:pointer;}
+.breadcrumb a:hover{color:var(--m);}
+.breadcrumb span{color:var(--td);font-weight:500;}
+/* MAIN */
+.product-layout{display:grid;grid-template-columns:1.1fr 1fr;gap:0;background:var(--white);}
+/* IMAGES */
+.img-panel{padding:32px 40px;border-right:1px solid var(--cd);}
+.main-img-box{border-radius:16px;background:linear-gradient(135deg,#c9a22718,#49331310);height:380px;display:flex;align-items:center;justify-content:center;font-size:120px;margin-bottom:16px;position:relative;border:1px solid var(--cd);}
+.img-badge{position:absolute;top:16px;left:16px;background:var(--gold);color:var(--td);font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;letter-spacing:0.06em;}
+.thumbs{display:flex;gap:10px;}
+.thumb{width:80px;height:80px;border-radius:10px;border:1.5px solid var(--cd);display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;background:var(--cream);transition:border-color 0.2s;}
+.thumb.active{border-color:var(--gold);background:linear-gradient(135deg,#c9a22715,#49331310);}
+.thumb:hover{border-color:var(--m);}
+/* INFO */
+.info-panel{padding:32px 40px;background:var(--cream);}
+.design-name{font-family:'Playfair Display',serif;font-size:30px;color:var(--td);margin-bottom:6px;}
+.rating-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.stars{color:var(--gold);font-size:14px;}
+.review-count{font-size:13px;color:var(--tl);}
+.price-row{display:flex;align-items:baseline;gap:12px;margin-bottom:24px;}
+.price{font-size:34px;font-weight:600;color:var(--mr);}
+.price-note{font-size:13px;color:var(--tl);}
+.specs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+.spec-box{background:var(--white);border:1px solid var(--cd);border-radius:10px;padding:12px 14px;}
+.spec-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--tl);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.spec-val{font-size:15px;font-weight:600;color:var(--td);}
+.desc-section{margin-bottom:24px;}
+.desc-title{font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--m);margin-bottom:10px;}
+.desc-text{font-size:14px;color:var(--tm);line-height:1.85;font-weight:300;}
+.tags-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.tag{font-size:11px;padding:5px 12px;border-radius:14px;background:var(--cd);color:var(--tm);font-weight:500;}
+.coverage-options{margin-bottom:28px;}
+.coverage-title{font-size:13px;font-weight:600;letter-spacing:0.04em;color:var(--m);margin-bottom:12px;}
+.coverage-opts{display:flex;flex-direction:column;gap:8px;}
+.cov-opt{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1.5px solid var(--cd);border-radius:10px;cursor:pointer;background:var(--white);transition:all 0.2s;}
+.cov-opt.selected{border-color:var(--m);background:rgba(73,51,19,0.04);}
+.cov-opt-left{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;}
+.cov-opt-price{font-size:14px;font-weight:600;color:var(--mr);}
+.cov-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--cd);display:flex;align-items:center;justify-content:center;font-size:10px;}
+.cov-opt.selected .cov-check{background:var(--m);border-color:var(--m);color:var(--cream);}
+.action-btns{display:flex;flex-direction:column;gap:10px;}
+.btn-primary{background:var(--gold);color:var(--td);border:none;padding:16px;border-radius:12px;font-family:'Jost',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background 0.2s;letter-spacing:0.03em;}
+.btn-primary:hover{background:#a07e18;}
+.btn-mehendi{background:var(--m);color:var(--cream);border:none;padding:16px;border-radius:12px;font-family:'Jost',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:background 0.2s;}
+.btn-mehendi:hover{background:var(--mr);}
+.btn-outline{background:transparent;color:var(--m);border:1.5px solid var(--m);padding:14px;border-radius:12px;font-family:'Jost',sans-serif;font-size:14px;cursor:pointer;}
+/* AI TRY-ON MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(42,26,8,0.75);z-index:2000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--cream);border-radius:20px;padding:40px;max-width:480px;width:90%;text-align:center;position:relative;}
+.modal-close{position:absolute;top:16px;right:20px;font-size:20px;cursor:pointer;color:var(--tl);}
+.modal-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--td);margin-bottom:8px;}
+.modal-sub{font-size:14px;color:var(--tl);margin-bottom:28px;font-weight:300;line-height:1.7;}
+.upload-zone{border:2px dashed var(--cdd);border-radius:14px;padding:40px 20px;cursor:pointer;transition:border-color 0.2s;background:var(--white);margin-bottom:20px;}
+.upload-zone:hover{border-color:var(--gold);}
+.upload-icon{font-size:44px;margin-bottom:12px;}
+.upload-text{font-size:14px;color:var(--tm);margin-bottom:6px;font-weight:500;}
+.upload-note{font-size:12px;color:var(--tl);}
+.modal-try-btn{width:100%;padding:14px;background:var(--m);color:var(--cream);border:none;border-radius:10px;font-family:'Jost',sans-serif;font-size:15px;font-weight:600;cursor:pointer;}
+/* REVIEWS */
+.reviews-section{padding:48px 5%;background:var(--cream);}
+.rev-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--td);margin-bottom:8px;}
+.rev-summary{display:flex;align-items:center;gap:24px;margin-bottom:32px;padding:20px;background:var(--white);border-radius:12px;border:1px solid var(--cd);}
+.rev-big-num{font-family:'Playfair Display',serif;font-size:52px;color:var(--td);line-height:1;}
+.rev-stars-big{color:var(--gold);font-size:20px;margin-bottom:4px;}
+.rev-count{font-size:13px;color:var(--tl);}
+.rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.rev-card{background:var(--white);border:1px solid var(--cd);border-radius:12px;padding:20px;}
+.rev-card-stars{color:var(--gold);font-size:13px;margin-bottom:8px;}
+.rev-card-text{font-size:13px;color:var(--tm);line-height:1.8;font-style:italic;margin-bottom:14px;font-weight:300;}
+.rev-author{display:flex;align-items:center;gap:10px;}
+.rev-avatar{width:34px;height:34px;border-radius:50%;background:var(--m);display:flex;align-items:center;justify-content:center;color:var(--cream);font-size:13px;font-weight:600;}
+.rev-name{font-size:13px;font-weight:600;color:var(--td);}
+.rev-date{font-size:11px;color:var(--tl);}
+/* SIMILAR */
+.similar-section{padding:48px 5%;background:var(--white);}
+.sim-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--td);margin-bottom:28px;}
+.sim-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.sim-card{border-radius:12px;overflow:hidden;border:1px solid var(--cd);cursor:pointer;transition:transform 0.2s;}
+.sim-card:hover{transform:translateY(-3px);}
+.sim-img{height:120px;display:flex;align-items:center;justify-content:center;font-size:44px;}
+.sim-body{padding:12px;}
+.sim-name{font-size:13px;font-weight:600;color:var(--td);margin-bottom:4px;}
+.sim-price{font-size:14px;font-weight:600;color:var(--mr);}
+/* FOOTER MINI */
+.footer-mini{background:var(--td);padding:24px 5%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+.footer-mini .logo{font-size:18px;}
+.footer-mini p{font-size:12px;color:rgba(253,246,236,0.35);}
+@media(max-width:768px){.product-layout{grid-template-columns:1fr;}.sim-grid{grid-template-columns:repeat(2,1fr);}}
+
+/* ── Back Button ── */
+.nav-back-btn{display:flex;align-items:center;gap:9px;text-decoration:none;padding:9px 14px 9px 11px;border:1px solid rgba(201,162,39,0.28);border-radius:2px;transition:all 0.24s;cursor:pointer;background:transparent;position:relative;color:rgba(253,246,236,0.6);}
+.nav-back-btn::before{content:'';position:absolute;top:-1px;left:-1px;width:8px;height:8px;border-top:1.5px solid rgba(201,162,39,0.6);border-left:1.5px solid rgba(201,162,39,0.6);}
+.nav-back-btn::after{content:'';position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-bottom:1.5px solid rgba(201,162,39,0.6);border-right:1.5px solid rgba(201,162,39,0.6);}
+.nav-back-btn .back-arrow{flex-shrink:0;transition:transform 0.24s;}
+.nav-back-btn .back-label{font-family:'Cinzel',Georgia,serif;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;font-weight:400;}
+.nav-back-btn:hover{color:#c9a227;border-color:rgba(201,162,39,0.5);background:rgba(201,162,39,0.06);}
+.nav-back-btn:hover .back-arrow{transform:translateX(-3px);}
+</style>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="stylesheet" href="css/responsive.css"/>
+</head>
+<body>
+<nav style="background:var(--m);padding:0 5%;height:66px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(201,162,39,0.18);">
+  <div style="display:flex;align-items:center;gap:14px;"><a href="javascript:history.back()" class="nav-back-btn">
+      <svg class="back-arrow" width="17" height="12" viewBox="0 0 17 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 5.5,1 L 1,6 L 5.5,11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="15.2" cy="6" r="1.8" fill="currentColor" opacity="0.5"/>
+      </svg>
+      <span class="back-label">Back</span>
+    </a></div>
+  <a href="index.html" style="display:flex;align-items:center;text-decoration:none;position:absolute;left:50%;transform:translateX(-50%);" title="Shringar — Home">
+    <svg width="238" height="52" viewBox="0 0 238 52" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;">
+      <g transform="translate(27,26)">
+        <circle r="22" fill="none" stroke="#c9a227" stroke-width="0.8" opacity="0.45"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(45)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(90)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(135)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(180)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(225)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(270)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(315)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(45)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(90)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(135)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(180)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(225)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(270)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(315)"/>
+        <circle r="12" fill="none" stroke="#c9a227" stroke-width="0.5" opacity="0.45"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(22.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(67.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(112.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(157.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(202.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(247.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(292.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(337.5)"/>
+        <circle r="6.5" fill="rgba(253,246,236,0.88)"/>
+        <circle r="4"   fill="#c9a227"/>
+        <circle r="2"   fill="rgba(20,10,4,0.85)"/>
+      </g>
+      <line x1="57" y1="9" x2="57" y2="43" stroke="rgba(201,162,39,0.22)" stroke-width="0.6"/>
+      <text x="149" y="23" font-family="'Cinzel Decorative','Cinzel',Georgia,serif" font-size="17" fill="#fdf6ec" font-weight="400" letter-spacing="0.1em" text-anchor="middle">SHRINGAR</text>
+      <line x1="74"  y1="30" x2="137" y2="30" stroke="rgba(201,162,39,0.4)" stroke-width="0.65"/>
+      <polygon points="149,26.5 154,30 149,33.5 144,30" fill="rgba(201,162,39,0.55)"/>
+      <line x1="161" y1="30" x2="224" y2="30" stroke="rgba(201,162,39,0.4)" stroke-width="0.65"/>
+      <text x="149" y="44" font-family="'Noto Sans Devanagari','Arial Unicode MS',sans-serif" font-size="10" fill="rgba(201,162,39,0.62)" letter-spacing="0.06em" text-anchor="middle">मेहंदी कला</text>
+    </svg>
+  </a>
+  <div style="display:flex;gap:10px;align-items:center;"><a href="cart.html" style="width:34px;height:34px;border-radius:50%;border:1px solid rgba(253,246,236,0.28);display:flex;align-items:center;justify-content:center;color:var(--cream);font-size:15px;text-decoration:none;">🛒</a></div>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><span style="font-size:18px;">🏠</span> Home</a>
+  <a href="cart.html"><span style="font-size:18px;">🛒</span> Cart</a>
+  <div class="menu-divider"></div>
+  <a href="booking.html"><span style="font-size:18px;">📅</span> Book a Design</a>
+  <a href="help.html"><span style="font-size:18px;">❓</span> Help & Support</a>
+  <div class="menu-divider"></div>
+  <a href="login.html" id="mobile-auth-link"><span style="font-size:18px;">👤</span> Sign In</a>
+</div>
+<script>
+(function() {
+  // Update auth link text if already logged in
+  var user = null;
+  try { user = typeof Shringar !== 'undefined' ? Shringar.getUser() : JSON.parse(localStorage.getItem('shringar_user')); } catch(e) {}
+  if (user) {
+    var link = document.getElementById('mobile-auth-link');
+    if (link) {
+      link.innerHTML = '<span style="font-size:18px;">👤</span> ' + user.firstName;
+      link.href = '#';
+      link.onclick = function(e) {
+        e.preventDefault();
+        if (confirm('Log out of Shringar?')) {
+          localStorage.removeItem('shringar_token');
+          localStorage.removeItem('shringar_user');
+          window.location.href = 'login.html';
+        }
+      };
+    }
+  }
+})();
+
+function toggleMobileMenu() {
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('mobile-menu');
+  if (!btn || !menu) return;
+  btn.classList.toggle('open');
+  menu.classList.toggle('open');
+  document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+}
+
+// Close menu when tapping a link inside it
+document.querySelectorAll('.mobile-menu a').forEach(function(a) {
+  a.addEventListener('click', function() {
+    var btn = document.getElementById('hamburger-btn');
+    var menu = document.getElementById('mobile-menu');
+    if (btn) btn.classList.remove('open');
+    if (menu) menu.classList.remove('open');
+    document.body.style.overflow = '';
+  });
+});
+</script>
+
+<div class="breadcrumb">
+  <a href="index.html">Home</a> ›
+  <a href="index.html">Designs</a> ›
+  <span id="breadcrumb-name">Rajasthani Bridal Full Set</span>
+</div>
+
+<div class="product-layout">
+  <div class="img-panel">
+    <div class="main-img-box" id="main-img-box">
+      <img id="main-photo" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:16px;position:absolute;inset:0;"/>
+      <span id="main-emoji">🤲</span>
+      <div class="img-badge" id="img-badge">⭐ Top Pick 2025</div>
+    </div>
+    <div class="thumbs" id="thumbs-row">
+      <div class="thumb active" onclick="selectThumb(this,'🤲')">🤲</div>
+      <div class="thumb" onclick="selectThumb(this,'✋')">✋</div>
+      <div class="thumb" onclick="selectThumb(this,'🦶')">🦶</div>
+      <div class="thumb" onclick="selectThumb(this,'🌿')">🌿</div>
+      <div class="thumb" onclick="selectThumb(this,'🎨')" style="font-size:14px;color:var(--tl);">+3 more</div>
+    </div>
+    <div id="video-section" style="display:none;margin-top:18px;">
+      <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--m);margin-bottom:10px;font-weight:600;">🎬 Watch This Design</div>
+      <div id="design-video-embed" style="border-radius:14px;overflow:hidden;"></div>
+    </div>
+  </div>
+
+  <div class="info-panel">
+    <h1 class="design-name" id="design-name">Rajasthani Bridal Full Set</h1>
+    <div class="rating-row">
+      <span class="stars">★★★★★</span>
+      <span style="font-size:14px;font-weight:600;">4.9</span>
+      <span class="review-count">(218 reviews)</span>
+    </div>
+    <div class="price-row">
+      <span class="price" id="design-price">₹2,500</span>
+      <span class="price-note">Starting price · Add-ons available</span>
+    </div>
+
+    <div class="specs-grid">
+      <div class="spec-box">
+        <div class="spec-label">⏱ Duration</div>
+        <div class="spec-val" id="spec-duration">3 – 4 hours</div>
+      </div>
+      <div class="spec-box">
+        <div class="spec-label">📏 Length / Coverage</div>
+        <div class="spec-val" id="spec-coverage">Fingertip to Elbow</div>
+      </div>
+      <div class="spec-box">
+        <div class="spec-label">🎨 Mehendi Cones</div>
+        <div class="spec-val" id="spec-cones">2 cones</div>
+      </div>
+      <div class="spec-box">
+        <div class="spec-label">📍 Placement</div>
+        <div class="spec-val" id="spec-placement">Both Hands</div>
+      </div>
+    </div>
+
+    <div class="desc-section">
+      <div class="desc-title">About This Design</div>
+      <div class="desc-text" id="design-desc">A masterpiece inspired by the royal courts of Rajasthan. Intricate peacocks, paisleys, floral jaal patterns and fine geometric latticework extend from your fingertips to the elbow. This heirloom-quality design is perfect for weddings and grand celebrations. Each application is unique and personalised to your hand shape.</div>
+    </div>
+
+    <div class="tags-row" id="tags-row">
+      <span class="tag">Bridal</span><span class="tag">Rajasthani</span>
+      <span class="tag">Full Hand</span><span class="tag">Wedding</span><span class="tag">Heritage</span>
+    </div>
+
+    <div class="coverage-options">
+      <div class="coverage-title">Choose Coverage Area</div>
+      <div class="coverage-opts" id="coverage-opts">
+        <div class="cov-opt selected" data-note="Both Hands (Full)" onclick="selectCov(this,'₹2,500')">
+          <div class="cov-opt-left"><div class="cov-check">✓</div> Both Hands (Full)</div>
+          <span class="cov-opt-price">₹2,500</span>
+        </div>
+        <div class="cov-opt" data-note="Hands + Feet Combo" onclick="selectCov(this,'₹4,300')">
+          <div class="cov-opt-left"><div class="cov-check"></div> Hands + Feet Combo</div>
+          <span class="cov-opt-price">₹4,300</span>
+        </div>
+        <div class="cov-opt" data-note="Single Hand Only" onclick="selectCov(this,'₹1,400')">
+          <div class="cov-opt-left"><div class="cov-check"></div> Single Hand Only</div>
+          <span class="cov-opt-price">₹1,400</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--tl);margin-top:8px;">Coverage variants shown for reference — your selection is saved as a note on the cart item; billing uses the base design price.</div>
+    </div>
+
+    <div id="cart-feedback" style="display:none;font-size:12.5px;border-radius:8px;padding:9px 12px;margin-bottom:10px;"></div>
+
+    <div class="action-btns">
+      <button class="btn-primary" id="add-to-cart-btn" onclick="handleAddToCart()">🛒 Add to Cart</button>
+      <button class="btn-mehendi" onclick="openAiTryOnModal()">✨ Try On My Hand (AI Lens)</button>
+      <button class="btn-outline" onclick="location.href='booking.html'">📅 Book This Design Directly</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- AI TRY-ON MODAL -->
+<div class="modal-overlay" id="ai-modal">
+  <div class="modal">
+    <span class="modal-close" onclick="closeAiTryOnModal()">✕</span>
+    <div class="modal-title">✨ AI Try-On Lens</div>
+    <div class="modal-sub" id="ai-modal-sub">Upload a photo of your hand and we'll show you exactly how this design will look on your skin tone.</div>
+
+    <div class="upload-zone" id="ai-upload-zone" onclick="document.getElementById('file-inp').click()">
+      <input type="file" id="file-inp" accept="image/*" style="display:none" onchange="handleUpload(this)"/>
+      <div class="upload-icon">📸</div>
+      <div class="upload-text">Tap to upload a hand photo</div>
+      <div class="upload-note">JPG, PNG supported · Max 10MB · Your photo stays private</div>
+    </div>
+
+    <!-- Result area — hidden until "Generate" produces a preview -->
+    <div id="ai-result-wrap" style="display:none;position:relative;margin-top:14px;border-radius:12px;overflow:hidden;">
+      <img id="ai-result-img" src="" alt="Your hand" style="width:100%;display:block;"/>
+      <canvas id="ai-result-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+    </div>
+    <div id="ai-result-caption" style="display:none;font-size:11.5px;color:var(--tl);text-align:center;margin-top:8px;">
+      ✨ Simulated preview — a decorative pattern overlay to give you a rough sense of placement and coverage, not an exact rendering of the real design.
+    </div>
+
+    <button class="modal-try-btn" id="ai-generate-btn" onclick="handleGenerateTryOnPreview()">Generate Try-On Preview</button>
+  </div>
+</div>
+
+<!-- REVIEWS -->
+<div class="reviews-section">
+  <div class="rev-title">Customer Reviews</div>
+  <div class="rev-summary">
+    <div>
+      <div class="rev-big-num">4.9</div>
+      <div class="rev-stars-big">★★★★★</div>
+      <div class="rev-count">218 verified reviews</div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tl);">
+        <span style="width:14px;">5★</span>
+        <div style="flex:1;height:6px;background:var(--cd);border-radius:3px;overflow:hidden;"><div style="width:89%;height:100%;background:var(--gold);border-radius:3px;"></div></div>
+        <span>89%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tl);">
+        <span style="width:14px;">4★</span>
+        <div style="flex:1;height:6px;background:var(--cd);border-radius:3px;overflow:hidden;"><div style="width:8%;height:100%;background:var(--gold);border-radius:3px;opacity:0.6;"></div></div>
+        <span>8%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tl);">
+        <span style="width:14px;">3★</span>
+        <div style="flex:1;height:6px;background:var(--cd);border-radius:3px;overflow:hidden;"><div style="width:3%;height:100%;background:var(--gold);border-radius:3px;opacity:0.4;"></div></div>
+        <span>3%</span>
+      </div>
+    </div>
+  </div>
+  <div class="rev-grid">
+    <div class="rev-card"><div class="rev-card-stars">★★★★★</div><p class="rev-card-text">Every guest at my wedding complimented the design. Sunita was incredibly precise and patient throughout the 4-hour session.</p><div class="rev-author"><div class="rev-avatar">P</div><div><div class="rev-name">Priya Sharma</div><div class="rev-date">Mumbai · May 2026</div></div></div></div>
+    <div class="rev-card"><div class="rev-card-stars">★★★★★</div><p class="rev-card-text">I used the AI try-on and it matched EXACTLY what I got. The design lasted beautifully for 3 weeks after the wedding.</p><div class="rev-author"><div class="rev-avatar">M</div><div><div class="rev-name">Meena Iyer</div><div class="rev-date">Chennai · April 2026</div></div></div></div>
+    <div class="rev-card"><div class="rev-card-stars">★★★★★</div><p class="rev-card-text">Booked two days before my wedding — they managed to fit me in and the result was stunning. Thank you Shringar!</p><div class="rev-author"><div class="rev-avatar">A</div><div><div class="rev-name">Anjali Rao</div><div class="rev-date">Pune · March 2026</div></div></div></div>
+  </div>
+</div>
+
+<!-- SIMILAR DESIGNS -->
+<div class="similar-section">
+  <div class="sim-title">You May Also Like</div>
+  <div class="sim-grid" id="similar-grid">
+    <!-- Populated dynamically from GET /api/designs (excludes current design) -->
+  </div>
+</div>
+
+<div class="footer-mini">
+  <a href="index.html" style="text-decoration:none;font-family:'Cinzel Decorative',serif;font-size:15px;color:var(--cream);letter-spacing:0.08em;">✦ Shringar ✦</a>
+  <p>© 2026 Shringar. All rights reserved.</p>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+let currentDesign = null;
+let selectedCoverageNote = "Both Hands (Full)";
+
+/** Backend returns relative URLs like "/uploads/abc.jpg" — prefix with the API host (minus /api) to load them */
+function resolveUploadUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const apiHost = Shringar.API_BASE.replace(/\/api$/, '');
+  return apiHost + path;
+}
+
+function selectThumb(el, emoji) {
+  document.querySelectorAll('.thumb').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('main-photo').style.display = 'none';
+  document.getElementById('main-emoji').style.display = 'block';
+  document.getElementById('main-emoji').textContent = emoji;
+}
+
+/** Used when real uploaded gallery photos are present instead of decorative emoji thumbs */
+function selectPhotoThumb(el, photoUrl) {
+  document.querySelectorAll('.thumb').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('main-emoji').style.display = 'none';
+  const mainPhoto = document.getElementById('main-photo');
+  mainPhoto.src = photoUrl;
+  mainPhoto.style.display = 'block';
+}
+
+function selectCov(el, price) {
+  document.querySelectorAll('.cov-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('design-price').textContent = price;
+  document.querySelectorAll('.cov-check').forEach(c=>c.textContent='');
+  el.querySelector('.cov-check').textContent = '✓';
+  selectedCoverageNote = el.dataset.note;
+}
+
+let aiTryOnPhotoData = null;
+
+function openAiTryOnModal() {
+  if (currentDesign) {
+    document.getElementById('ai-modal-sub').textContent =
+      `Upload a photo of your hand and we'll show you exactly how this ${currentDesign.name} design will look on your skin tone.`;
+  }
+  document.getElementById('ai-modal').classList.add('open');
+}
+
+function closeAiTryOnModal() {
+  document.getElementById('ai-modal').classList.remove('open');
+}
+
+function handleUpload(inp) {
+  if (!inp.files || !inp.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    aiTryOnPhotoData = e.target.result;
+    const zone = document.querySelector('#ai-upload-zone');
+    zone.innerHTML = `
+      <img src="${aiTryOnPhotoData}" alt="Your uploaded hand" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-bottom:8px;"/>
+      <div style="font-size:13px;font-weight:600;color:var(--tm);">✅ Photo uploaded — ready to generate</div>`;
+    // Reset any previous result if the user uploads a new photo
+    document.getElementById('ai-result-wrap').style.display = 'none';
+    document.getElementById('ai-result-caption').style.display = 'none';
+  };
+  reader.readAsDataURL(inp.files[0]);
+}
+
+async function handleGenerateTryOnPreview() {
+  const btn = document.getElementById('ai-generate-btn');
+  if (!aiTryOnPhotoData) {
+    Shringar.toast('Please upload a hand photo first.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  const img = document.getElementById('ai-result-img');
+  const wrap = document.getElementById('ai-result-wrap');
+  const caption = document.getElementById('ai-result-caption');
+
+  img.src = aiTryOnPhotoData;
+  wrap.style.display = 'block';
+
+  // Wait for the image to actually load so its natural dimensions are available for the canvas overlay
+  await new Promise(resolve => {
+    if (img.complete && img.naturalWidth) return resolve();
+    img.onload = resolve;
+  });
+
+  drawHennaOverlayOnPhoto();
+  caption.style.display = 'block';
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  btn.disabled = false;
+  btn.textContent = '↻ Regenerate Preview';
+}
+
+/** Draws a decorative henna-style pattern over the uploaded photo — an illustrative
+ *  simulation of design placement, not a pixel-accurate render of the real design. */
+function drawHennaOverlayOnPhoto() {
+  const canvas = document.getElementById('ai-result-canvas');
+  const img = document.getElementById('ai-result-img');
+
+  canvas.width = img.offsetWidth;
+  canvas.height = img.offsetHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height * 0.55;
+  const r = Math.min(canvas.width, canvas.height) * 0.32;
+
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = '#6b3a10';
+  ctx.fillStyle = 'rgba(107,58,16,0.10)';
+  ctx.lineWidth = 1.5;
+
+  // Central mandala
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const x1 = cx + Math.cos(angle) * r * 0.35, y1 = cy + Math.sin(angle) * r * 0.35;
+    const x2 = cx + Math.cos(angle) * r * 0.72, y2 = cy + Math.sin(angle) * r * 0.72;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx + Math.cos(angle) * r * 0.55, cy + Math.sin(angle) * r * 0.55, r * 0.12, r * 0.22, angle, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.32, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.68, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.06, 0, Math.PI * 2); ctx.fillStyle = 'rgba(107,58,16,0.4)'; ctx.fill();
+
+  // Finger vine accents fanning up from the palm
+  for (let f = -2; f <= 2; f++) {
+    const baseX = cx + f * (canvas.width * 0.09);
+    ctx.beginPath();
+    ctx.moveTo(baseX, cy - r * 0.6);
+    ctx.quadraticCurveTo(baseX + 10, cy - r * 1.3, baseX, cy - r * 2.0);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+document.getElementById('ai-modal').addEventListener('click', function(e){if(e.target===this)closeAiTryOnModal();});
+
+/** Reads ?id=N from the URL (falls back to 1 = Rajasthani Bridal if absent) and loads real data */
+async function loadDesign() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id') || '1';
+
+  try {
+    const d = await Shringar.Designs.byId(id);
+    currentDesign = d;
+
+    document.title = `${d.name} — Shringar`;
+    document.getElementById('breadcrumb-name').textContent = d.name;
+    document.getElementById('design-name').textContent = d.name;
+    document.getElementById('design-price').textContent = Shringar.formatINR(d.price);
+    document.getElementById('spec-duration').textContent = d.durationLabel;
+    document.getElementById('spec-coverage').textContent = d.coverage;
+    document.getElementById('spec-cones').textContent = `${d.conesNeeded} cone${d.conesNeeded == 1 ? '' : 's'}`;
+    document.getElementById('spec-placement').textContent = d.coverage;
+    document.getElementById('design-desc').textContent = d.description || '';
+    document.getElementById('main-emoji').textContent = d.emojiIcon || '🤲';
+    document.querySelectorAll('.thumb')[0].textContent = d.emojiIcon || '🤲';
+
+    // ── Real cover image, if uploaded (falls back to the emoji otherwise) ──
+    const mainPhoto = document.getElementById('main-photo');
+    const mainEmoji = document.getElementById('main-emoji');
+    if (d.imageUrl) {
+      mainPhoto.src = resolveUploadUrl(d.imageUrl);
+      mainPhoto.style.display = 'block';
+      mainEmoji.style.display = 'none';
+    } else {
+      mainPhoto.style.display = 'none';
+      mainEmoji.style.display = 'block';
+    }
+
+    // ── Gallery thumbnails: real uploaded photos take priority over decorative emoji thumbs ──
+    if (d.galleryImageUrls && d.galleryImageUrls.length > 0) {
+      const thumbsRow = document.getElementById('thumbs-row');
+      const allImages = [d.imageUrl, ...d.galleryImageUrls].filter(Boolean);
+      thumbsRow.innerHTML = allImages.map((url, i) => `
+        <div class="thumb ${i === 0 ? 'active' : ''}" onclick="selectPhotoThumb(this,'${resolveUploadUrl(url)}')">
+          <img src="${resolveUploadUrl(url)}" alt="View ${i+1}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"/>
+        </div>`).join('');
+    }
+
+    // ── YouTube video embed, only shown if this design has one ──
+    if (d.youtubeVideoUrl) {
+      document.getElementById('video-section').style.display = 'block';
+      Shringar.renderYoutubeEmbed(document.getElementById('design-video-embed'), d.youtubeVideoUrl, d.name);
+    }
+
+    const tagsRow = document.getElementById('tags-row');
+    tagsRow.innerHTML = (d.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+    // Update the first coverage option's price to match real base price
+    const firstCov = document.querySelector('.cov-opt');
+    firstCov.querySelector('.cov-opt-price').textContent = Shringar.formatINR(d.price);
+    firstCov.setAttribute('onclick', `selectCov(this,'${Shringar.formatINR(d.price)}')`);
+
+    loadSimilarDesigns(d.id);
+
+    // Single source of truth for popularity tracking — every path that leads here
+    // (homepage grid, carousel, filtered grid, AI Try-On selection) counts once,
+    // right when the design is actually viewed in detail. Fire-and-forget, never
+    // blocks the page from rendering even if the call fails.
+    Shringar.Designs.trackClick(d.id);
+
+  } catch (err) {
+    Shringar.toast(err.message, 'error');
+  }
+}
+
+async function loadSimilarDesigns(currentId) {
+  try {
+    const all = await Shringar.Designs.all();
+    const others = all.filter(d => d.id != currentId).slice(0, 4);
+    const grid = document.getElementById('similar-grid');
+
+    if (others.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--tl);font-size:13px;padding:20px;">No other designs to show right now.</div>`;
+      return;
+    }
+
+    grid.innerHTML = others.map(d => `
+      <div class="sim-card" onclick="location.href='design-detail.html?id=${d.id}'">
+        <div class="sim-img" style="background:linear-gradient(135deg,#c9a22718,#49331312);">${d.emojiIcon || '🤲'}</div>
+        <div class="sim-body"><div class="sim-name">${d.name}</div><div class="sim-price">${Shringar.formatINR(d.price)}</div></div>
+      </div>`).join('');
+  } catch (err) {
+    // non-critical — fail silently, section just stays empty
+  }
+}
+
+async function handleAddToCart() {
+  if (!currentDesign) return;
+
+  if (!Shringar.isLoggedIn()) {
+    sessionStorage.setItem('shringar_redirect_after_login', `design-detail.html?id=${currentDesign.id}`);
+    showCartFeedback('Please log in to add items to your cart', 'error');
+    setTimeout(() => location.href = 'login.html', 900);
+    return;
+  }
+
+  const btn = document.getElementById('add-to-cart-btn');
+  btn.disabled = true; btn.textContent = 'Adding…';
+
+  try {
+    await Shringar.Cart.addItem(currentDesign.id, 1, selectedCoverageNote);
+    showCartFeedback(`✅ Added "${currentDesign.name}" to your cart`, 'success');
+    Shringar.toast('Added to cart');
+  } catch (err) {
+    showCartFeedback(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '🛒 Add to Cart';
+  }
+}
+
+function showCartFeedback(msg, type) {
+  const el = document.getElementById('cart-feedback');
+  el.style.display = 'block';
+  el.style.background = type === 'success' ? '#e1f5ee' : '#fcebeb';
+  el.style.color = type === 'success' ? '#0f6e56' : '#a32d2d';
+  el.style.border = `1px solid ${type === 'success' ? '#0f6e5640' : '#f7c1c1'}`;
+  el.textContent = msg;
+}
+
+document.addEventListener('DOMContentLoaded', loadDesign);
+</script>
+</body>
+</html>

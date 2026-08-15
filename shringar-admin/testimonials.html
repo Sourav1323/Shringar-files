@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+<title>Testimonials — Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div><div class="sidebar-logo-text">✦ Shringar</div><div class="sidebar-logo-sub">Admin Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin"><div class="sidebar-admin-avatar" id="admin-avatar">A</div><div><div class="sidebar-admin-name" data-admin-name>Admin</div><div class="sidebar-admin-role">Administrator</div></div></div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title">Testimonials</div><div class="topbar-sub">Manage customer reviews shown on the homepage</div></div>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Review</button>
+    </div>
+    <div class="content">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">All Reviews</div><span style="font-size:12px;color:var(--tl);">Drag to reorder — lower sort order shows first</span></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Customer</th><th>Review</th><th>Rating</th><th>Occasion</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="testimonials-tbody"><tr><td colspan="7" class="loading-state">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-overlay" id="testimonial-modal">
+  <div class="modal-box">
+    <div class="modal-header"><div class="modal-title" id="modal-title">Add Review</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="modal-error" style="display:none;color:var(--red);font-size:12.5px;background:var(--redl);border:1px solid #f0c8c8;border-radius:8px;padding:10px 12px;margin-bottom:14px;"></div>
+      <div class="form-grid">
+        <div class="form-field"><label class="form-label">Customer Name *</label><input class="form-input" id="t-name" placeholder="e.g. Priya Sharma"/></div>
+        <div class="form-field"><label class="form-label">Avatar Emoji</label><input class="form-input" id="t-emoji" placeholder="👩" maxlength="4"/></div>
+        <div class="form-field"><label class="form-label">Occasion</label><input class="form-input" id="t-occasion" placeholder="e.g. Bridal Mehendi 2025"/></div>
+        <div class="form-field"><label class="form-label">Location</label><input class="form-input" id="t-location" placeholder="e.g. Andheri, Mumbai"/></div>
+        <div class="form-field full"><label class="form-label">Review Text *</label><textarea class="form-textarea" id="t-review" rows="3" placeholder="What did the customer say…"></textarea></div>
+        <div class="form-field">
+          <label class="form-label">Rating (1–5)</label>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:6px;">
+            <div id="star-buttons" style="display:flex;gap:8px;"></div>
+            <span id="rating-display" style="font-size:13px;color:var(--tl);">Tap to rate</span>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Sort Order</label>
+          <input class="form-input" type="number" id="t-sort" placeholder="0" min="0"/>
+          <div class="form-hint">Lower = appears first on website</div>
+        </div>
+        <div class="form-field">
+          <div class="form-check"><input type="checkbox" id="t-active" checked/><label for="t-active">Show on website</label></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveTestimonial()">Save Review</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script src="js/admin-api-extra.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) throw new Error('redirect');
+ShringarAdmin.paintAdminName(); ShringarAdmin.paintActiveNav();
+document.getElementById('admin-avatar').textContent = (ShringarAdmin.getAdmin()?.firstName?.[0]||'A').toUpperCase();
+
+let editingId = null, selectedRating = 5;
+
+/** Builds the 5 star-rating buttons via real DOM APIs — a template literal written
+ *  directly into static HTML is never evaluated by the browser, it just renders as
+ *  literal text, which is what caused the raw "${...}" string to appear on screen. */
+function renderStarButtons() {
+  const container = document.getElementById('star-buttons');
+  container.innerHTML = '';
+  for (let n = 1; n <= 5; n++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = `star-btn-${n}`;
+    btn.textContent = '☆';
+    btn.style.cssText = 'font-size:22px;background:none;border:none;cursor:pointer;transition:transform 0.15s;padding:0;';
+    btn.onclick = () => selectRating(n);
+    container.appendChild(btn);
+  }
+}
+
+function selectRating(n) {
+  selectedRating = n;
+  for (let i=1;i<=5;i++) {
+    const btn = document.getElementById(`star-btn-${i}`);
+    if (btn) btn.textContent = i <= n ? '⭐' : '☆';
+  }
+  document.getElementById('rating-display').textContent = ['','Poor','Fair','Good','Great','Excellent!'][n];
+}
+
+async function loadTestimonials() {
+  const tbody = document.getElementById('testimonials-tbody');
+  try {
+    const list = await ShringarAdmin.Testimonials.all();
+    if (!list.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">⭐</div>No reviews yet. Add your first customer review!</td></tr>`; return; }
+    tbody.innerHTML = list.map(t => `<tr>
+      <td style="color:var(--tl);font-size:12px;">${t.sortOrder ?? 0}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="cell-emoji" style="width:36px;height:36px;">${t.avatarEmoji||'👩'}</div>
+          <div>
+            <div class="cell-name">${t.customerName}</div>
+            <div class="cell-sub">${t.location||''}</div>
+          </div>
+        </div>
+      </td>
+      <td style="max-width:220px;font-size:12.5px;color:var(--tm);">"${t.review.length>80 ? t.review.slice(0,80)+'…' : t.review}"</td>
+      <td>${'⭐'.repeat(t.rating||5)}</td>
+      <td style="font-size:12.5px;color:var(--tl);">${t.occasion||'—'}</td>
+      <td>${t.isActive ? '<span class="badge badge-green">Visible</span>' : '<span class="badge badge-gray">Hidden</span>'}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-sm btn-outline" onclick="openEditModal(${t.id})">Edit</button>
+          <button class="btn btn-sm btn-outline" onclick="toggleVisibility(${t.id},${!t.isActive})">${t.isActive ? 'Hide' : 'Show'}</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTestimonial(${t.id},'${t.customerName.replace(/'/g,"\\'")}')">Delete</button>
+        </div>
+      </td>
+    </tr>`).join('');
+  } catch(err) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">⚠️ ${err.message}</td></tr>`; }
+}
+
+function openModal() {
+  editingId = null; selectedRating = 5;
+  document.getElementById('modal-title').textContent = 'Add Review';
+  ['t-name','t-occasion','t-location','t-review'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('t-emoji').value='👩';
+  document.getElementById('t-sort').value='0';
+  document.getElementById('t-active').checked=true;
+  selectRating(5);
+  document.getElementById('modal-error').style.display='none';
+  document.getElementById('testimonial-modal').classList.add('open');
+}
+
+async function openEditModal(id) {
+  try {
+    const list = await ShringarAdmin.Testimonials.all();
+    const t = list.find(x => x.id === id);
+    if (!t) return;
+    editingId = id;
+    document.getElementById('modal-title').textContent = 'Edit Review';
+    document.getElementById('t-name').value = t.customerName||'';
+    document.getElementById('t-emoji').value = t.avatarEmoji||'👩';
+    document.getElementById('t-occasion').value = t.occasion||'';
+    document.getElementById('t-location').value = t.location||'';
+    document.getElementById('t-review').value = t.review||'';
+    document.getElementById('t-sort').value = t.sortOrder??0;
+    document.getElementById('t-active').checked = !!t.isActive;
+    selectedRating = t.rating||5;
+    selectRating(selectedRating);
+    document.getElementById('modal-error').style.display='none';
+    document.getElementById('testimonial-modal').classList.add('open');
+  } catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+function closeModal() { document.getElementById('testimonial-modal').classList.remove('open'); }
+
+async function saveTestimonial() {
+  const errEl = document.getElementById('modal-error');
+  errEl.style.display='none';
+  const name = document.getElementById('t-name').value.trim();
+  const review = document.getElementById('t-review').value.trim();
+  if (!name || !review) { errEl.textContent='Name and review text are required.'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('save-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+  const payload = { customerName:name, avatarEmoji:document.getElementById('t-emoji').value.trim()||'👩', occasion:document.getElementById('t-occasion').value.trim()||null, location:document.getElementById('t-location').value.trim()||null, review, rating:selectedRating, sortOrder:parseInt(document.getElementById('t-sort').value)||0, isActive:document.getElementById('t-active').checked };
+  try {
+    if (editingId) await ShringarAdmin.Testimonials.update(editingId, payload);
+    else await ShringarAdmin.Testimonials.create(payload);
+    ShringarAdmin.toast(editingId ? 'Review updated' : 'Review added — now visible on the website', 'success');
+    closeModal(); loadTestimonials();
+  } catch(err) { errEl.textContent=err.message; errEl.style.display='block'; }
+  finally { btn.disabled=false; btn.textContent='Save Review'; }
+}
+
+async function toggleVisibility(id, show) {
+  try { await ShringarAdmin.Testimonials.update(id,{isActive:show}); loadTestimonials(); ShringarAdmin.toast(show?'Review shown on website':'Review hidden'); }
+  catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+async function deleteTestimonial(id, name) {
+  if (!confirm(`Delete review from "${name}"?`)) return;
+  try { await ShringarAdmin.Testimonials.delete(id); ShringarAdmin.toast('Review deleted'); loadTestimonials(); }
+  catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+document.getElementById('testimonial-modal').addEventListener('click',e=>{if(e.target===document.getElementById('testimonial-modal'))closeModal();});
+document.addEventListener('DOMContentLoaded', renderStarButtons);
+document.addEventListener('DOMContentLoaded', loadTestimonials);
+</script>
+</body>
+</html>

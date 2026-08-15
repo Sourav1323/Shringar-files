@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>My Orders — Shringar</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="stylesheet" href="css/responsive.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400&family=Cinzel:wght@600&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--m:#493313;--ml:#6b4a1e;--mr:#7a2c1a;--cream:#fdf6ec;--cd:#f5e8d0;--cdd:#e8d0b0;--gold:#c9a227;--goldd:#a07e18;--td:#2a1a08;--tm:#5c3d1e;--tl:#8a6040;--white:#fff;--green:#0f6e56;--greenl:#e1f5ee;--red:#a32d2d;--redl:#fcebeb;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--td);}
+
+/* NAV */
+nav{background:var(--m);padding:0 5%;display:flex;justify-content:space-between;align-items:center;height:64px;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--cream);letter-spacing:0.06em;text-decoration:none;}
+.nav-logo span{font-family:'Jost',sans-serif;font-size:9px;display:block;letter-spacing:0.22em;color:rgba(253,246,236,0.5);text-transform:uppercase;}
+.nav-right{display:flex;gap:10px;align-items:center;}
+.nav-icon{width:36px;height:36px;border-radius:50%;border:1px solid rgba(253,246,236,0.28);display:flex;align-items:center;justify-content:center;color:var(--cream);font-size:15px;text-decoration:none;}
+
+/* PAGE */
+.page-shell{max-width:860px;margin:0 auto;padding:32px 5% 60px;}
+.page-header{display:flex;align-items:center;gap:16px;margin-bottom:28px;}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1.5px solid var(--cd);border-radius:9px;font-family:'Jost',sans-serif;font-size:13px;color:var(--m);cursor:pointer;background:transparent;text-decoration:none;transition:all 0.2s;}
+.back-btn:hover{border-color:var(--m);background:rgba(73,51,19,0.04);}
+.page-title{font-family:'Cinzel',Georgia,serif;font-size:24px;color:var(--td);}
+.page-sub{font-size:13px;color:var(--tl);margin-top:4px;}
+
+/* FILTER TABS */
+.filter-tabs{display:flex;gap:8px;margin-bottom:22px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.filter-tabs::-webkit-scrollbar{display:none;}
+.filter-tab{padding:9px 18px;border:1.5px solid var(--cd);border-radius:20px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;background:var(--white);color:var(--tm);transition:all 0.2s;flex-shrink:0;}
+.filter-tab:hover{border-color:var(--m);}
+.filter-tab.active{background:var(--m);color:var(--cream);border-color:var(--m);}
+
+/* ORDER CARDS */
+.order-card{background:var(--white);border:1px solid var(--cd);border-radius:14px;margin-bottom:16px;overflow:hidden;transition:box-shadow 0.2s;}
+.order-card:hover{box-shadow:0 4px 20px rgba(73,51,19,0.08);}
+
+.order-card-header{padding:16px 20px;border-bottom:1px solid var(--cd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.order-ref{font-family:monospace;font-size:13px;font-weight:700;color:var(--m);letter-spacing:0.04em;}
+.order-date-chip{font-size:12px;color:var(--tl);background:var(--cream);padding:5px 12px;border-radius:20px;border:1px solid var(--cd);}
+
+.order-card-body{padding:16px 20px;}
+.order-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.order-info{flex:1;}
+.order-designs{font-size:14px;font-weight:600;color:var(--td);margin-bottom:4px;}
+.order-location{font-size:12.5px;color:var(--tl);}
+.order-artist{font-size:12.5px;color:var(--tl);margin-top:3px;}
+.order-amounts{text-align:right;flex-shrink:0;}
+.order-total{font-size:18px;font-weight:700;font-family:'Cinzel',Georgia,serif;color:var(--td);}
+.order-advance-label{font-size:11.5px;color:var(--tl);margin-top:3px;}
+
+/* STATUS BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:0.02em;}
+.badge-confirmed{background:var(--greenl);color:var(--green);}
+.badge-pending{background:#fdf0db;color:#7a5000;}
+.badge-completed{background:#e8f4fd;color:#1a5f8a;}
+.badge-cancelled{background:var(--redl);color:var(--red);}
+.badge-rescheduled{background:#f5e8fd;color:#6b2fa0;}
+.badge-in-progress{background:#fdf6e8;color:#7a5000;}
+
+/* ACTION AREA */
+.order-card-footer{padding:14px 20px;background:#fdf9f4;border-top:1px solid var(--cd);display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;}
+.footer-status{font-size:12.5px;color:var(--tl);}
+
+/* Buttons */
+.btn-sm{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all 0.2s;}
+.btn-gold{background:var(--gold);color:var(--td);}
+.btn-gold:hover{background:var(--goldd);}
+.btn-outline{background:transparent;color:var(--m);border:1.5px solid var(--cd);}
+.btn-outline:hover{border-color:var(--m);}
+.btn-danger-sm{background:transparent;color:var(--red);border:1.5px solid #f0c8c8;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;cursor:pointer;padding:9px 16px;border-radius:9px;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;}
+.btn-danger-sm:hover{background:var(--redl);border-color:var(--red);}
+
+/* FULFILLMENT CONFIRMATION PANEL */
+.fulfillment-panel{background:linear-gradient(135deg,rgba(15,110,86,0.05),rgba(15,110,86,0.02));border:1.5px solid rgba(15,110,86,0.25);border-radius:12px;padding:16px 18px;margin:0 20px 16px;}
+.fulfillment-title{font-size:14px;font-weight:700;color:var(--green);margin-bottom:6px;}
+.fulfillment-sub{font-size:12.5px;color:var(--tm);margin-bottom:14px;line-height:1.6;}
+.star-rating{display:flex;gap:6px;margin-bottom:12px;}
+.star{font-size:24px;cursor:pointer;transition:transform 0.15s;}
+.star:hover,.star.active{transform:scale(1.2);}
+.feedback-input{width:100%;padding:10px 13px;border:1.5px solid var(--cd);border-radius:9px;font-family:'Jost',sans-serif;font-size:13.5px;color:var(--td);background:var(--cream);outline:none;resize:none;margin-bottom:12px;}
+.feedback-input:focus{border-color:var(--gold);}
+
+/* ALREADY CONFIRMED */
+.confirmed-panel{display:flex;align-items:flex-start;gap:12px;background:var(--greenl);border:1px solid rgba(15,110,86,0.2);border-radius:12px;padding:14px 16px;margin:0 20px 16px;}
+
+/* RESCHEDULE MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(42,26,8,0.7);z-index:9000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--white);border-radius:16px;width:100%;max-width:420px;padding:28px 26px;box-shadow:0 24px 64px rgba(0,0,0,0.3);}
+.modal-title{font-family:'Cinzel',Georgia,serif;font-size:18px;color:var(--td);margin-bottom:8px;}
+.modal-sub{font-size:13px;color:var(--tl);margin-bottom:20px;line-height:1.6;}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:60px 24px;}
+.empty-state .icon{font-size:52px;margin-bottom:16px;}
+.empty-state h3{font-family:'Cinzel',Georgia,serif;font-size:20px;color:var(--td);margin-bottom:8px;}
+.empty-state p{font-size:13.5px;color:var(--tl);line-height:1.7;margin-bottom:20px;}
+
+/* LOADING */
+.loading{text-align:center;padding:60px 24px;color:var(--tl);}
+.loading-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);animation:dotPulse 1.4s infinite;margin:0 3px;}
+.loading-dot:nth-child(2){animation-delay:0.2s;}
+.loading-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes dotPulse{0%,80%,100%{opacity:0.3;transform:scale(0.8)}40%{opacity:1;transform:scale(1)}}
+
+@media(max-width:640px){
+  .order-card-header,.order-card-body,.order-card-footer{padding:12px 14px;}
+  .order-row{flex-direction:column;gap:8px;}
+  .order-amounts{text-align:left;}
+  .page-title{font-size:20px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">✦ Shringar<span>मेहंदी कला</span></a>
+  <div class="nav-right">
+    <a href="cart.html" class="nav-icon">🛒</a>
+    <a href="profile.html" class="nav-icon" data-auth-icon>👤</a>
+  </div>
+</nav>
+
+<div class="page-shell">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <a href="profile.html" class="back-btn">← Profile</a>
+    <div>
+      <div class="page-title">My Orders</div>
+      <div class="page-sub" id="orders-subtitle">Loading your appointments…</div>
+    </div>
+  </div>
+
+  <!-- FILTER TABS -->
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-tab" onclick="setFilter('upcoming',this)">📅 Upcoming</button>
+    <button class="filter-tab" onclick="setFilter('past',this)">✅ Past</button>
+    <button class="filter-tab" onclick="setFilter('CONFIRMED',this)">✓ Confirmed</button>
+    <button class="filter-tab" onclick="setFilter('PENDING',this)">⏳ Pending</button>
+    <button class="filter-tab" onclick="setFilter('RESCHEDULED',this)">↻ Rescheduled</button>
+    <button class="filter-tab" onclick="setFilter('CANCELLED',this)">✕ Cancelled</button>
+    <button class="filter-tab" onclick="setFilter('COMPLETED',this)">🌿 Completed</button>
+  </div>
+
+  <!-- ORDERS LIST -->
+  <div id="orders-container">
+    <div class="loading">
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+    </div>
+  </div>
+
+</div>
+
+<!-- RESCHEDULE MODAL -->
+<div class="modal-overlay" id="reschedule-modal">
+  <div class="modal-box">
+    <div class="modal-title">📅 Reschedule Appointment</div>
+    <div class="modal-sub">Your advance payment carries over at no extra charge. Must be at least 24 hours before your current appointment.</div>
+    <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--tl);font-weight:600;margin-bottom:7px;">New Date *</label>
+    <input type="date" id="r-new-date" style="width:100%;padding:12px;border:1.5px solid var(--cd);border-radius:10px;font-size:15px;font-family:'Jost',sans-serif;color:var(--td);background:var(--cream);outline:none;margin-bottom:14px;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--cd)'"/>
+    <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--tl);font-weight:600;margin-bottom:7px;">Reason (optional)</label>
+    <input type="text" id="r-reason" placeholder="e.g. Event moved to another day" style="width:100%;padding:12px;border:1.5px solid var(--cd);border-radius:10px;font-size:14px;font-family:'Jost',sans-serif;color:var(--td);background:var(--cream);outline:none;margin-bottom:6px;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--cd)'"/>
+    <div id="r-error" style="display:none;font-size:12.5px;color:var(--red);background:var(--redl);border:1px solid #f0c8c8;border-radius:8px;padding:9px 12px;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button onclick="closeReschedule()" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--cd);border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;cursor:pointer;color:var(--tm);">Keep Original</button>
+      <button id="r-confirm-btn" onclick="submitReschedule()" style="flex:2;padding:12px;background:var(--gold);border:none;border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--td);">Confirm New Date</button>
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL CONFIRM MODAL -->
+<div class="modal-overlay" id="cancel-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ Cancel Booking?</div>
+    <div class="modal-sub" id="cancel-modal-sub">Are you sure?</div>
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button onclick="document.getElementById('cancel-modal').classList.remove('open')" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--cd);border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;cursor:pointer;color:var(--tm);">Keep It</button>
+      <button id="cancel-confirm-btn" onclick="submitCancel()" style="flex:2;padding:12px;background:var(--red);border:none;border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:#fff;">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+if (!Shringar.isLoggedIn()) window.location.href = 'login.html?redirect=orders.html';
+Shringar.paintAuthNav();
+
+let allOrders = [];
+let currentFilter = 'all';
+let activeBookingId = null;
+let ratingSelected = 0;
+
+const STATUS_BADGE = {
+  CONFIRMED:   '<span class="badge badge-confirmed">✓ Confirmed</span>',
+  PENDING:     '<span class="badge badge-pending">⏳ Pending Payment</span>',
+  COMPLETED:   '<span class="badge badge-completed">🌿 Completed</span>',
+  CANCELLED:   '<span class="badge badge-cancelled">✕ Cancelled</span>',
+  RESCHEDULED: '<span class="badge badge-rescheduled">↻ Rescheduled</span>',
+  IN_PROGRESS: '<span class="badge badge-in-progress">🎨 In Progress</span>',
+};
+
+function isUpcoming(order) {
+  return new Date(order.appointmentDate) >= new Date(new Date().toDateString());
+}
+
+function isFuture(order) {
+  const appt = new Date(order.appointmentDate);
+  appt.setHours(23,59,59);
+  return appt > new Date();
+}
+
+function formatDate(str) {
+  if (!str) return '—';
+  return new Date(str).toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'long', year:'numeric' });
+}
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderOrders();
+}
+
+function getFiltered() {
+  switch (currentFilter) {
+    case 'upcoming': return allOrders.filter(o => isFuture(o) && o.status !== 'CANCELLED');
+    case 'past':     return allOrders.filter(o => !isFuture(o) || o.status === 'COMPLETED' || o.status === 'CANCELLED');
+    default:
+      if (['CONFIRMED','PENDING','COMPLETED','CANCELLED','RESCHEDULED','IN_PROGRESS'].includes(currentFilter))
+        return allOrders.filter(o => o.status === currentFilter);
+      return allOrders;
+  }
+}
+
+function renderOrders() {
+  const container = document.getElementById('orders-container');
+  const filtered = getFiltered();
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📦</div>
+        <h3>No orders found</h3>
+        <p>${currentFilter === 'all' ? "You haven't placed any bookings yet." : "No bookings match this filter."}</p>
+        <a href="booking.html" class="btn-sm btn-gold">📅 Book an Appointment</a>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(order => renderOrderCard(order)).join('');
+}
+
+function renderOrderCard(o) {
+  const upcoming = isFuture(o);
+  const canAction = upcoming && ['CONFIRMED','PENDING','RESCHEDULED'].includes(o.status);
+  const needsConfirm = !upcoming && o.status !== 'CANCELLED' && o.status !== 'COMPLETED' && !o.customerConfirmedCompletion;
+  const alreadyConfirmed = o.customerConfirmedCompletion;
+  const designs = (o.items || []).map(i => (i.emojiIcon || '🤲') + ' ' + i.designName).join(', ') || 'Mehendi appointment';
+
+  return `
+    <div class="order-card" id="order-${o.id}">
+      <div class="order-card-header">
+        <div>
+          <span class="order-ref">${o.bookingReference}</span>
+          <span style="margin-left:10px;">${STATUS_BADGE[o.status] || o.status}</span>
+        </div>
+        <span class="order-date-chip">📅 ${formatDate(o.appointmentDate)}</span>
+      </div>
+
+      <div class="order-card-body">
+        <div class="order-row">
+          <div class="order-info">
+            <div class="order-designs">${designs}</div>
+            <div class="order-location">📍 ${o.area}, ${o.city}</div>
+            ${o.artistName ? `<div class="order-artist">👩‍🎨 ${o.artistName}</div>` : ''}
+            ${o.preferredTime ? `<div class="order-location">🕐 ${preferredTimeLabel(o.preferredTime)}</div>` : ''}
+          </div>
+          <div class="order-amounts">
+            <div class="order-total">${Shringar.formatINR(o.grandTotal)}</div>
+            <div class="order-advance-label">
+              ${o.isAdvancePaid ? '✅ Advance paid: ' + Shringar.formatINR(o.advanceAmount) : '⏳ Advance pending: ' + Shringar.formatINR(o.advanceAmount)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${needsConfirm ? renderFulfillmentPanel(o) : ''}
+      ${alreadyConfirmed ? renderAlreadyConfirmed(o) : ''}
+
+      <div class="order-card-footer">
+        <div class="footer-status">
+          ${upcoming ? `<span style="color:var(--green);">🟢 Upcoming appointment</span>` : `<span style="color:var(--tl);">Past appointment</span>`}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="order.html?ref=${encodeURIComponent(o.bookingReference)}" class="btn-sm btn-outline">View Details</a>
+          ${canAction ? `
+            <button class="btn-sm btn-outline" onclick="openReschedule(${o.id},'${o.appointmentDate}')">📅 Reschedule</button>
+            <button class="btn-danger-sm" onclick="openCancel(${o.id},'${o.bookingReference}',${!!o.canCancelFree})">✕ Cancel</button>
+          ` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderFulfillmentPanel(o) {
+  return `
+    <div class="fulfillment-panel" id="fulfill-${o.id}">
+      <div class="fulfillment-title">🌿 How was your appointment?</div>
+      <div class="fulfillment-sub">Please confirm your appointment took place and leave a quick rating for your artist — it helps other customers too!</div>
+      <div class="star-rating" id="stars-${o.id}">
+        ${[1,2,3,4,5].map(n => `<span class="star" onclick="selectStar(${o.id},${n})" id="star-${o.id}-${n}">☆</span>`).join('')}
+        <span style="font-size:13px;color:var(--tl);margin-left:8px;" id="rating-label-${o.id}">Tap to rate</span>
+      </div>
+      <textarea class="feedback-input" id="feedback-${o.id}" rows="2" placeholder="Optional: share your experience with your artist…"></textarea>
+      <button class="btn-sm btn-gold" onclick="confirmFulfillment(${o.id})" style="width:100%;justify-content:center;">
+        ✅ Yes, Appointment Happened — Submit Review
+      </button>
+    </div>`;
+}
+
+function renderAlreadyConfirmed(o) {
+  return `
+    <div class="confirmed-panel" style="margin:0 20px 16px;">
+      <div style="font-size:28px;">✅</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--green);">You confirmed this appointment</div>
+        ${o.fulfillmentRating ? `<div style="font-size:13px;color:var(--tm);margin-top:3px;">Your rating: ${'⭐'.repeat(o.fulfillmentRating)}</div>` : ''}
+        ${o.fulfillmentFeedback ? `<div style="font-size:12.5px;color:var(--tl);margin-top:3px;">"${o.fulfillmentFeedback}"</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function preferredTimeLabel(t) {
+  return { MORNING:'Morning (9–12)', AFTERNOON:'Afternoon (12–3)', EVENING:'Evening (3–6)', FLEXIBLE:'Flexible' }[t] || t;
+}
+
+// ── STAR RATING ──
+
+let ratings = {};
+function selectStar(bookingId, n) {
+  ratings[bookingId] = n;
+  for (let i = 1; i <= 5; i++) {
+    const star = document.getElementById(`star-${bookingId}-${i}`);
+    if (star) star.textContent = i <= n ? '⭐' : '☆';
+  }
+  const label = document.getElementById(`rating-label-${bookingId}`);
+  if (label) label.textContent = ['','Poor','Fair','Good','Great','Excellent!'][n] || '';
+}
+
+// ── FULFILLMENT CONFIRM ──
+
+async function confirmFulfillment(bookingId) {
+  const rating = ratings[bookingId] || 0;
+  const feedback = (document.getElementById(`feedback-${bookingId}`) || {}).value?.trim() || '';
+  const panel = document.getElementById(`fulfill-${bookingId}`);
+  const btn = panel?.querySelector('button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  try {
+    await Shringar.Bookings.confirmFulfillment(bookingId, rating, feedback);
+    Shringar.toast('Thank you for your feedback! 🌸');
+    loadOrders();
+  } catch (err) {
+    Shringar.toast(err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Yes, Appointment Happened — Submit Review'; }
+  }
+}
+
+// ── RESCHEDULE ──
+
+function openReschedule(id, currentDate) {
+  activeBookingId = id;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('r-new-date').min = tomorrow.toISOString().split('T')[0];
+  document.getElementById('r-new-date').value = currentDate || '';
+  document.getElementById('r-reason').value = '';
+  document.getElementById('r-error').style.display = 'none';
+  document.getElementById('reschedule-modal').classList.add('open');
+}
+
+function closeReschedule() {
+  document.getElementById('reschedule-modal').classList.remove('open');
+  activeBookingId = null;
+}
+
+async function submitReschedule() {
+  const newDate = document.getElementById('r-new-date').value;
+  const reason  = document.getElementById('r-reason').value.trim();
+  const errEl   = document.getElementById('r-error');
+  const btn     = document.getElementById('r-confirm-btn');
+  errEl.style.display = 'none';
+
+  if (!newDate) { errEl.textContent = 'Please select a new date.'; errEl.style.display='block'; return; }
+  if (new Date(newDate) <= new Date()) { errEl.textContent = 'New date must be in the future.'; errEl.style.display='block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Rescheduling…';
+  try {
+    await Shringar.Bookings.reschedule(activeBookingId, newDate, reason);
+    Shringar.toast('Appointment rescheduled! ✅');
+    closeReschedule();
+    loadOrders();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirm New Date';
+  }
+}
+
+// ── CANCEL ──
+
+let cancelBookingId = null;
+
+function openCancel(id, ref, canFree) {
+  cancelBookingId = id;
+  const sub = document.getElementById('cancel-modal-sub');
+  sub.textContent = canFree
+    ? `Cancelling "${ref}" will trigger a full refund of your advance to your original payment method (5–7 working days).`
+    : `Your appointment is within 48 hours. Your advance is non-refundable as per our cancellation policy. Are you sure?`;
+  document.getElementById('cancel-modal').classList.add('open');
+}
+
+async function submitCancel() {
+  const btn = document.getElementById('cancel-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Cancelling…';
+  try {
+    await Shringar.Bookings.cancel(cancelBookingId, 'Cancelled by customer');
+    Shringar.toast('Booking cancelled');
+    document.getElementById('cancel-modal').classList.remove('open');
+    loadOrders();
+  } catch (err) {
+    Shringar.toast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Yes, Cancel';
+  }
+}
+
+// Close modals on overlay click
+['reschedule-modal','cancel-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.classList.remove('open');
+      if (id === 'reschedule-modal') closeReschedule();
+    }
+  });
+});
+
+// ── LOAD ──
+
+async function loadOrders() {
+  const container = document.getElementById('orders-container');
+  container.innerHTML = '<div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>';
+  try {
+    allOrders = await Shringar.Bookings.myBookings();
+    allOrders.sort((a,b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
+    const sub = document.getElementById('orders-subtitle');
+    sub.textContent = `${allOrders.length} booking${allOrders.length !== 1 ? 's' : ''} total · ${allOrders.filter(o => isFuture(o) && o.status !== 'CANCELLED').length} upcoming`;
+    renderOrders();
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Couldn't load orders</h3><p>${err.message}</p></div>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadOrders);
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dashboard — Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="admin-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">✦ Shringar</div>
+        <div class="sidebar-logo-sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin">
+        <div class="sidebar-admin-avatar" id="admin-avatar">A</div>
+        <div>
+          <div class="sidebar-admin-name" data-admin-name>Admin</div>
+          <div class="sidebar-admin-role">Administrator</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-sub">Live overview of orders, payments and engagement</div>
+      </div>
+      <button class="btn btn-outline" onclick="loadAll()">↻ Refresh</button>
+    </div>
+
+    <div class="content">
+
+      <!-- STATS GRID -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="loading-state" style="grid-column:1/-1;">Loading stats…</div>
+      </div>
+
+      <!-- TWO COLUMN: Popular Designs + Order Breakdown -->
+      <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:22px;" id="dashboard-cols">
+
+        <!-- MOST CLICKED DESIGNS -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">🔥 Most Clicked Designs</div>
+            <span style="font-size:11.5px;color:var(--tl);">Drives what shows first on the homepage</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="popular-designs-table">
+              <thead>
+                <tr><th>Design</th><th>Clicks</th><th>Featured</th><th></th></tr>
+              </thead>
+              <tbody id="popular-designs-body">
+                <tr><td colspan="4" class="loading-state">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ORDER STATUS BREAKDOWN -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📦 Order Status</div>
+          </div>
+          <div class="panel-body" id="status-breakdown">
+            <div class="loading-state">Loading…</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
+
+ShringarAdmin.paintAdminName();
+ShringarAdmin.paintActiveNav();
+
+const admin = ShringarAdmin.getAdmin();
+if (admin) document.getElementById('admin-avatar').textContent = (admin.firstName?.[0] || 'A').toUpperCase();
+
+async function loadStats() {
+  const grid = document.getElementById('stats-grid');
+  try {
+    const s = await ShringarAdmin.Dashboard.stats();
+
+    grid.innerHTML = `
+      <div class="stat-card gold">
+        <div class="stat-icon">📦</div>
+        <div class="stat-label">Total Orders</div>
+        <div class="stat-value">${s.totalOrders ?? 0}</div>
+        <div class="stat-meta">${s.totalBookingAttempts ?? 0} total checkout attempts</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Total Order Value</div>
+        <div class="stat-value">${ShringarAdmin.formatINR(s.totalOrderValue)}</div>
+        <div class="stat-meta">Across all confirmed orders</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-icon">💵</div>
+        <div class="stat-label">Advance Received</div>
+        <div class="stat-value">${ShringarAdmin.formatINR(s.totalAdvanceReceived)}</div>
+        <div class="stat-meta">30% paid upfront, collected via Razorpay</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-label">Balance Pending</div>
+        <div class="stat-value">${ShringarAdmin.formatINR(s.totalBalancePending)}</div>
+        <div class="stat-meta">Owed to artists, collected in person</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-label">Total Customers</div>
+        <div class="stat-value">${s.totalCustomers ?? 0}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎨</div>
+        <div class="stat-label">Active Designs</div>
+        <div class="stat-value">${s.totalDesigns ?? 0}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👩‍🎨</div>
+        <div class="stat-label">Total Artists</div>
+        <div class="stat-value">${s.totalArtists ?? 0}</div>
+      </div>
+    `;
+
+    document.getElementById('status-breakdown').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="badge badge-amber">⏳ Pending</span>
+          <strong>${s.pendingOrders ?? 0}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="badge badge-green">✓ Confirmed</span>
+          <strong>${s.confirmedOrders ?? 0}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="badge badge-gold">🌿 Completed</span>
+          <strong>${s.completedOrders ?? 0}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="badge badge-red">✕ Cancelled</span>
+          <strong>${s.cancelledOrders ?? 0}</strong>
+        </div>
+      </div>
+      <a href="orders.html" class="btn btn-outline" style="width:100%;justify-content:center;margin-top:18px;">View All Orders →</a>
+    `;
+
+  } catch (err) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+async function loadPopularDesigns() {
+  const tbody = document.getElementById('popular-designs-body');
+  try {
+    const designs = await ShringarAdmin.Dashboard.popularDesigns();
+
+    if (designs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No click data yet — designs will appear here once customers start browsing.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = designs.map((d, i) => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="cell-emoji">${d.emojiIcon || '🤲'}</div>
+            <div>
+              <div class="cell-name">${i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : ''}${d.name}</div>
+            </div>
+          </div>
+        </td>
+        <td><strong>${d.clickCount}</strong> views</td>
+        <td>${d.isFeatured ? '<span class="badge badge-gold">★ Featured</span>' : '<span class="badge badge-gray">—</span>'}</td>
+        <td><a href="designs.html?edit=${d.id}" class="btn btn-sm btn-outline">Edit</a></td>
+      </tr>`).join('');
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state"><div class="icon">⚠️</div>${err.message}</td></tr>`;
+  }
+}
+
+function loadAll() {
+  loadStats();
+  loadPopularDesigns();
+}
+
+document.addEventListener('DOMContentLoaded', loadAll);
+</script>
+</body>
+</html>

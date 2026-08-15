@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+<title>Settings — Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div><div class="sidebar-logo-text">✦ Shringar</div><div class="sidebar-logo-sub">Admin Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin"><div class="sidebar-admin-avatar" id="admin-avatar">A</div><div><div class="sidebar-admin-name" data-admin-name>Admin</div><div class="sidebar-admin-role">Administrator</div></div></div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title">Site Settings</div><div class="topbar-sub">Control all website content and business rules without touching code</div></div>
+      <button class="btn btn-primary" id="save-all-btn" onclick="saveAll()">💾 Save All Changes</button>
+    </div>
+    <div class="content">
+
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">📢 Announcement Banner</div></div>
+        <div class="panel-body">
+          <div class="form-field"><label class="form-label">Banner Text</label><input class="form-input" id="s-announcement" placeholder="e.g. 🎉 Festive season — book early!"/></div>
+          <div class="form-check"><input type="checkbox" id="s-announcement-active"/><label for="s-announcement-active">Show this banner on the website</label></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">🏠 Homepage Text</div></div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <div class="form-field full"><label class="form-label">Hero Title</label><input class="form-input" id="s-hero-title" placeholder="मेहंदी कला for Every Celebration"/></div>
+            <div class="form-field full"><label class="form-label">Hero Subtitle</label><textarea class="form-textarea" id="s-hero-subtitle" rows="2"></textarea></div>
+            <div class="form-field"><label class="form-label">Hero Button Text</label><input class="form-input" id="s-hero-cta" placeholder="Book Your Artist"/></div>
+            <div class="form-field"><label class="form-label">About Tagline</label><input class="form-input" id="s-about-tagline"/></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">📱 Social Links & Contact</div></div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <div class="form-field"><label class="form-label">Instagram Handle (without @)</label><input class="form-input" id="s-instagram" placeholder="shringar.in"/></div>
+            <div class="form-field"><label class="form-label">WhatsApp Number (digits only)</label><input class="form-input" id="s-whatsapp" placeholder="919876543210"/></div>
+            <div class="form-field"><label class="form-label">Contact Phone</label><input class="form-input" id="s-phone" placeholder="+91 98765 43210"/></div>
+            <div class="form-field"><label class="form-label">Contact Email</label><input class="form-input" type="email" id="s-email" placeholder="hello@shringar.in"/></div>
+            <div class="form-field"><label class="form-label">YouTube Channel URL</label><input class="form-input" id="s-youtube" placeholder="https://youtube.com/@shringar"/></div>
+            <div class="form-field"><label class="form-label">YouTube Intro Video URL</label><input class="form-input" id="s-youtube-intro" placeholder="https://youtube.com/watch?v=..."/></div>
+            <div class="form-field full"><label class="form-label">Facebook URL</label><input class="form-input" id="s-facebook" placeholder="https://facebook.com/shringar"/></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">💰 Business Rules & Pricing</div></div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <div class="form-field">
+              <label class="form-label">Advance Payment %</label>
+              <input class="form-input" type="number" min="1" max="100" id="s-advance-pct" placeholder="30"/>
+              <div class="form-hint">Percentage of total collected upfront (1–100)</div>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Artist Visit Fee (₹)</label>
+              <input class="form-input" type="number" min="0" id="s-visit-fee" placeholder="200"/>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Free Cancellation Window (hours)</label>
+              <input class="form-input" type="number" min="0" id="s-cancel-hours" placeholder="48"/>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Reschedule Notice (hours)</label>
+              <input class="form-input" type="number" min="0" id="s-reschedule-hours" placeholder="24"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">🕐 Available Time Slots</div></div>
+        <div class="panel-body">
+          <div class="form-field">
+            <label class="form-label">Time Slots (comma-separated HH:MM, 24hr format)</label>
+            <textarea class="form-textarea" id="s-time-slots" rows="2" placeholder="09:00,10:00,11:00,12:00,13:00,14:00,15:00,16:00,17:00,18:00"></textarea>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Blackout Days (0=Sun…6=Sat, comma-separated)</label>
+            <input class="form-input" id="s-blackout-days" placeholder="e.g. 0 for Sundays, 0,6 for weekends"/>
+          </div>
+          <div id="slot-preview" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script src="js/admin-api-extra.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) throw new Error('redirect');
+ShringarAdmin.paintAdminName(); ShringarAdmin.paintActiveNav();
+document.getElementById('admin-avatar').textContent = (ShringarAdmin.getAdmin()?.firstName?.[0]||'A').toUpperCase();
+
+document.getElementById('s-time-slots').addEventListener('input', renderSlotPreview);
+
+function renderSlotPreview() {
+  const slots = document.getElementById('s-time-slots').value.split(',').map(s=>s.trim()).filter(Boolean);
+  document.getElementById('slot-preview').innerHTML = slots.map(s =>
+    `<span style="padding:5px 13px;border:1.5px solid var(--cd);border-radius:20px;font-size:12.5px;color:var(--tm);background:var(--white);">🕐 ${s}</span>`).join('');
+}
+
+async function loadSettings() {
+  try {
+    const s = await ShringarAdmin.Settings.get();
+    document.getElementById('s-announcement').value = s.announcementBanner||'';
+    document.getElementById('s-announcement-active').checked = !!s.announcementActive;
+    document.getElementById('s-hero-title').value = s.heroTitle||'';
+    document.getElementById('s-hero-subtitle').value = s.heroSubtitle||'';
+    document.getElementById('s-hero-cta').value = s.heroCtaText||'';
+    document.getElementById('s-about-tagline').value = s.aboutTagline||'';
+    document.getElementById('s-instagram').value = s.instagramHandle||'';
+    document.getElementById('s-whatsapp').value = s.whatsappNumber||'';
+    document.getElementById('s-phone').value = s.contactPhone||'';
+    document.getElementById('s-email').value = s.contactEmail||'';
+    document.getElementById('s-youtube').value = s.youtubeChannelUrl||'';
+    document.getElementById('s-youtube-intro').value = s.youtubeIntroVideoUrl||'';
+    document.getElementById('s-facebook').value = s.facebookUrl||'';
+    document.getElementById('s-advance-pct').value = s.advancePercent??30;
+    document.getElementById('s-visit-fee').value = s.artistVisitFee??200;
+    document.getElementById('s-cancel-hours').value = s.freeCancelHours??48;
+    document.getElementById('s-reschedule-hours').value = s.rescheduleHours??24;
+    document.getElementById('s-time-slots').value = s.availableTimeSlots||'';
+    document.getElementById('s-blackout-days').value = s.blackoutDays||'';
+    renderSlotPreview();
+  } catch(err) { ShringarAdmin.toast(err.message,'error'); }
+}
+
+async function saveAll() {
+  const btn = document.getElementById('save-all-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await ShringarAdmin.Settings.update({
+      announcementBanner: document.getElementById('s-announcement').value.trim(),
+      announcementActive: document.getElementById('s-announcement-active').checked,
+      heroTitle: document.getElementById('s-hero-title').value.trim(),
+      heroSubtitle: document.getElementById('s-hero-subtitle').value.trim(),
+      heroCtaText: document.getElementById('s-hero-cta').value.trim(),
+      aboutTagline: document.getElementById('s-about-tagline').value.trim(),
+      instagramHandle: document.getElementById('s-instagram').value.trim(),
+      whatsappNumber: document.getElementById('s-whatsapp').value.trim(),
+      contactPhone: document.getElementById('s-phone').value.trim(),
+      contactEmail: document.getElementById('s-email').value.trim(),
+      youtubeChannelUrl: document.getElementById('s-youtube').value.trim(),
+      youtubeIntroVideoUrl: document.getElementById('s-youtube-intro').value.trim(),
+      facebookUrl: document.getElementById('s-facebook').value.trim(),
+      advancePercent: parseInt(document.getElementById('s-advance-pct').value)||30,
+      artistVisitFee: parseFloat(document.getElementById('s-visit-fee').value)||200,
+      freeCancelHours: parseInt(document.getElementById('s-cancel-hours').value)||48,
+      rescheduleHours: parseInt(document.getElementById('s-reschedule-hours').value)||24,
+      availableTimeSlots: document.getElementById('s-time-slots').value.trim(),
+      blackoutDays: document.getElementById('s-blackout-days').value.trim(),
+    });
+    ShringarAdmin.toast('All settings saved — live site updated immediately','success');
+  } catch(err) { ShringarAdmin.toast(err.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='💾 Save All Changes'; }
+}
+
+document.addEventListener('DOMContentLoaded', loadSettings);
+</script>
+</body>
+</html>

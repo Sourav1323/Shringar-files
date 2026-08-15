@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Designs — Shringar Admin</title>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="admin-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div>
+        <div class="sidebar-logo-text">✦ Shringar</div>
+        <div class="sidebar-logo-sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin">
+        <div class="sidebar-admin-avatar" id="admin-avatar">A</div>
+        <div>
+          <div class="sidebar-admin-name" data-admin-name>Admin</div>
+          <div class="sidebar-admin-role">Administrator</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Designs</div>
+        <div class="topbar-sub">Add, edit, or remove mehendi designs shown on the website</div>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateModal()">+ Add New Design</button>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">All Designs</div>
+          <div class="filter-row">
+            <select class="filter-select" id="status-filter" onchange="renderTable()">
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Removed only</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Design</th><th>Category</th><th>Price</th><th>Clicks</th><th>Status</th><th>Featured</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="designs-table-body">
+              <tr><td colspan="7" class="loading-state">Loading designs…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD / EDIT MODAL ══ -->
+<div class="modal-overlay" id="design-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add New Design</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="form-error" style="display:none;color:var(--red);font-size:12.5px;background:var(--redl);border:1px solid #f0c8c8;border-radius:8px;padding:10px 12px;margin-bottom:16px;"></div>
+
+      <div class="form-grid">
+        <div class="form-field full">
+          <label class="form-label">Design Name *</label>
+          <input class="form-input" id="f-name" placeholder="e.g. Rajasthani Bridal"/>
+        </div>
+
+        <div class="form-field full">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="f-description" rows="3" placeholder="A short description shown on the design detail page"></textarea>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Category *</label>
+          <input class="form-input" id="f-category" list="category-options" placeholder="e.g. Bridal"/>
+          <datalist id="category-options">
+            <option value="Bridal"><option value="Arabic"><option value="Rajasthani">
+            <option value="Mughal"><option value="Minimal"><option value="Fusion">
+          </datalist>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Coverage *</label>
+          <input class="form-input" id="f-coverage" placeholder="e.g. Full hand, Both feet"/>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Duration (hours)</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input class="form-input" type="number" step="0.5" id="f-duration-min" placeholder="Min"/>
+            <span style="color:var(--tl);">–</span>
+            <input class="form-input" type="number" step="0.5" id="f-duration-max" placeholder="Max"/>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Cones Needed</label>
+          <input class="form-input" type="number" step="0.5" id="f-cones" placeholder="e.g. 2"/>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Price (₹) *</label>
+          <input class="form-input" type="number" min="0" id="f-price" placeholder="e.g. 2500"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Sort Order</label>
+          <input class="form-input" type="number" id="f-sort-order" placeholder="0"/>
+          <div class="form-hint">Lower numbers appear first in manual sort mode.</div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Emoji Icon (fallback)</label>
+          <input class="form-input" id="f-emoji" placeholder="🤲" maxlength="4"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Badge Label</label>
+          <input class="form-input" id="f-badge" placeholder="e.g. Popular, New, Trending"/>
+        </div>
+
+        <div class="form-field full">
+          <label class="form-label">YouTube Video URL (optional)</label>
+          <input class="form-input" id="f-youtube" placeholder="https://www.youtube.com/watch?v=..."/>
+        </div>
+
+        <!-- COVER IMAGE -->
+        <div class="form-field full">
+          <label class="form-label">Cover Image</label>
+          <div class="upload-box" onclick="document.getElementById('f-cover-input').click()">
+            <input type="file" id="f-cover-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleCoverUpload(this)"/>
+            <div id="cover-upload-label">📸 Click to upload a cover photo (JPG/PNG/WEBP, max 10MB)</div>
+          </div>
+          <div class="upload-preview" id="cover-preview"></div>
+        </div>
+
+        <!-- GALLERY IMAGES -->
+        <div class="form-field full">
+          <label class="form-label">Gallery Images (additional angles)</label>
+          <div class="upload-box" onclick="document.getElementById('f-gallery-input').click()">
+            <input type="file" id="f-gallery-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleGalleryUpload(this)"/>
+            <div>📸 Click to add another photo</div>
+          </div>
+          <div class="upload-preview" id="gallery-preview"></div>
+        </div>
+
+        <!-- TAGS -->
+        <div class="form-field full">
+          <label class="form-label">Tags</label>
+          <div class="chip-input-wrap" id="tags-wrap">
+            <input class="chip-input" id="tags-input" placeholder="Type a tag and press Enter (e.g. Bridal, Festive)" onkeydown="handleChipInput(event,'tags')"/>
+          </div>
+        </div>
+
+        <!-- SKIN TONES -->
+        <div class="form-field full">
+          <label class="form-label">Recommended Skin Tones (powers AI Try-On matching)</label>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;">
+            <label class="form-check"><input type="checkbox" class="skin-tone-cb" value="Very Fair"/> Very Fair</label>
+            <label class="form-check"><input type="checkbox" class="skin-tone-cb" value="Fair"/> Fair</label>
+            <label class="form-check"><input type="checkbox" class="skin-tone-cb" value="Wheatish"/> Wheatish</label>
+            <label class="form-check"><input type="checkbox" class="skin-tone-cb" value="Medium Brown"/> Medium Brown</label>
+            <label class="form-check"><input type="checkbox" class="skin-tone-cb" value="Dark Brown"/> Dark Brown</label>
+            <label class="form-check"><input type="checkbox" class="skin-tone-cb" value="Deep"/> Deep</label>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <div class="form-check"><input type="checkbox" id="f-active" checked/> <label for="f-active">Active (visible on website)</label></div>
+        </div>
+        <div class="form-field">
+          <div class="form-check"><input type="checkbox" id="f-featured"/> <label for="f-featured">Featured (shown in homepage carousel)</label></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveDesign()">Save Design</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
+ShringarAdmin.paintAdminName();
+ShringarAdmin.paintActiveNav();
+const admin = ShringarAdmin.getAdmin();
+if (admin) document.getElementById('admin-avatar').textContent = (admin.firstName?.[0] || 'A').toUpperCase();
+
+let allDesigns = [];
+let editingId = null;
+let tagsList = [];
+let coverImageUrl = null;
+let galleryImageUrls = [];
+
+async function loadDesigns() {
+  const tbody = document.getElementById('designs-table-body');
+  try {
+    allDesigns = await ShringarAdmin.Designs.all();
+    renderTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">⚠️</div>${err.message}</td></tr>`;
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('designs-table-body');
+  const filter = document.getElementById('status-filter').value;
+
+  let filtered = allDesigns;
+  if (filter === 'active') filtered = allDesigns.filter(d => d.isActive);
+  if (filter === 'inactive') filtered = allDesigns.filter(d => !d.isActive);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">🎨</div>No designs found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(d => {
+    const imgCell = d.imageUrl
+      ? `<img class="cell-img" src="${ShringarAdmin.resolveUploadUrl(d.imageUrl)}" alt="${d.name}"/>`
+      : `<div class="cell-emoji">${d.emojiIcon || '🤲'}</div>`;
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            ${imgCell}
+            <div>
+              <div class="cell-name">${d.name}</div>
+              <div class="cell-sub">${d.coverage}</div>
+            </div>
+          </div>
+        </td>
+        <td>${d.category}</td>
+        <td><strong>${ShringarAdmin.formatINR(d.price)}</strong></td>
+        <td>${d.clickCount ?? 0}</td>
+        <td>${d.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Removed</span>'}</td>
+        <td>${d.isFeatured ? '<span class="badge badge-gold">★ Featured</span>' : '—'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm btn-outline" onclick="openEditModal(${d.id})">Edit</button>
+            ${d.isActive
+              ? `<button class="btn btn-sm btn-danger" onclick="deleteDesign(${d.id},'${d.name.replace(/'/g,"\\'")}')">Delete</button>`
+              : `<button class="btn btn-sm btn-primary" onclick="restoreDesign(${d.id})">Restore</button>`}
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ───────────────────────── Modal open/close ─────────────────────────
+
+function openCreateModal() {
+  editingId = null;
+  tagsList = [];
+  coverImageUrl = null;
+  galleryImageUrls = [];
+  document.getElementById('modal-title').textContent = 'Add New Design';
+  clearForm();
+  document.getElementById('design-modal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const d = allDesigns.find(x => x.id === id);
+  if (!d) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Edit Design';
+
+  document.getElementById('f-name').value = d.name || '';
+  document.getElementById('f-description').value = d.description || '';
+  document.getElementById('f-category').value = d.category || '';
+  document.getElementById('f-coverage').value = d.coverage || '';
+  document.getElementById('f-duration-min').value = d.durationMinHours ?? '';
+  document.getElementById('f-duration-max').value = d.durationMaxHours ?? '';
+  document.getElementById('f-cones').value = d.conesNeeded ?? '';
+  document.getElementById('f-price').value = d.price ?? '';
+  document.getElementById('f-sort-order').value = d.sortOrder ?? 0;
+  document.getElementById('f-emoji').value = d.emojiIcon || '';
+  document.getElementById('f-badge').value = d.badge || '';
+  document.getElementById('f-youtube').value = d.youtubeVideoUrl || '';
+  document.getElementById('f-active').checked = !!d.isActive;
+  document.getElementById('f-featured').checked = !!d.isFeatured;
+
+  tagsList = [...(d.tags || [])];
+  renderChips('tags', tagsList);
+
+  document.querySelectorAll('.skin-tone-cb').forEach(cb => {
+    cb.checked = (d.recommendedSkinTones || []).includes(cb.value);
+  });
+
+  coverImageUrl = d.imageUrl || null;
+  renderCoverPreview();
+
+  galleryImageUrls = [...(d.galleryImageUrls || [])];
+  renderGalleryPreview();
+
+  document.getElementById('design-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('design-modal').classList.remove('open');
+  document.getElementById('form-error').style.display = 'none';
+}
+
+function clearForm() {
+  ['f-name','f-description','f-category','f-coverage','f-duration-min','f-duration-max',
+   'f-cones','f-price','f-emoji','f-badge','f-youtube'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-sort-order').value = 0;
+  document.getElementById('f-active').checked = true;
+  document.getElementById('f-featured').checked = false;
+  document.querySelectorAll('.skin-tone-cb').forEach(cb => cb.checked = false);
+  renderChips('tags', []);
+  renderCoverPreview();
+  renderGalleryPreview();
+}
+
+// ───────────────────────── Tag chip input ─────────────────────────
+
+function handleChipInput(e, field) {
+  if (e.key === 'Enter' && e.target.value.trim()) {
+    e.preventDefault();
+    tagsList.push(e.target.value.trim());
+    e.target.value = '';
+    renderChips(field, tagsList);
+  }
+}
+
+function renderChips(field, list) {
+  const wrap = document.getElementById(field + '-wrap');
+  const input = document.getElementById(field + '-input');
+  wrap.querySelectorAll('.chip').forEach(c => c.remove());
+  list.forEach((tag, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = `${tag} <span class="remove" onclick="removeChip('${field}',${i})">✕</span>`;
+    wrap.insertBefore(chip, input);
+  });
+}
+
+function removeChip(field, index) {
+  tagsList.splice(index, 1);
+  renderChips(field, tagsList);
+}
+
+// ───────────────────────── Image upload ─────────────────────────
+
+async function handleCoverUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const label = document.getElementById('cover-upload-label');
+  label.textContent = 'Uploading…';
+  try {
+    const result = await ShringarAdmin.uploadImage(input.files[0]);
+    coverImageUrl = result.url;
+    renderCoverPreview();
+    ShringarAdmin.toast('Cover image uploaded', 'success');
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  } finally {
+    label.textContent = '📸 Click to upload a cover photo (JPG/PNG/WEBP, max 10MB)';
+    input.value = '';
+  }
+}
+
+function renderCoverPreview() {
+  const preview = document.getElementById('cover-preview');
+  if (!coverImageUrl) { preview.innerHTML = ''; return; }
+  preview.innerHTML = `
+    <div class="upload-preview-item">
+      <img src="${ShringarAdmin.resolveUploadUrl(coverImageUrl)}" alt="Cover"/>
+      <div class="remove-img" onclick="coverImageUrl=null;renderCoverPreview();">✕</div>
+    </div>`;
+}
+
+async function handleGalleryUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  try {
+    const result = await ShringarAdmin.uploadImage(input.files[0]);
+    galleryImageUrls.push(result.url);
+    renderGalleryPreview();
+    ShringarAdmin.toast('Photo added to gallery', 'success');
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  } finally {
+    input.value = '';
+  }
+}
+
+function renderGalleryPreview() {
+  const preview = document.getElementById('gallery-preview');
+  preview.innerHTML = galleryImageUrls.map((url, i) => `
+    <div class="upload-preview-item">
+      <img src="${ShringarAdmin.resolveUploadUrl(url)}" alt="Gallery ${i+1}"/>
+      <div class="remove-img" onclick="removeGalleryImage(${i})">✕</div>
+    </div>`).join('');
+}
+
+function removeGalleryImage(i) {
+  galleryImageUrls.splice(i, 1);
+  renderGalleryPreview();
+}
+
+// ───────────────────────── Save / Delete / Restore ─────────────────────────
+
+async function saveDesign() {
+  const errorEl = document.getElementById('form-error');
+  errorEl.style.display = 'none';
+
+  const name = document.getElementById('f-name').value.trim();
+  const category = document.getElementById('f-category').value.trim();
+  const coverage = document.getElementById('f-coverage').value.trim();
+  const price = parseFloat(document.getElementById('f-price').value);
+
+  if (!name || !category || !coverage || isNaN(price)) {
+    errorEl.textContent = 'Please fill in Name, Category, Coverage and a valid Price.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const recommendedSkinTones = [...document.querySelectorAll('.skin-tone-cb:checked')].map(cb => cb.value);
+
+  const payload = {
+    name,
+    description: document.getElementById('f-description').value.trim(),
+    category,
+    coverage,
+    durationMinHours: parseFloatOrNull('f-duration-min'),
+    durationMaxHours: parseFloatOrNull('f-duration-max'),
+    conesNeeded: parseFloatOrNull('f-cones'),
+    price,
+    imageUrl: coverImageUrl,
+    galleryImageUrls,
+    youtubeVideoUrl: document.getElementById('f-youtube').value.trim() || null,
+    emojiIcon: document.getElementById('f-emoji').value.trim() || '🤲',
+    badge: document.getElementById('f-badge').value.trim() || null,
+    isActive: document.getElementById('f-active').checked,
+    isFeatured: document.getElementById('f-featured').checked,
+    tags: tagsList,
+    recommendedSkinTones,
+    sortOrder: parseInt(document.getElementById('f-sort-order').value) || 0,
+  };
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    if (editingId) {
+      await ShringarAdmin.Designs.update(editingId, payload);
+      ShringarAdmin.toast('Design updated', 'success');
+    } else {
+      await ShringarAdmin.Designs.create(payload);
+      ShringarAdmin.toast('Design created', 'success');
+    }
+    closeModal();
+    loadDesigns();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Design';
+  }
+}
+
+function parseFloatOrNull(id) {
+  const val = document.getElementById(id).value;
+  return val === '' ? null : parseFloat(val);
+}
+
+async function deleteDesign(id, name) {
+  if (!confirm(`Remove "${name}" from the website? It will disappear from the customer-facing site immediately, but past orders that include it are unaffected. You can restore it anytime.`)) return;
+  try {
+    await ShringarAdmin.Designs.delete(id);
+    ShringarAdmin.toast('Design removed from website', 'success');
+    loadDesigns();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+async function restoreDesign(id) {
+  try {
+    await ShringarAdmin.Designs.restore(id);
+    ShringarAdmin.toast('Design restored to website', 'success');
+    loadDesigns();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+// ───────────────────────── Deep link support: designs.html?edit=ID ─────────────────────────
+
+async function checkDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get('edit');
+  if (editId) {
+    await loadDesigns();
+    const id = parseInt(editId);
+    if (allDesigns.find(d => d.id === id)) openEditModal(id);
+  } else {
+    loadDesigns();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', checkDeepLink);
+</script>
+</body>
+</html>

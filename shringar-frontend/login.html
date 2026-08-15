@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Login — Shringar</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Sans+Devanagari:wght@400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--m:#493313;--ml:#6b4a1e;--mr:#7a2c1a;--cream:#fdf6ec;--cd:#f5e8d0;--gold:#c9a227;--td:#2a1a08;--tm:#5c3d1e;--tl:#8a6040;}
+body{font-family:'Jost',sans-serif;background:var(--cream);min-height:100vh;display:flex;flex-direction:column;}
+.page{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:100vh;}
+/* LEFT PANEL */
+.left{background:var(--m);padding:56px 56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
+.left-bg{position:absolute;inset:0;opacity:0.06;}
+.left-bg svg{width:100%;height:100%;object-fit:cover;}
+.left-content{position:relative;z-index:2;}
+.logo{display:none;}
+.logo span{color:var(--gold);}
+.left-heading{font-family:'Playfair Display',serif;font-size:clamp(28px,3vw,38px);color:var(--cream);line-height:1.25;margin-bottom:20px;}
+.left-heading em{font-style:italic;color:var(--gold);}
+.left-sub{font-size:14px;color:rgba(253,246,236,0.6);line-height:1.9;font-weight:300;margin-bottom:40px;}
+.perks{display:flex;flex-direction:column;gap:16px;}
+.perk{display:flex;align-items:flex-start;gap:14px;}
+.perk-icon{width:34px;height:34px;border-radius:50%;background:rgba(201,162,39,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-top:1px;}
+.perk-text strong{display:block;font-size:14px;color:var(--cream);font-weight:500;margin-bottom:3px;}
+.perk-text span{font-size:12px;color:rgba(253,246,236,0.55);font-weight:300;}
+.left-bottom{position:relative;z-index:2;font-size:12px;color:rgba(253,246,236,0.3);}
+/* DECORATIVE CIRCLE */
+.deco-circle{position:absolute;bottom:-80px;right:-80px;width:300px;height:300px;border-radius:50%;border:60px solid rgba(201,162,39,0.1);}
+.deco-circle2{position:absolute;top:-60px;left:-60px;width:200px;height:200px;border-radius:50%;border:40px solid rgba(253,246,236,0.05);}
+
+/* RIGHT PANEL */
+.right{background:var(--cream);padding:56px 56px;display:flex;flex-direction:column;justify-content:center;}
+.form-title{font-family:'Playfair Display',serif;font-size:28px;color:var(--td);margin-bottom:6px;}
+.form-subtitle{font-size:14px;color:var(--tl);font-weight:300;margin-bottom:36px;}
+.tabs{display:flex;border-bottom:2px solid var(--cd);margin-bottom:32px;}
+.tab{font-family:'Jost',sans-serif;font-size:14px;font-weight:500;padding:10px 24px;border:none;background:transparent;cursor:pointer;color:var(--tl);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;letter-spacing:0.02em;}
+.tab.active{color:var(--m);border-bottom-color:var(--m);}
+.form-body{display:none;}
+.form-body.active{display:block;}
+.field{margin-bottom:20px;}
+.field-label{display:block;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--tl);margin-bottom:7px;font-weight:500;}
+.field-input{width:100%;padding:12px 16px;border:1.5px solid var(--cd);border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;background:var(--cream);color:var(--td);outline:none;transition:border-color 0.2s;}
+.field-input:focus{border-color:var(--m);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.forgot{text-align:right;margin-top:-12px;margin-bottom:20px;}
+.forgot a{font-size:12px;color:var(--mr);cursor:pointer;}
+.submit-btn{width:100%;padding:14px;background:var(--m);color:var(--cream);border:none;border-radius:10px;font-family:'Jost',sans-serif;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.04em;transition:background 0.2s;margin-bottom:20px;}
+.submit-btn:hover{background:var(--mr);}
+.divider{text-align:center;font-size:12px;color:var(--tl);margin:16px 0;position:relative;}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--cd);}
+.divider::before{left:0;}.divider::after{right:0;}
+.google-btn{width:100%;padding:12px;border:1.5px solid var(--cd);border-radius:10px;background:white;font-family:'Jost',sans-serif;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--td);transition:border-color 0.2s;}
+.google-btn:hover{border-color:var(--m);}
+.g-icon{width:20px;height:20px;}
+.switch-link{text-align:center;font-size:13px;color:var(--tl);margin-top:20px;}
+.switch-link a{color:var(--m);font-weight:500;cursor:pointer;text-decoration:underline;}
+.terms-note{font-size:11px;color:var(--tl);text-align:center;margin-top:12px;line-height:1.7;}
+.terms-note a{color:var(--m);}
+/* FLOATING BUTTONS */
+@media(max-width:768px){.page{grid-template-columns:1fr;}.left{display:none;}.right{padding:40px 24px;}}
+
+/* ── SHRINGAR LOGO & NAV ── */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Sans+Devanagari:wght@400&display=swap');
+.nav-back-btn{display:flex;align-items:center;gap:6px;color:rgba(253,246,236,0.7);font-size:12px;text-decoration:none;padding:7px 14px;border:1px solid rgba(253,246,236,0.2);border-radius:20px;transition:all 0.2s;font-family:'Jost',sans-serif;cursor:pointer;background:transparent;}
+
+.nav-back-btn::before{content:'';position:absolute;top:-1px;left:-1px;width:8px;height:8px;border-top:1.5px solid rgba(201,162,39,0.6);border-left:1.5px solid rgba(201,162,39,0.6);}
+.nav-back-btn::after{content:'';position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-bottom:1.5px solid rgba(201,162,39,0.6);border-right:1.5px solid rgba(201,162,39,0.6);}
+.nav-back-btn .back-arrow{flex-shrink:0;transition:transform 0.24s;}
+.nav-back-btn .back-label{font-family:'Cinzel',Georgia,serif;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;font-weight:400;}
+.nav-back-btn:hover{color:#c9a227;border-color:rgba(201,162,39,0.5);background:rgba(201,162,39,0.06);}
+.nav-back-btn:hover .back-arrow{transform:translateX(-3px);}
+
+.shringar-logo-wrap{display:flex;flex-direction:column;align-items:center;text-decoration:none;position:absolute;left:50%;transform:translateX(-50%);}
+.shringar-logo{font-family:'Cinzel Decorative',serif;font-size:19px;color:var(--cream);letter-spacing:0.06em;line-height:1;display:flex;align-items:center;}
+.shringar-logo::before,.shringar-logo::after{content:'✦';color:var(--gold);font-size:10px;margin:0 8px;opacity:0.9;}
+.logo-sub{font-family:'Jost',sans-serif;font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(253,246,236,0.45);text-align:center;margin-top:3px;}
+</style>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="stylesheet" href="css/responsive.css"/>
+</head>
+<body>
+<div style="position:fixed;top:0;left:0;right:0;z-index:100;background:var(--m);padding:12px 5%;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(201,162,39,0.18);">
+  <a href="javascript:history.back()" class="nav-back-btn">
+      <svg class="back-arrow" width="17" height="12" viewBox="0 0 17 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 5.5,1 L 1,6 L 5.5,11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="15.2" cy="6" r="1.8" fill="currentColor" opacity="0.5"/>
+      </svg>
+      <span class="back-label">Back</span>
+    </a>
+  <a href="index.html" style="text-decoration:none;">
+      <svg width="238" height="52" viewBox="0 0 238 52" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;">
+      <g transform="translate(27,26)">
+        <circle r="22" fill="none" stroke="#c9a227" stroke-width="0.8" opacity="0.45"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(45)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(90)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(135)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(180)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(225)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(270)"/>
+        <circle cx="0" cy="-23" r="1.6" fill="#c9a227" opacity="0.8" transform="rotate(315)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(45)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(90)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(135)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(180)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(225)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(270)"/>
+        <path d="M 0,-19 C 4.5,-13 4.5,-6 0,0 C -4.5,-6 -4.5,-13 0,-19" fill="rgba(253,246,236,0.88)" transform="rotate(315)"/>
+        <circle r="12" fill="none" stroke="#c9a227" stroke-width="0.5" opacity="0.45"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(22.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(67.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(112.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(157.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(202.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(247.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(292.5)"/>
+        <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(337.5)"/>
+        <circle r="6.5" fill="rgba(253,246,236,0.88)"/>
+        <circle r="4"   fill="#c9a227"/>
+        <circle r="2"   fill="rgba(20,10,4,0.85)"/>
+      </g>
+      <line x1="57" y1="9" x2="57" y2="43" stroke="rgba(201,162,39,0.22)" stroke-width="0.6"/>
+      <text x="149" y="23" font-family="'Cinzel Decorative','Cinzel',Georgia,serif" font-size="17" fill="#fdf6ec" font-weight="400" letter-spacing="0.1em" text-anchor="middle">SHRINGAR</text>
+      <line x1="74"  y1="30" x2="137" y2="30" stroke="rgba(201,162,39,0.4)" stroke-width="0.65"/>
+      <polygon points="149,26.5 154,30 149,33.5 144,30" fill="rgba(201,162,39,0.55)"/>
+      <line x1="161" y1="30" x2="224" y2="30" stroke="rgba(201,162,39,0.4)" stroke-width="0.65"/>
+      <text x="149" y="44" font-family="'Noto Sans Devanagari','Arial Unicode MS',sans-serif" font-size="10" fill="rgba(201,162,39,0.62)" letter-spacing="0.06em" text-anchor="middle">मेहंदी कला</text>
+    </svg>
+    </a>
+  <div style="width:80px;"></div>
+</div>
+<div class="page" style="margin-top:48px;">
+  <div class="left">
+    <div class="left-bg">
+      <svg viewBox="0 0 600 900" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="h2" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="28" fill="none" stroke="#fdf6ec" stroke-width="1"/><circle cx="50" cy="50" r="16" fill="none" stroke="#fdf6ec" stroke-width="0.6"/><path d="M50 22 Q66 36 50 50 Q34 36 50 22" fill="none" stroke="#fdf6ec" stroke-width="0.7"/><path d="M78 50 Q64 66 50 50 Q64 34 78 50" fill="none" stroke="#fdf6ec" stroke-width="0.7"/><path d="M50 78 Q34 64 50 50 Q66 64 50 78" fill="none" stroke="#fdf6ec" stroke-width="0.7"/><path d="M22 50 Q36 34 50 50 Q36 66 22 50" fill="none" stroke="#fdf6ec" stroke-width="0.7"/></pattern></defs><rect width="600" height="900" fill="url(#h2)"/></svg>
+    </div>
+    <div class="deco-circle"></div>
+    <div class="deco-circle2"></div>
+    <div class="left-content">
+      <a href="index.html" class="logo">Shringar</a>
+      <h2 class="left-heading">Adorn yourself with <em>timeless</em> tradition</h2>
+      <p class="left-sub">Join thousands of brides and art lovers who trust Shringar for life's most beautiful moments.</p>
+      <div class="perks">
+        <div class="perk"><div class="perk-icon">✨</div><div class="perk-text"><strong>Try Before You Book</strong><span>Use AI Lens to see designs on your skin tone</span></div></div>
+        <div class="perk"><div class="perk-icon">📅</div><div class="perk-text"><strong>Easy Slot Booking</strong><span>Pick your date, time and preferred artist</span></div></div>
+        <div class="perk"><div class="perk-icon">💰</div><div class="perk-text"><strong>Only 30% Advance</strong><span>Confirm your booking with a small advance payment</span></div></div>
+        <div class="perk"><div class="perk-icon">🌿</div><div class="perk-text"><strong>Free Cancellation</strong><span>Cancel up to 48 hours before your appointment</span></div></div>
+      </div>
+    </div>
+    <div class="left-bottom">© 2026 Shringar. All rights reserved.</div>
+  </div>
+
+  <div class="right">
+    <div class="form-title">Welcome back</div>
+    <div class="form-subtitle">Sign in or create your Shringar account</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login',this)">Sign In</button>
+      <button class="tab" onclick="switchTab('signup',this)">Create Account</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="form-body active" id="form-login">
+      <div class="field">
+        <label class="field-label">Email or Phone</label>
+        <input class="field-input" type="text" id="login-identifier" placeholder="you@email.com or +91 98765 43210"/>
+      </div>
+      <div class="field">
+        <label class="field-label">Password</label>
+        <input class="field-input" type="password" id="login-password" placeholder="••••••••"/>
+      </div>
+      <div id="login-error" style="display:none;color:#a32d2d;font-size:12.5px;background:#fcebeb;border:1px solid #f7c1c1;border-radius:8px;padding:10px 12px;margin-bottom:14px;"></div>
+      <div class="forgot"><a>Forgot password?</a></div>
+      <button class="submit-btn" id="login-submit-btn" onclick="handleLogin()">Sign In</button>
+      <div class="divider">or continue with</div>
+      <button class="google-btn" onclick="handleGoogleSignIn()">
+        <svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button class="google-btn" onclick="handleMicrosoftSignIn()" style="margin-top:8px;">
+        <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Continue with Microsoft
+      </button>
+      <div class="switch-link">Don't have an account? <a onclick="switchTab('signup',document.querySelectorAll('.tab')[1])">Sign up free</a></div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div class="form-body" id="form-signup">
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">First Name</label>
+          <input class="field-input" type="text" id="signup-firstname" placeholder="Priya"
+            oninput="this.value=this.value.replace(/[^A-Za-z\s'-]/g,'')"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Last Name</label>
+          <input class="field-input" type="text" id="signup-lastname" placeholder="Sharma"
+            oninput="this.value=this.value.replace(/[^A-Za-z\s'-]/g,'')"/>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Phone Number *</label>
+        <div style="display:flex;border:1.5px solid var(--cd);border-radius:12px;overflow:hidden;background:var(--cream);" id="phone-wrapper">
+          <select id="signup-country-code" style="border:none;background:transparent;font-family:'Jost',sans-serif;font-size:14px;color:var(--td);padding:12px 8px 12px 14px;cursor:pointer;outline:none;flex-shrink:0;" onchange="updatePhonePlaceholder()">
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+971">🇦🇪 +971</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+65">🇸🇬 +65</option>
+          </select>
+          <div style="width:1px;background:var(--cd);flex-shrink:0;"></div>
+          <input type="tel" id="signup-phone" placeholder="98765 43210"
+            style="border:none;background:transparent;flex:1;padding:12px 14px;font-family:'Jost',sans-serif;font-size:14px;color:var(--td);outline:none;min-width:0;"
+            maxlength="12"
+            oninput="this.value=this.value.replace(/[^0-9 ]/g,'')"
+            onfocus="document.getElementById('phone-wrapper').style.borderColor='var(--gold)'"
+            onblur="document.getElementById('phone-wrapper').style.borderColor='var(--cd)'"/>
+        </div>
+        <div id="phone-hint" style="font-size:11px;color:var(--tl);margin-top:5px;">Enter 10-digit mobile number without country code</div>
+      </div>
+      <div class="field">
+        <label class="field-label">Email Address</label>
+        <input class="field-input" type="email" id="signup-email" placeholder="priya@email.com"/>
+      </div>
+      <div class="field">
+        <label class="field-label">Password *</label>
+        <div style="position:relative;">
+          <input class="field-input" type="password" id="signup-password" placeholder="Min 8 chars, uppercase, number"
+            oninput="checkPasswordStrength(this.value)" style="padding-right:44px;"/>
+          <button type="button" onclick="togglePasswordVisibility()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--tl);" id="pwd-eye">👁</button>
+        </div>
+        <div style="margin-top:8px;">
+          <div style="height:4px;background:var(--cd);border-radius:2px;overflow:hidden;">
+            <div id="pwd-strength-bar" style="height:100%;width:0%;border-radius:2px;transition:all 0.3s;"></div>
+          </div>
+          <div id="pwd-strength-label" style="font-size:11px;margin-top:4px;color:var(--tl);"></div>
+        </div>
+        <div id="pwd-requirements" style="margin-top:8px;display:none;background:#fdf6ec;border:1px solid var(--cd);border-radius:8px;padding:8px 12px;">
+          <div id="req-length" style="font-size:11px;color:var(--tl);">✗ At least 8 characters</div>
+          <div id="req-upper" style="font-size:11px;color:var(--tl);">✗ At least 1 uppercase letter</div>
+          <div id="req-lower" style="font-size:11px;color:var(--tl);">✗ At least 1 lowercase letter</div>
+          <div id="req-digit" style="font-size:11px;color:var(--tl);">✗ At least 1 number</div>
+        </div>
+      </div>
+      <div id="signup-error" style="display:none;color:#a32d2d;font-size:12.5px;background:#fcebeb;border:1px solid #f7c1c1;border-radius:8px;padding:10px 12px;margin-bottom:14px;"></div>
+      <button class="submit-btn" id="signup-submit-btn" onclick="handleSignup()">Create My Account</button>
+      <div class="divider">or continue with</div>
+      <button class="google-btn" onclick="handleGoogleSignIn()">
+        <svg class="g-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Sign up with Google
+      </button>
+      <button class="google-btn" onclick="handleMicrosoftSignIn()" style="margin-top:8px;">
+        <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Sign up with Microsoft
+      </button>
+      <div class="terms-note">By creating an account you agree to our <a href="help.html">Terms of Service</a> and <a href="help.html">Privacy Policy</a>.</div>
+      <div class="switch-link">Already have an account? <a onclick="switchTab('login',document.querySelectorAll('.tab')[0])">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+
+<script src="js/api.js"></script>
+<script>
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.form-body').forEach(f=>f.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('form-'+name).classList.add('active');
+  document.querySelector('.form-title').textContent = name==='login' ? 'Welcome back' : 'Create account';
+  document.querySelector('.form-subtitle').textContent = name==='login' ? 'Sign in to your Shringar account' : 'Join Shringar — it\'s free';
+}
+
+function showError(elId, message) {
+  const el = document.getElementById(elId);
+  el.textContent = message;
+  el.style.display = 'block';
+}
+function hideError(elId) {
+  document.getElementById(elId).style.display = 'none';
+}
+
+function redirectAfterAuth() {
+  const target = sessionStorage.getItem('shringar_redirect_after_login');
+  sessionStorage.removeItem('shringar_redirect_after_login');
+  // .replace() swaps the current history entry instead of pushing a new one,
+  // so this login/signup page is never left as a "Back"-able page once the
+  // user is authenticated — pressing Back afterward skips straight past it.
+  window.location.replace(target || 'index.html');
+}
+
+async function handleLogin() {
+  hideError('login-error');
+  const identifier = document.getElementById('login-identifier').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  if (!identifier || !password) {
+    showError('login-error', 'Please enter both your email/phone and password.');
+    return;
+  }
+
+  const btn = document.getElementById('login-submit-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  try {
+    const auth = await Shringar.Auth.login(identifier, password);
+    Shringar.setSession(auth);
+    Shringar.toast(`Welcome back, ${auth.firstName}!`);
+    redirectAfterAuth();
+  } catch (err) {
+    showError('login-error', err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function updatePhonePlaceholder() {
+  const code = document.getElementById('signup-country-code').value;
+  const maxes = { '+91':10, '+1':10, '+44':11, '+971':9, '+61':9, '+65':8 };
+  document.getElementById('signup-phone').maxLength = maxes[code] || 12;
+  const hints = { '+91':'Enter 10-digit mobile number', '+1':'Enter 10-digit number', '+44':'Enter 11-digit number', '+971':'Enter 9-digit number', '+61':'Enter 9-digit number', '+65':'Enter 8-digit number' };
+  document.getElementById('phone-hint').textContent = hints[code] || 'Enter your mobile number';
+}
+
+function togglePasswordVisibility() {
+  const inp = document.getElementById('signup-password');
+  const eye = document.getElementById('pwd-eye');
+  if (inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
+  else { inp.type = 'password'; eye.textContent = '👁'; }
+}
+
+function checkPasswordStrength(val) {
+  const bar = document.getElementById('pwd-strength-bar');
+  const label = document.getElementById('pwd-strength-label');
+  const reqs = document.getElementById('pwd-requirements');
+  const reqLen = document.getElementById('req-length');
+  const reqUpper = document.getElementById('req-upper');
+  const reqLower = document.getElementById('req-lower');
+  const reqDigit = document.getElementById('req-digit');
+
+  if (!val) { bar.style.width='0%'; label.textContent=''; reqs.style.display='none'; return; }
+  reqs.style.display = 'block';
+
+  const hasLen = val.length >= 8, hasUpper = /[A-Z]/.test(val), hasLower = /[a-z]/.test(val), hasDigit = /[0-9]/.test(val);
+  const mark = (el, ok) => { el.textContent = (ok ? '✓ ' : '✗ ') + el.textContent.slice(2); el.style.color = ok ? '#0f6e56' : 'var(--tl)'; };
+  mark(reqLen, hasLen); mark(reqUpper, hasUpper); mark(reqLower, hasLower); mark(reqDigit, hasDigit);
+
+  const score = [hasLen, hasUpper, hasLower, hasDigit].filter(Boolean).length;
+  const configs = [null, {w:'25%',c:'#a32d2d',t:'Weak'}, {w:'50%',c:'#ba7517',t:'Fair'}, {w:'75%',c:'#c9a227',t:'Good'}, {w:'100%',c:'#0f6e56',t:'Strong ✓'}];
+  const cfg = configs[score];
+  if (cfg) { bar.style.width=cfg.w; bar.style.background=cfg.c; label.textContent=cfg.t; label.style.color=cfg.c; }
+}
+
+async function handleSignup() {
+  hideError('signup-error');
+  const firstName = document.getElementById('signup-firstname').value.trim();
+  const lastName  = document.getElementById('signup-lastname').value.trim();
+  const countryCode = document.getElementById('signup-country-code').value;
+  const phoneRaw  = document.getElementById('signup-phone').value.replace(/\s/g,'');
+  const email     = document.getElementById('signup-email').value.trim();
+  const password  = document.getElementById('signup-password').value;
+
+  if (!firstName) { showError('signup-error', 'Please enter your first name.'); return; }
+  if (!/^[A-Za-z][A-Za-z\s'-]{1,49}$/.test(firstName)) {
+    showError('signup-error', 'First name should only contain letters (e.g. Priya) — no numbers or symbols.');
+    return;
+  }
+  if (lastName && !/^[A-Za-z][A-Za-z\s'-]{0,49}$/.test(lastName)) {
+    showError('signup-error', 'Last name should only contain letters (e.g. Sharma) — no numbers or symbols.');
+    return;
+  }
+
+  if (!phoneRaw) { showError('signup-error', 'Please enter your phone number.'); return; }
+  if (!/^[0-9]{7,12}$/.test(phoneRaw)) { showError('signup-error', 'Phone number must contain only digits.'); return; }
+  const maxes = { '+91':10, '+1':10, '+44':11, '+971':9, '+61':9, '+65':8 };
+  const expectedLen = maxes[countryCode];
+  if (expectedLen && phoneRaw.length !== expectedLen) {
+    showError('signup-error', `Phone number for ${countryCode} must be exactly ${expectedLen} digits.`);
+    return;
+  }
+  const fullPhone = countryCode + phoneRaw;
+
+  if (!email) { showError('signup-error', 'Please enter your email address.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { showError('signup-error', 'Please enter a valid email address (e.g. priya@gmail.com).'); return; }
+
+  if (!password) { showError('signup-error', 'Please enter a password.'); return; }
+  if (password.length < 8) { showError('signup-error', 'Password must be at least 8 characters long.'); return; }
+  if (!/[A-Z]/.test(password)) { showError('signup-error', 'Password must include at least one uppercase letter.'); return; }
+  if (!/[a-z]/.test(password)) { showError('signup-error', 'Password must include at least one lowercase letter.'); return; }
+  if (!/[0-9]/.test(password)) { showError('signup-error', 'Password must include at least one number.'); return; }
+
+  const btn = document.getElementById('signup-submit-btn');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+
+  try {
+    const auth = await Shringar.Auth.signup({ firstName, lastName, phone: fullPhone, email, password });
+    Shringar.setSession(auth);
+    Shringar.toast(`Welcome to Shringar, ${auth.firstName}! 🌸`);
+    redirectAfterAuth();
+  } catch (err) {
+    showError('signup-error', err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create My Account';
+  }
+}
+
+// Allow pressing Enter to submit
+document.getElementById('login-password')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+document.getElementById('signup-password')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleSignup(); });
+
+// If already logged in, skip the login page entirely
+if (Shringar.isLoggedIn()) {
+  redirectAfterAuth();
+}
+
+// ── Defense-in-depth against the browser's back-forward cache (bfcache) ──
+// Some browsers can restore this exact page (with the signup form still
+// filled in from moments ago) when the user presses Back, without re-running
+// the page's initial load logic above. If that happens and the user is now
+// authenticated, bounce them away immediately instead of letting them
+// resubmit the same signup form and hit "account already exists".
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted && Shringar.isLoggedIn()) {
+    redirectAfterAuth();
+  }
+});
+
+// ── GOOGLE SIGN-IN ──
+// ONE-TIME SETUP (free): console.cloud.google.com → New Project → APIs & Services
+// → Credentials → Create OAuth 2.0 Client ID (Web application) → add
+// http://localhost:5500 under Authorized JavaScript Origins → paste the Client ID below.
+const GOOGLE_CLIENT_ID = '698260033527-oedfheu478sgc3b38ab4rduik3cca9tq.apps.googleusercontent.com';
+
+/** A real Google OAuth Client ID always ends in this suffix. Catches the easy mistake
+ *  of pasting the real ID onto the end of the placeholder text instead of replacing
+ *  it outright (e.g. 'YOUR_GOOGLE_CLIENT_ID698260033527-...') — which produces a
+ *  string Google's SDK silently rejects, making the button appear to do nothing. */
+function isValidGoogleClientId(id) {
+  return typeof id === 'string' && /^[\d]+-[\w-]+\.apps\.googleusercontent\.com$/.test(id);
+}
+
+function handleGoogleSignIn() {
+  if (!isValidGoogleClientId(GOOGLE_CLIENT_ID)) {
+    const msg = GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')
+      ? '⚙️ Google Sign-In needs a one-time setup — open login.html and replace YOUR_GOOGLE_CLIENT_ID with your real Client ID from console.cloud.google.com.'
+      : `⚠️ This doesn't look like a valid Google Client ID: "${GOOGLE_CLIENT_ID.slice(0, 40)}…". It should look like 123456789-abc123.apps.googleusercontent.com — make sure you replaced the whole placeholder rather than pasting your ID onto the end of it.`;
+    showError('login-error', msg);
+    showError('signup-error', msg);
+    return;
+  }
+  if (typeof google !== 'undefined' && google.accounts) {
+    google.accounts.id.prompt();
+  } else {
+    showError('login-error', 'Google library still loading — please try again in a moment.');
+  }
+}
+
+async function handleGoogleCredentialResponse(response) {
+  try {
+    const result = await fetch(`${Shringar.API_BASE}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: response.credential })
+    }).then(r => r.json());
+
+    if (!result.success) throw new Error(result.message);
+    Shringar.setSession(result.data);
+    Shringar.toast(`Welcome, ${result.data.firstName}! 🌸`);
+    redirectAfterAuth();
+  } catch (err) {
+    showError('login-error', 'Google sign-in failed: ' + err.message);
+  }
+}
+
+window.onGoogleLibraryLoad = function() {
+  if (!isValidGoogleClientId(GOOGLE_CLIENT_ID)) return;
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredentialResponse,
+    auto_select: false,
+    cancel_on_tap_outside: true,
+  });
+};
+
+// ── MICROSOFT SIGN-IN ──
+// ONE-TIME SETUP (free): portal.azure.com → Microsoft Entra ID → App registrations
+// → New registration → add http://localhost:5500 as a Web redirect URI → copy the
+// Application (client) ID below. Requires a small backend endpoint /auth/microsoft
+// (same pattern as /auth/google) to verify the token server-side.
+const MICROSOFT_CLIENT_ID = 'YOUR_MICROSOFT_CLIENT_ID';
+
+function handleMicrosoftSignIn() {
+  const msg = '⚙️ Microsoft Sign-In needs a one-time setup — open login.html and replace YOUR_MICROSOFT_CLIENT_ID with your real Application ID from portal.azure.com, then enable the matching backend endpoint.';
+  showError('login-error', msg);
+  showError('signup-error', msg);
+}
+</script>
+
+<!-- Google Identity Services — loads asynchronously, never blocks the page -->
+<script src="https://accounts.google.com/gsi/client" async defer onload="if(typeof window.onGoogleLibraryLoad==='function') window.onGoogleLibraryLoad()"></script>
+</body>
+</html>
