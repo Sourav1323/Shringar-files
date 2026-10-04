@@ -43,4 +43,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     BigDecimal sumBalancePending();
 
     long countByStatus(BookingStatus status);
+
+    @Query("SELECT b FROM Booking b WHERE b.fulfillmentRating IS NOT NULL OR b.fulfillmentFeedback IS NOT NULL ORDER BY b.customerConfirmedAt DESC, b.createdAt DESC")
+    List<Booking> findAllWithFeedback();
 }

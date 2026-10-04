@@ -5,40 +5,40 @@
 -- ══════════════════════════════════════════════════════════════
 
 -- ── DESIGNS ──
-INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
+INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, image_url, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
 SELECT 'Rajasthani Bridal',
        'A masterpiece inspired by the royal courts of Rajasthan. Intricate peacocks, paisleys, floral jaal patterns and fine geometric latticework extend from fingertips to elbow.',
-       'Bridal', 'Full hand', 3.0, 4.0, 2.0, 2500.00, '🤲', 'Popular', '#493313', 1, 1, 1, 184
+       'Bridal', 'Full hand', 3.0, 4.0, 2.0, 2500.00, 'images/rajasthani-bridal.jpg', '🤲', 'Popular', '#493313', 1, 1, 1, 184
 WHERE NOT EXISTS (SELECT 1 FROM designs WHERE name = 'Rajasthani Bridal');
 
-INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
+INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, image_url, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
 SELECT 'Floral Minimal',
        'Delicate blooms and fine lines for the modern minimalist. Perfect for receptions and casual events.',
-       'Minimal', 'Half hand', 1.0, 2.0, 1.0, 800.00, '🌸', 'New', '#7a2c1a', 1, 1, 2, 142
+       'Minimal', 'Half hand', 1.0, 2.0, 1.0, 800.00, 'images/floral-minimal.jpg', '🌸', 'New', '#7a2c1a', 1, 1, 2, 142
 WHERE NOT EXISTS (SELECT 1 FROM designs WHERE name = 'Floral Minimal');
 
-INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
+INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, image_url, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
 SELECT 'Arabic Glam',
        'Bold Arabic strokes with floral fills. The most requested design for engagement ceremonies.',
-       'Arabic', 'Both hands', 2.0, 3.0, 1.5, 1500.00, '🌿', 'Trending', '#c9a227', 1, 1, 3, 97
+       'Arabic', 'Both hands', 2.0, 3.0, 1.5, 1500.00, 'images/arabic-sawan.jpg', '🌿', 'Trending', '#c9a227', 1, 1, 3, 97
 WHERE NOT EXISTS (SELECT 1 FROM designs WHERE name = 'Arabic Glam');
 
-INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
+INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, image_url, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
 SELECT 'Peacock Bridal Feet',
        'Majestic peacock feather patterns with fine detailing covering both feet and ankles beautifully.',
-       'Bridal', 'Both feet', 2.0, 2.0, 1.5, 1800.00, '🦚', 'Bridal', '#ba7517', 1, 0, 4, 63
+       'Bridal', 'Both feet', 2.0, 2.0, 1.5, 1800.00, 'images/peacock-feet.png', '🦚', 'Bridal', '#ba7517', 1, 0, 4, 63
 WHERE NOT EXISTS (SELECT 1 FROM designs WHERE name = 'Peacock Bridal Feet');
 
-INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
+INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, image_url, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
 SELECT 'Indo-Arabic Fusion',
        'The best of both worlds — Indian mandala roots with Arabic flowing strokes. Absolutely striking.',
-       'Fusion', 'Full hand', 2.5, 2.5, 2.0, 2000.00, '🌺', 'Fusion', '#993517', 1, 0, 5, 51
+       'Fusion', 'Full hand', 2.5, 2.5, 2.0, 2000.00, 'images/indo-arabic.png', '🌺', 'Fusion', '#993517', 1, 0, 5, 51
 WHERE NOT EXISTS (SELECT 1 FROM designs WHERE name = 'Indo-Arabic Fusion');
 
-INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
+INSERT INTO designs (name, description, category, coverage, duration_min_hours, duration_max_hours, cones_needed, price, image_url, emoji_icon, badge, badge_color, is_active, is_featured, sort_order, click_count)
 SELECT 'Mughal Classic',
        'Inspired by Mughal architecture — domed arches, geometric lattice and vine scrollwork.',
-       'Mughal', 'Full feet', 1.5, 1.5, 1.0, 1200.00, '✨', 'Classic', '#493313', 1, 0, 6, 38
+       'Mughal', 'Full feet', 1.5, 1.5, 1.0, 1200.00, 'images/mughal-classic.jpg', '✨', 'Classic', '#493313', 1, 0, 6, 38
 WHERE NOT EXISTS (SELECT 1 FROM designs WHERE name = 'Mughal Classic');
 
 
@@ -387,3 +387,7 @@ SELECT 'Ritu Patel', 'Engagement Ceremony', 'Worli, Mumbai',
   'The Indo-Arabic Fusion design was exactly what I wanted. Rekha was so professional and the online booking made it hassle-free. Will definitely book again for my wedding!',
   5, '💍', 1, 4
 WHERE NOT EXISTS (SELECT 1 FROM testimonials WHERE customer_name = 'Ritu Patel');
+
+
+-- ── SEEDING COMPLETE (No pre-created users or admin credentials) ──
+

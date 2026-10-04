@@ -6,6 +6,8 @@
 <meta http-equiv="Expires" content="0"/>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Admin Login — Shringar</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
 <link rel="stylesheet" href="css/admin.css"/>
 <style>
 body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--cream),var(--cd));}
@@ -14,21 +16,22 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
 .login-header::before{content:'';position:absolute;inset:0;opacity:0.06;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='18' fill='none' stroke='%23fdf6ec' stroke-width='1'/%3E%3C/svg%3E");background-size:60px;}
 .login-logo{font-family:'Cinzel Decorative',serif;font-size:24px;color:var(--cream);letter-spacing:0.06em;position:relative;}
 .login-logo span{color:var(--gold);}
-.login-tag{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(201,162,39,0.6);margin-top:6px;position:relative;}
+.login-tag{font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,215,0,0.85);margin-top:6px;position:relative;}
 .login-form{padding:30px;}
 .login-title{font-family:'Cinzel',Georgia,serif;font-size:18px;color:var(--td);margin-bottom:4px;}
-.login-sub{font-size:12.5px;color:var(--tl);margin-bottom:24px;}
+.login-sub{font-size:14.5px;color:var(--tl);margin-bottom:24px;}
 .login-btn{width:100%;padding:13px;background:var(--gold);color:var(--td);border:none;border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.2s;}
 .login-btn:hover{background:var(--goldd);}
 .login-btn:disabled{opacity:0.6;cursor:not-allowed;}
 .login-error{display:none;color:var(--red);font-size:12.5px;background:var(--redl);border:1px solid #f0c8c8;border-radius:8px;padding:10px 12px;margin-bottom:16px;}
-.login-footer-note{text-align:center;font-size:11px;color:var(--tl);margin-top:18px;line-height:1.7;}
+.login-footer-note{text-align:center;font-size:13px;color:var(--tl);margin-top:18px;line-height:1.7;}
 </style>
 </head>
 <body>
 <div class="login-box">
   <div class="login-header">
-    <div class="login-logo">✦ Shringar ✦</div>
+    <img src="images/shringar-logo.png" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2.5px solid #ffd700;box-shadow:0 0 16px rgba(255,215,0,0.65), 0 3px 12px rgba(0,0,0,0.4);margin:0 auto 12px;display:block;" alt="Logo"/>
+    <div class="login-logo">Shringar</div>
     <div class="login-tag">Admin Portal</div>
   </div>
   <div class="login-form">
@@ -37,19 +40,53 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
 
     <div id="login-error" class="login-error"></div>
 
-    <div class="form-field">
-      <label class="form-label">Admin Email or Phone</label>
-      <input class="form-input" type="text" id="login-identifier" placeholder="you@shringar.in"/>
+    <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--cd);padding-bottom:10px;">
+      <button id="tab-login" onclick="switchTab('login')" style="flex:1;padding:8px;border:none;background:var(--gold);color:var(--td);font-weight:700;border-radius:8px;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;">Sign In</button>
+      <button id="tab-signup" onclick="switchTab('signup')" style="flex:1;padding:8px;border:1px solid var(--cd);background:#fff;color:var(--tm);font-weight:600;border-radius:8px;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;">Create Admin</button>
     </div>
-    <div class="form-field">
-      <label class="form-label">Password</label>
-      <input class="form-input" type="password" id="login-password" placeholder="••••••••"/>
+
+    <!-- SIGN IN FORM -->
+    <div id="form-login-box">
+      <div class="form-field">
+        <label class="form-label">Admin Email or Phone</label>
+        <input class="form-input" type="text" id="login-identifier" placeholder="admin@shringar.com or 9876543210"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="login-password" placeholder="••••••••"/>
+      </div>
+      <button class="login-btn" id="login-btn" onclick="handleLogin()">Sign In to Admin Portal</button>
     </div>
-    <button class="login-btn" id="login-btn" onclick="handleLogin()">Sign In to Admin Portal</button>
+
+    <!-- CREATE ADMIN FORM -->
+    <div id="form-signup-box" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-field">
+          <label class="form-label">First Name</label>
+          <input class="form-input" type="text" id="reg-fname" placeholder="First Name"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" type="text" id="reg-lname" placeholder="Last Name"/>
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" id="reg-email" placeholder="admin@yourdomain.com"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Mobile Number</label>
+        <input class="form-input" type="tel" id="reg-phone" placeholder="10-digit mobile number"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="reg-password" placeholder="Min 6 characters"/>
+      </div>
+      <button class="login-btn" id="signup-btn" onclick="handleCreateAdmin()">Create Admin Account & Enter</button>
+    </div>
 
     <div class="login-footer-note">
-      Only accounts with admin access can sign in here.<br>
-      Need access? Ask a developer to run the SQL in the backend README.
+      Secure Administrator Portal · Shringar Mehendi Couture
     </div>
   </div>
 </div>
@@ -59,6 +96,23 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
 // If already logged in as admin, skip straight to dashboard
 if (ShringarAdmin.isLoggedIn() && ShringarAdmin.getAdmin()?.role === 'ADMIN') {
   window.location.href = 'dashboard.html';
+}
+
+function switchTab(mode) {
+  hideError();
+  const isLogin = mode === 'login';
+  document.getElementById('form-login-box').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('form-signup-box').style.display = isLogin ? 'none' : 'block';
+  
+  const tabL = document.getElementById('tab-login');
+  const tabS = document.getElementById('tab-signup');
+  if (isLogin) {
+    tabL.style.background = 'var(--gold)'; tabL.style.color = 'var(--td)'; tabL.style.border = 'none'; tabL.style.fontWeight = '700';
+    tabS.style.background = '#fff'; tabS.style.color = 'var(--tm)'; tabS.style.border = '1px solid var(--cd)'; tabS.style.fontWeight = '600';
+  } else {
+    tabS.style.background = 'var(--gold)'; tabS.style.color = 'var(--td)'; tabS.style.border = 'none'; tabS.style.fontWeight = '700';
+    tabL.style.background = '#fff'; tabL.style.color = 'var(--tm)'; tabL.style.border = '1px solid var(--cd)'; tabL.style.fontWeight = '600';
+  }
 }
 
 function showError(msg) {
@@ -95,13 +149,50 @@ async function handleLogin() {
     }
 
     ShringarAdmin.setSession(auth);
-    ShringarAdmin.toast(`Welcome back, ${auth.firstName}!`, 'success');
+    ShringarAdmin.toast(`Welcome, ${auth.firstName}!`, 'success');
     window.location.replace('dashboard.html');
 
   } catch (err) {
     showError(err.message);
     btn.disabled = false;
     btn.textContent = 'Sign In to Admin Portal';
+  }
+}
+
+async function handleCreateAdmin() {
+  hideError();
+  const firstName = document.getElementById('reg-fname').value.trim();
+  const lastName = document.getElementById('reg-lname').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-password').value;
+
+  if (!firstName || !email || !password) {
+    showError('First name, email, and password are required.');
+    return;
+  }
+
+  const btn = document.getElementById('signup-btn');
+  btn.disabled = true;
+  btn.textContent = 'Creating Admin Account…';
+
+  try {
+    const auth = await ShringarAdmin.Auth.signupAdmin({
+      firstName,
+      lastName: lastName || 'Admin',
+      email,
+      phone: phone || '+910000000000',
+      password
+    });
+    ShringarAdmin.setSession(auth);
+    ShringarAdmin.toast(`Admin account created! Welcome ${auth.firstName}!`, 'success');
+    setTimeout(() => {
+      window.location.replace('dashboard.html');
+    }, 600);
+  } catch (err) {
+    showError(err.message);
+    btn.disabled = false;
+    btn.textContent = 'Create Admin Account & Enter';
   }
 }
 

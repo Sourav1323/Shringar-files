@@ -17,6 +17,11 @@ public class SiteSettingsService {
                 .orElseGet(() -> siteSettingsRepository.save(SiteSettings.builder().build()));
 
         return SiteSettingsResponse.builder()
+                .upiId(s.getUpiId())
+                .upiPayeeName(s.getUpiPayeeName())
+                .upiQrImageUrl(s.getUpiQrImageUrl())
+                .logoUrl(s.getLogoUrl())
+                .heroBannerImageUrl(s.getHeroBannerImageUrl())
                 .instagramHandle(s.getInstagramHandle())
                 .instagramUrl(resolveInstagramUrl(s))
                 .youtubeChannelUrl(s.getYoutubeChannelUrl())

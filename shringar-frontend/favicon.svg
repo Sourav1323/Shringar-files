@@ -1,33 +1,57 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#493313"/>
+  <defs>
+    <!-- Radiant 24K Gold Gradients -->
+    <radialGradient id="brightGoldDisc" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#fff8d6"/>
+      <stop offset="25%" stop-color="#ffd700"/>
+      <stop offset="60%" stop-color="#d4af37"/>
+      <stop offset="90%" stop-color="#aa7c11"/>
+      <stop offset="100%" stop-color="#734e06"/>
+    </radialGradient>
+    <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3d1808"/>
+      <stop offset="70%" stop-color="#240c04"/>
+      <stop offset="100%" stop-color="#120501"/>
+    </radialGradient>
+    <linearGradient id="goldStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#ffd700"/>
+      <stop offset="70%" stop-color="#d4af37"/>
+      <stop offset="100%" stop-color="#8c6109"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Luminous 24K Solid Gold Outer Medallion -->
+  <circle cx="32" cy="32" r="31" fill="url(#brightGoldDisc)"/>
+  <circle cx="32" cy="32" r="30.5" fill="none" stroke="#fff" stroke-width="1" opacity="0.6"/>
+
+  <!-- Ornate Beaded Rim -->
+  <circle cx="32" cy="32" r="27.5" fill="none" stroke="#684102" stroke-width="1.2" stroke-dasharray="1.6,2.2"/>
+
+  <!-- Rich Deep Maroon/Mahogany Velvet Core for Maximum Golden Contrast -->
+  <circle cx="32" cy="32" r="24.5" fill="url(#innerGlow)" stroke="url(#goldStroke)" stroke-width="1.2"/>
+
+  <!-- Central Radiant Gold Sacred Peacock & Mandala Filigree -->
   <g transform="translate(32,32)">
-    <circle r="22" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.5"/>
-    <circle cx="0" cy="-23" r="1.8" fill="#c9a227"/>
-    <circle cx="0" cy="-23" r="1.8" fill="#c9a227" transform="rotate(45)"/>
-    <circle cx="0" cy="-23" r="1.8" fill="#c9a227" transform="rotate(90)"/>
-    <circle cx="0" cy="-23" r="1.8" fill="#c9a227" transform="rotate(135)"/>
-    <circle cx="0" cy="-23" r="1.8" fill="#c9a227" transform="rotate(180)"/>
-    <circle cx="0" cy="-23" r="1.8" fill="#c9a227" transform="rotate(225)"/>
-    <circle cx="0" cy="-23" r="1.8" fill="#c9a227" transform="rotate(270)"/>
-    <circle cx="0" cy="-23" r="1.8" fill="#c9a227" transform="rotate(315)"/>
-    <path d="M 0,-18 C 4.5,-12 4.5,-6 0,0 C -4.5,-6 -4.5,-12 0,-18" fill="rgba(253,246,236,0.9)"/>
-    <path d="M 0,-18 C 4.5,-12 4.5,-6 0,0 C -4.5,-6 -4.5,-12 0,-18" fill="rgba(253,246,236,0.9)" transform="rotate(45)"/>
-    <path d="M 0,-18 C 4.5,-12 4.5,-6 0,0 C -4.5,-6 -4.5,-12 0,-18" fill="rgba(253,246,236,0.9)" transform="rotate(90)"/>
-    <path d="M 0,-18 C 4.5,-12 4.5,-6 0,0 C -4.5,-6 -4.5,-12 0,-18" fill="rgba(253,246,236,0.9)" transform="rotate(135)"/>
-    <path d="M 0,-18 C 4.5,-12 4.5,-6 0,0 C -4.5,-6 -4.5,-12 0,-18" fill="rgba(253,246,236,0.9)" transform="rotate(180)"/>
-    <path d="M 0,-18 C 4.5,-12 4.5,-6 0,0 C -4.5,-6 -4.5,-12 0,-18" fill="rgba(253,246,236,0.9)" transform="rotate(225)"/>
-    <path d="M 0,-18 C 4.5,-12 4.5,-6 0,0 C -4.5,-6 -4.5,-12 0,-18" fill="rgba(253,246,236,0.9)" transform="rotate(270)"/>
-    <path d="M 0,-18 C 4.5,-12 4.5,-6 0,0 C -4.5,-6 -4.5,-12 0,-18" fill="rgba(253,246,236,0.9)" transform="rotate(315)"/>
-    <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(22.5)"/>
-    <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(67.5)"/>
-    <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(112.5)"/>
-    <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(157.5)"/>
-    <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(202.5)"/>
-    <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(247.5)"/>
-    <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(292.5)"/>
-    <path d="M 0,-10 C 2.5,-7 2.5,-3.5 0,0 C -2.5,-3.5 -2.5,-7 0,-10" fill="#c9a227" transform="rotate(337.5)"/>
-    <circle r="6" fill="rgba(253,246,236,0.9)"/>
-    <circle r="3.5" fill="#c9a227"/>
-    <circle r="1.8" fill="#493313"/>
+    <!-- 8 Golden Lotus Radiance Petals -->
+    <g fill="url(#brightGoldDisc)">
+      <path d="M0,-23 C3,-16 3,-8 0,0 C-3,-8 -3,-16 0,-23"/>
+      <path d="M0,-23 C3,-16 3,-8 0,0 C-3,-8 -3,-16 0,-23" transform="rotate(45)"/>
+      <path d="M0,-23 C3,-16 3,-8 0,0 C-3,-8 -3,-16 0,-23" transform="rotate(90)"/>
+      <path d="M0,-23 C3,-16 3,-8 0,0 C-3,-8 -3,-16 0,-23" transform="rotate(135)"/>
+      <path d="M0,-23 C3,-16 3,-8 0,0 C-3,-8 -3,-16 0,-23" transform="rotate(180)"/>
+      <path d="M0,-23 C3,-16 3,-8 0,0 C-3,-8 -3,-16 0,-23" transform="rotate(225)"/>
+      <path d="M0,-23 C3,-16 3,-8 0,0 C-3,-8 -3,-16 0,-23" transform="rotate(270)"/>
+      <path d="M0,-23 C3,-16 3,-8 0,0 C-3,-8 -3,-16 0,-23" transform="rotate(315)"/>
+    </g>
+
+    <!-- Inner Golden Filigree Ring -->
+    <circle r="12" fill="none" stroke="url(#goldStroke)" stroke-width="1.2"/>
+
+    <!-- Royal Crowned Peacock Motif in Solid Gleaming Gold -->
+    <path d="M-3,5 C-7,4 -9,-1 -5,-6 C-3,-9 2,-11 5,-8 C6,-7 7,-5 7,-3 C7,1 3,4 -1,5 C-4,6 -5,9 -2,9 C2,9 4,7 6,4 C6,-2 -2,-7 -6,-3 C-9,1 -7,8 -1,11 Z" fill="url(#brightGoldDisc)"/>
+    <!-- Royal Diamond Crown Sparkle -->
+    <polygon points="4,-10 6,-8 4,-6 2,-8" fill="#ffffff"/>
+    <circle cx="0" cy="0" r="2.2" fill="#fff" opacity="0.9"/>
   </g>
 </svg>

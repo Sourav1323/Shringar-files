@@ -107,7 +107,13 @@ public class AdminDashboardService {
                 .balanceAmount(b.getBalanceAmount())
                 .status(b.getStatus())
                 .isAdvancePaid(b.getIsAdvancePaid())
+                .upiPaymentSubmitted(b.getUpiPaymentSubmitted())
+                .upiTransactionRef(b.getUpiTransactionRef())
                 .isBalancePaid(b.getIsBalancePaid())
+                .customerConfirmedCompletion(b.getCustomerConfirmedCompletion())
+                .fulfillmentRating(b.getFulfillmentRating())
+                .fulfillmentFeedback(b.getFulfillmentFeedback())
+                .customerConfirmedAt(b.getCustomerConfirmedAt())
                 .createdAt(b.getCreatedAt())
                 .build();
     }

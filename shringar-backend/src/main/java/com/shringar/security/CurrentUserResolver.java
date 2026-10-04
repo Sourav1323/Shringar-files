@@ -23,6 +23,18 @@ public class CurrentUserResolver {
         return getCurrentUser().getId();
     }
 
+    public Long getCurrentUserIdOptional() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+                return null;
+            }
+            return userRepository.findByEmail(auth.getName()).map(User::getId).orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {

@@ -6,6 +6,8 @@
 <meta http-equiv="Expires" content="0"/>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Orders — Shringar Admin</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
 <link rel="stylesheet" href="css/admin.css"/>
 </head>
 <body>
@@ -14,8 +16,9 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
+      <img src="images/shringar-logo.png" class="sidebar-logo-img" alt="Logo" />
       <div>
-        <div class="sidebar-logo-text">✦ Shringar</div>
+        <div class="sidebar-logo-text">Shringar</div>
         <div class="sidebar-logo-sub">Admin Portal</div>
       </div>
     </div>
@@ -24,6 +27,8 @@
       <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
       <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
       <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="concerns.html" class="nav-link" data-nav-link><span class="icon">🙋</span> Concerns</a>
+      <a href="feedback.html" class="nav-link" data-nav-link><span class="icon">💬</span> Feedback Inbox</a>
       <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
       <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
       <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
@@ -69,7 +74,7 @@
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Reference</th><th>Customer</th><th>Date</th><th>Artist</th><th>Total</th><th>Advance</th><th>Status</th></tr>
+              <tr><th>Reference</th><th>Customer</th><th>Date</th><th>Artist</th><th>Total</th><th>Advance</th><th>Status</th><th>Action</th></tr>
             </thead>
             <tbody id="orders-table-body">
               <tr><td colspan="7" class="loading-state">Loading orders…</td></tr>
@@ -92,6 +97,7 @@
 <script>
 if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
 ShringarAdmin.paintAdminName();
+ShringarAdmin.paintAdminLogo();
 ShringarAdmin.paintActiveNav();
 const admin = ShringarAdmin.getAdmin();
 if (admin) document.getElementById('admin-avatar').textContent = (admin.firstName?.[0] || 'A').toUpperCase();
@@ -107,6 +113,17 @@ const STATUS_BADGE = {
   CANCELLED: '<span class="badge badge-red">✕ Cancelled</span>',
   RESCHEDULED: '<span class="badge badge-amber">↻ Rescheduled</span>',
 };
+
+async function confirmUpiPayment(id) {
+  if (!confirm('Confirm you\'ve verified this payment in your UPI app/bank statement? This will mark the booking as paid and confirmed, and notify the customer and artist.')) return;
+  try {
+    await ShringarAdmin.Dashboard.confirmUpiPayment(id);
+    ShringarAdmin.toast('Payment confirmed — booking is now confirmed', 'success');
+    loadOrders();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
 
 async function loadOrders() {
   const tbody = document.getElementById('orders-table-body');
@@ -132,10 +149,19 @@ async function loadOrders() {
         <td>${o.artistName || 'Unassigned'}</td>
         <td><strong>${ShringarAdmin.formatINR(o.grandTotal)}</strong></td>
         <td>
-          ${o.isAdvancePaid ? '<span class="badge badge-green">✓ Paid</span>' : '<span class="badge badge-amber">Pending</span>'}
+          ${o.isAdvancePaid
+            ? '<span class="badge badge-green">✓ Paid</span>'
+            : o.upiPaymentSubmitted
+              ? `<span class="badge badge-amber">⏳ Awaiting verification</span>${o.upiTransactionRef ? `<div class="cell-sub">Ref: ${o.upiTransactionRef}</div>` : ''}`
+              : '<span class="badge badge-gray">Not paid</span>'}
           <div class="cell-sub">${ShringarAdmin.formatINR(o.advanceAmount)}</div>
         </td>
         <td>${STATUS_BADGE[o.status] || o.status}</td>
+        <td>
+          ${!o.isAdvancePaid && o.upiPaymentSubmitted
+            ? `<button class="btn btn-sm btn-primary" onclick="confirmUpiPayment(${o.id})">✅ Confirm Payment</button>`
+            : '—'}
+        </td>
       </tr>`).join('');
 
     // Pagination controls

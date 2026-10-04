@@ -43,6 +43,23 @@ public class SiteSettings {
     @Column(name = "contact_email", length = 100)
     private String contactEmail;
 
+    // ── UPI Payments (manual verification, no payment gateway needed) ──
+    @Column(name = "upi_id", length = 100)
+    private String upiId;              // e.g. "shringar@okicici" — shown to customers to pay to
+
+    @Column(name = "upi_payee_name", length = 100)
+    private String upiPayeeName;       // merchant/business name shown inside the customer's UPI app
+
+    @Column(name = "upi_qr_image_url", length = 500)
+    private String upiQrImageUrl;      // custom uploaded UPI QR code image
+
+    // ── Branding (logo + hero banner image) ──
+    @Column(name = "logo_url", length = 500)
+    private String logoUrl;
+
+    @Column(name = "hero_banner_image_url", length = 500)
+    private String heroBannerImageUrl;
+
     // ── Hero / Homepage Text ──
     @Column(name = "hero_title", length = 200)
     @Builder.Default

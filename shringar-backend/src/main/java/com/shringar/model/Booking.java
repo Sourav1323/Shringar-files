@@ -118,6 +118,20 @@ public class Booking {
     @Builder.Default
     private Boolean isBalancePaid = false;
 
+    // ── UPI payment (manual verification, no gateway) ──
+    /** Customer says they've paid via UPI and it's waiting for the admin to confirm
+     *  against their own bank/UPI app — distinct from isAdvancePaid, which only
+     *  becomes true once the admin has actually verified and confirmed it. */
+    @Column(name = "upi_payment_submitted")
+    @Builder.Default
+    private Boolean upiPaymentSubmitted = false;
+
+    @Column(name = "upi_transaction_ref", length = 60)
+    private String upiTransactionRef;   // customer-entered UTR / reference number, optional
+
+    @Column(name = "upi_submitted_at")
+    private java.time.LocalDateTime upiSubmittedAt;
+
     // ── Fulfillment confirmation (both parties must confirm for COMPLETED status) ──
     @Column(name = "customer_confirmed_completion")
     @Builder.Default
@@ -159,10 +173,33 @@ public class Booking {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    /** Free cancellation allowed up to 48 hrs before appointment */
+    public LocalDateTime getSlotDateTime() {
+        if (appointmentDate == null) return null;
+        LocalTime time = specificTime != null ? specificTime : LocalTime.of(9, 0);
+        return appointmentDate.atTime(time);
+    }
+
+    /**
+     * Free cancellation window is 25% of the total duration between booking time (createdAt)
+     * and appointment slot time. While this window is active, cancellation is free.
+     * When the time is up (or slot has passed), cancellation is no longer valid and removed.
+     */
+    public LocalDateTime getCancellationDeadline() {
+        if (createdAt == null || appointmentDate == null) return null;
+        LocalDateTime slotDateTime = getSlotDateTime();
+        long totalMinutes = java.time.Duration.between(createdAt, slotDateTime).toMinutes();
+        if (totalMinutes <= 0) return createdAt;
+        long allowedMinutes = Math.max(1, Math.round(totalMinutes * 0.25));
+        return createdAt.plusMinutes(allowedMinutes);
+    }
+
     public boolean canCancelFree() {
-        LocalDateTime appointmentDateTime = appointmentDate.atTime(
-                specificTime != null ? specificTime : LocalTime.NOON);
-        return LocalDateTime.now().isBefore(appointmentDateTime.minusHours(48));
+        if (createdAt == null || appointmentDate == null) return false;
+        LocalDateTime slotDateTime = getSlotDateTime();
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(slotDateTime)) return false;
+
+        LocalDateTime deadline = getCancellationDeadline();
+        return deadline != null && now.isBefore(deadline);
     }
 }

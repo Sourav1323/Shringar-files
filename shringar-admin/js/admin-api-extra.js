@@ -52,4 +52,17 @@
     removeArea: (cityId, name) => _req(`/admin/locations/cities/${cityId}/areas/${encodeURIComponent(name)}`, 'DELETE'),
     toggleArea: (cityId, name) => _req(`/admin/locations/cities/${cityId}/areas/${encodeURIComponent(name)}/toggle`, 'PATCH'),
   };
+
+  // Customer Concerns
+  orig.Concerns = {
+    all: (status) => _req(status ? `/admin/concerns?status=${encodeURIComponent(status)}` : '/admin/concerns'),
+    get: (id) => _req(`/admin/concerns/${id}`),
+    respond: (id, response, status) => _req(`/admin/concerns/${id}/respond`, 'PATCH', { response, status }),
+  };
+
+  // Feedback Inbox
+  orig.Feedback = {
+    all: (minRating) => _req(minRating ? `/admin/feedback?minRating=${minRating}` : '/admin/feedback'),
+    featureTestimonial: (bookingId) => _req(`/admin/feedback/${bookingId}/feature-testimonial`, 'POST'),
+  };
 })();

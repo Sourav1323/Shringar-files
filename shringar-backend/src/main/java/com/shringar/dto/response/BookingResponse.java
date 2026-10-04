@@ -37,7 +37,10 @@ public class BookingResponse {
     private BigDecimal balanceAmount;
     private BookingStatus status;
     private Boolean isAdvancePaid;
+    private Boolean upiPaymentSubmitted;
     private Boolean canCancelFree;
+    private LocalDateTime cancellationDeadline;
+    private Long cancellationRemainingSeconds;
     private Boolean customerConfirmedCompletion;
     private Boolean designerConfirmedCompletion;
     private Integer fulfillmentRating;

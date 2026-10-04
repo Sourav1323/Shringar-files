@@ -40,6 +40,12 @@ public class AdminBookingResponse {
     private BigDecimal balanceAmount;
     private BookingStatus status;
     private Boolean isAdvancePaid;
+    private Boolean upiPaymentSubmitted;
+    private String upiTransactionRef;
     private Boolean isBalancePaid;
+    private Boolean customerConfirmedCompletion;
+    private Integer fulfillmentRating;
+    private String fulfillmentFeedback;
+    private LocalDateTime customerConfirmedAt;
     private LocalDateTime createdAt;
 }

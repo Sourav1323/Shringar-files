@@ -1,5 +1,6 @@
 package com.shringar.service.notification;
 
+import com.shringar.model.ArtistApplication;
 import com.shringar.model.Booking;
 import com.shringar.model.BookingItem;
 import jakarta.mail.MessagingException;
@@ -25,6 +26,12 @@ public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
+
     @Value("${spring.mail.from}")
     private String fromAddress;
 
@@ -33,6 +40,16 @@ public class EmailServiceImpl implements EmailService {
 
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
+
+    @Override
+    public boolean isConfigured() {
+        return mailUsername != null
+                && !mailUsername.isBlank()
+                && !mailUsername.toLowerCase().contains("your_email")
+                && mailPassword != null
+                && !mailPassword.isBlank()
+                && !mailPassword.toLowerCase().contains("your_app_password");
+    }
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy");
 
@@ -266,11 +283,29 @@ public class EmailServiceImpl implements EmailService {
 
     // ───────────────────────── Utilities ─────────────────────────
 
+    private String resolveFromAddress() {
+        if (fromAddress != null && !fromAddress.isBlank() && !fromAddress.contains("noreply@shringar.in")) {
+            return fromAddress;
+        }
+        if (mailUsername != null && !mailUsername.isBlank() && mailUsername.contains("@")) {
+            return mailUsername;
+        }
+        return (fromAddress != null && !fromAddress.isBlank()) ? fromAddress : "noreply@shringar.in";
+    }
+
     private void send(String to, String subject, String htmlBody) {
+        if (!isConfigured()) {
+            log.info("[EMAIL SKIPPED — SMTP not configured] To: {} | Subject: {}", to, subject);
+            return;
+        }
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromAddress);
+            try {
+                helper.setFrom(resolveFromAddress(), "Shringar Mehendi");
+            } catch (Exception e) {
+                helper.setFrom(resolveFromAddress());
+            }
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
@@ -304,5 +339,212 @@ public class EmailServiceImpl implements EmailService {
 
     private String orderUrl(Booking booking) {
         return frontendBaseUrl + "/order.html?ref=" + booking.getBookingReference();
+    }
+
+    // ───────────────────────── Artist application notification ─────────────────────────
+
+    @Override
+    @Async("notificationExecutor")
+    public void sendArtistApplicationNotification(ArtistApplication application) {
+        List<String> adminEmails = Arrays.stream(adminEmailsCsv.split(","))
+                .map(String::trim).filter(s -> !s.isBlank()).toList();
+
+        if (adminEmails.isEmpty()) {
+            log.warn("No admin.notification-emails configured — skipping artist application notification for {}", application.getEmail());
+            return;
+        }
+
+        String subject = "🎨 New Artist Application — " + application.getFullName();
+        String body = wrapTemplate(
+                "New Artist Application",
+                "Someone wants to join Shringar as a mehendi artist.",
+                """
+                <table style="width:100%%;font-size:13px;color:#2a1a08;border-collapse:collapse;margin-bottom:16px;">
+                  <tr><td style="padding:6px 0;color:#8a6040;">Name</td><td style="padding:6px 0;font-weight:600;">%s</td></tr>
+                  <tr><td style="padding:6px 0;color:#8a6040;">Email</td><td style="padding:6px 0;">%s</td></tr>
+                  <tr><td style="padding:6px 0;color:#8a6040;">Phone</td><td style="padding:6px 0;">%s</td></tr>
+                  <tr><td style="padding:6px 0;color:#8a6040;">City</td><td style="padding:6px 0;">%s</td></tr>
+                  <tr><td style="padding:6px 0;color:#8a6040;">Experience</td><td style="padding:6px 0;">%s</td></tr>
+                  <tr><td style="padding:6px 0;color:#8a6040;">Specialization</td><td style="padding:6px 0;">%s</td></tr>
+                  <tr><td style="padding:6px 0;color:#8a6040;vertical-align:top;">Portfolio</td><td style="padding:6px 0;">%s</td></tr>
+                </table>
+                <div style="font-size:13px;color:#5c3d1e;line-height:1.7;background:#fdf6ec;border-radius:8px;padding:12px 14px;">%s</div>
+                <p style="font-size:12.5px;color:#8a6040;margin-top:16px;">Review and approve this application from the admin portal's Artists → Applications tab, then onboard them as a full artist profile.</p>
+                """.formatted(
+                        application.getFullName(),
+                        application.getEmail(),
+                        application.getPhone(),
+                        application.getCity(),
+                        application.getYearsExperience() != null ? application.getYearsExperience() + " years" : "Not specified",
+                        application.getSpecialization() != null && !application.getSpecialization().isBlank() ? application.getSpecialization() : "Not specified",
+                        application.getPortfolioLink() != null && !application.getPortfolioLink().isBlank() ? application.getPortfolioLink() : "Not provided",
+                        application.getMessage() != null && !application.getMessage().isBlank() ? application.getMessage() : "No additional message provided."
+                ),
+                null
+        );
+
+        for (String adminEmail : adminEmails) {
+            send(adminEmail, subject, body);
+        }
+    }
+
+    // ───────────────────────── OTP email with instant delivery & anti-spam optimization ─────────────────────────
+
+    private boolean sendSecurityEmail(String toEmail, String subject, String plainText, String htmlBody) {
+        if (!isConfigured()) {
+            log.info("[EMAIL SKIPPED — SMTP not configured] To: {} | Subject: {}", toEmail, subject);
+            return false;
+        }
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+
+            // 1. Transactional & high-priority headers to avoid greylisting and delayed queuing
+            message.setHeader("X-Priority", "1");
+            message.setHeader("Priority", "urgent");
+            message.setHeader("Importance", "high");
+            message.setHeader("X-MSMail-Priority", "High");
+            message.setHeader("Precedence", "urgent");
+            message.setHeader("Auto-Submitted", "auto-generated");
+            message.setHeader("X-Auto-Response-Suppress", "All");
+
+            // 2. Prevent Gmail thread grouping so each OTP arrives as a brand-new top unread message
+            message.setHeader("In-Reply-To", "");
+            message.setHeader("References", "");
+            String domain = resolveFromAddress().contains("@")
+                    ? resolveFromAddress().substring(resolveFromAddress().indexOf("@") + 1)
+                    : "gmail.com";
+            message.setHeader("Message-ID", "<otp." + System.currentTimeMillis() + "." + java.util.UUID.randomUUID().toString().substring(0, 8) + "@" + domain + ">");
+            message.setSentDate(new java.util.Date());
+
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            try {
+                helper.setFrom(resolveFromAddress(), "Shringar Mehendi");
+            } catch (Exception e) {
+                helper.setFrom(resolveFromAddress());
+            }
+            helper.setReplyTo(resolveFromAddress());
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+
+            // 3. Set BOTH plain-text and HTML so antispam engines don't flag MIME_HTML_ONLY (prevents 5-minute spam check delay)
+            helper.setText(plainText, htmlBody);
+
+            mailSender.send(message);
+            log.info("Urgent OTP email sent to {} — Subject: {}", toEmail, subject);
+            return true;
+        } catch (MessagingException | RuntimeException e) {
+            log.error("Failed to send OTP email to {}: {}", toEmail, e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean sendOtpEmail(String toEmail, String otpCode) {
+        String timeStamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"));
+        String subject = "[" + otpCode + "] Shringar Verification Code · " + timeStamp;
+        String plainText = """
+        Shringar Mehendi Verification
+
+        Your verification code is: %s
+
+        Enter this 6-digit code on the Shringar website to verify your email.
+        This code expires in 10 minutes.
+
+        If you did not request this verification, please ignore this email.
+        © Shringar Mehendi Art · https://shringar.in
+        """.formatted(otpCode);
+
+        String body = wrapTemplate(
+                "Verify Your Email",
+                "Enter this code to confirm it's really you.",
+                """
+                <div style="text-align:center;margin:20px 0;">
+                  <div style="display:inline-block;background:#fdf6ec;border:2px dashed #c9a227;border-radius:12px;padding:18px 36px;">
+                    <div style="font-size:32px;font-weight:700;letter-spacing:0.3em;color:#493313;font-family:monospace;">%s</div>
+                  </div>
+                </div>
+                <p style="font-size:12.5px;color:#8a6040;text-align:center;">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
+                """.formatted(otpCode),
+                null
+        );
+
+        return sendSecurityEmail(toEmail, subject, plainText, body);
+    }
+
+    @Override
+    public boolean sendPasswordResetOtpEmail(String toEmail, String otpCode) {
+        String timeStamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"));
+        String subject = "[" + otpCode + "] Shringar Password Reset Code · " + timeStamp;
+        String plainText = """
+        Shringar Mehendi Password Reset
+
+        Your password reset code is: %s
+
+        Enter this 6-digit code on the reset password screen to choose a new password.
+        This code expires in 15 minutes.
+
+        If you did not request a password reset, your account is safe and you can safely ignore this email.
+        © Shringar Mehendi Art · https://shringar.in
+        """.formatted(otpCode);
+
+        String body = wrapTemplate(
+                "Reset Your Password",
+                "Use this 6-digit code to securely set a new password.",
+                """
+                <div style="text-align:center;margin:24px 0;">
+                  <div style="display:inline-block;background:#fdf6ec;border:2px dashed #7a2c1a;border-radius:12px;padding:18px 36px;">
+                    <div style="font-size:32px;font-weight:700;letter-spacing:0.3em;color:#7a2c1a;font-family:monospace;">%s</div>
+                  </div>
+                </div>
+                <p style="font-size:13px;color:#5c3d1e;text-align:center;line-height:1.6;">
+                  This code expires in 15 minutes. Enter this code on the password reset screen to choose your new password.
+                </p>
+                <p style="font-size:12px;color:#8a6040;text-align:center;margin-top:14px;">
+                  If you didn't request a password reset, your account is safe and you can safely ignore this email.
+                </p>
+                """.formatted(otpCode),
+                null
+        );
+
+        return sendSecurityEmail(toEmail, subject, plainText, body);
+    }
+
+    @Override
+    public boolean sendPhoneOtpToEmail(String toEmail, String phone, String otpCode) {
+        String timeStamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"));
+        String subject = "[" + otpCode + "] Shringar Phone Verification Code · " + timeStamp;
+        String plainText = """
+        Shringar Mehendi Phone Verification
+
+        Verification code for your phone number (%s):
+        %s
+
+        Enter this 6-digit code to complete your phone verification.
+        This code expires in 10 minutes.
+
+        If you did not request this, please ignore this email.
+        © Shringar Mehendi Art · https://shringar.in
+        """.formatted(phone, otpCode);
+
+        String body = wrapTemplate(
+                "Verify Your Phone Number",
+                "Verification code for your phone number (" + phone + ").",
+                """
+                <div style="text-align:center;margin:24px 0;">
+                  <div style="display:inline-block;background:#fdf6ec;border:2px dashed #c9a227;border-radius:12px;padding:18px 36px;">
+                    <div style="font-size:32px;font-weight:700;letter-spacing:0.3em;color:#493313;font-family:monospace;">%s</div>
+                  </div>
+                </div>
+                <p style="font-size:13px;color:#5c3d1e;text-align:center;line-height:1.6;">
+                  Enter this 6-digit code in the phone verification box to confirm your phone number.
+                </p>
+                <p style="font-size:12px;color:#8a6040;text-align:center;margin-top:14px;">
+                  This code expires in 10 minutes.
+                </p>
+                """.formatted(otpCode),
+                null
+        );
+
+        return sendSecurityEmail(toEmail, subject, plainText, body);
     }
 }

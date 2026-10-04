@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customer Concerns | Shringar Admin</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="images/shringar-logo.png" class="sidebar-logo-img" alt="Logo" />
+      <div>
+        <div class="sidebar-logo-text">Shringar</div>
+        <div class="sidebar-logo-sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="concerns.html" class="nav-link" data-nav-link><span class="icon">🙋</span> Concerns</a>
+      <a href="feedback.html" class="nav-link" data-nav-link><span class="icon">💬</span> Feedback Inbox</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin">
+        <div class="sidebar-admin-avatar" id="admin-avatar">A</div>
+        <div><div class="sidebar-admin-name" data-admin-name>Admin</div><div class="sidebar-admin-role">Administrator</div></div>
+      </div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Customer Concerns</div>
+        <div class="topbar-sub">Review tickets, dispute inquiries, and post official responses</div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="loadConcerns()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Filter Bar -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;">
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm btn-outline active-filter" id="f-all" onclick="setFilter('ALL')">All</button>
+          <button class="btn btn-sm btn-outline" id="f-open" onclick="setFilter('OPEN')">⚪ Open</button>
+          <button class="btn btn-sm btn-outline" id="f-in-review" onclick="setFilter('IN_REVIEW')">🟡 Under Review</button>
+          <button class="btn btn-sm btn-outline" id="f-resolved" onclick="setFilter('RESOLVED')">🟢 Resolved</button>
+        </div>
+        <div style="flex:1;min-width:240px;position:relative;">
+          <input type="text" id="search-input" placeholder="Search customer, email, booking ref, or subject…"
+            class="form-input" style="padding:7px 12px;font-size:13px;" oninput="renderConcerns()"/>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th>Category</th>
+                <th>Booking Ref</th>
+                <th>Subject & Issue</th>
+                <th>Status</th>
+                <th>Response</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="concerns-tbody">
+              <tr><td colspan="8" class="loading-state">Loading concerns…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW & RESPOND MODAL -->
+<div class="modal-overlay" id="concern-modal" style="display:none;">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="modal-header">
+      <div class="modal-title" id="m-title">Review Concern</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="m-meta" style="background:#fdf7ee;padding:12px 14px;border-radius:10px;border:1px solid #fae3c3;margin-bottom:14px;font-size:13px;line-height:1.6;">
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label class="form-label" style="font-weight:700;">Customer's Message:</label>
+        <div id="m-message" style="background:#fff;border:1.5px solid var(--cd);border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.6;color:var(--td);max-height:180px;overflow-y:auto;">
+        </div>
+      </div>
+
+      <div class="form-field" style="margin-bottom:14px;">
+        <label class="form-label">Update Status</label>
+        <select class="form-input" id="m-status">
+          <option value="RESOLVED">🟢 RESOLVED (Issue solved)</option>
+          <option value="IN_REVIEW">🟡 IN_REVIEW (Investigating)</option>
+          <option value="OPEN">⚪ OPEN (Pending review)</option>
+          <option value="CLOSED">🔒 CLOSED</option>
+        </select>
+      </div>
+
+      <div class="form-field" style="margin-bottom:16px;">
+        <label class="form-label">Official Admin Response (Customer sees this immediately)</label>
+        <textarea class="form-textarea" id="m-response" rows="4" placeholder="Write your response, resolution steps, or refund details for the customer…"></textarea>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="save-response-btn" onclick="saveResponse()">💾 Send Response & Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script src="js/admin-api-extra.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) throw new Error('redirect');
+ShringarAdmin.paintAdminName();
+ShringarAdmin.paintAdminLogo();
+ShringarAdmin.paintActiveNav();
+document.getElementById('admin-avatar').textContent = (ShringarAdmin.getAdmin()?.firstName?.[0]||'A').toUpperCase();
+
+let allConcerns = [];
+let currentFilter = 'ALL';
+let activeConcernId = null;
+
+async function loadConcerns() {
+  const tbody = document.getElementById('concerns-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" class="loading-state">Loading concerns…</td></tr>';
+  try {
+    allConcerns = await ShringarAdmin.Concerns.all();
+    renderConcerns();
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--red);padding:24px;">Failed to load concerns: ${err.message}</td></tr>`;
+  }
+}
+
+function setFilter(status) {
+  currentFilter = status;
+  document.querySelectorAll('[id^="f-"]').forEach(btn => btn.classList.remove('active-filter'));
+  const btnMap = { 'ALL':'f-all', 'OPEN':'f-open', 'IN_REVIEW':'f-in-review', 'RESOLVED':'f-resolved' };
+  if (btnMap[status]) document.getElementById(btnMap[status]).classList.add('active-filter');
+  renderConcerns();
+}
+
+function renderConcerns() {
+  const tbody = document.getElementById('concerns-tbody');
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+
+  let filtered = allConcerns.filter(c => {
+    if (currentFilter !== 'ALL' && c.status !== currentFilter) return false;
+    if (q) {
+      const matchName = (c.customerName || '').toLowerCase().includes(q);
+      const matchEmail = (c.customerEmail || '').toLowerCase().includes(q);
+      const matchRef = (c.bookingReference || '').toLowerCase().includes(q);
+      const matchSub = (c.subject || '').toLowerCase().includes(q);
+      const matchMsg = (c.message || '').toLowerCase().includes(q);
+      return matchName || matchEmail || matchRef || matchSub || matchMsg;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--tl);">No concerns matching criteria.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => {
+    const isResolved = c.status === 'RESOLVED';
+    const statusBadge = isResolved
+      ? `<span class="badge badge-success">✓ Resolved</span>`
+      : (c.status === 'IN_REVIEW' ? `<span class="badge badge-warning">⏳ Under Review</span>` : `<span class="badge badge-secondary">⚪ Open</span>`);
+
+    const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+
+    return `
+      <tr>
+        <td><strong>#${c.id}</strong></td>
+        <td>
+          <div style="font-weight:600;color:var(--td);">${c.customerName}</div>
+          <div style="font-size:11.5px;color:var(--ts);">${c.customerEmail}</div>
+          ${c.customerPhone ? `<div style="font-size:11px;color:var(--ts);">${c.customerPhone}</div>` : ''}
+        </td>
+        <td><span style="font-size:12px;font-weight:600;color:var(--m);">${c.category}</span></td>
+        <td>${c.bookingReference ? `<span style="font-family:monospace;font-size:12px;font-weight:700;">${c.bookingReference}</span>` : '<span style="color:var(--tl);">—</span>'}</td>
+        <td style="max-width:260px;">
+          <div style="font-weight:600;font-size:13px;color:var(--td);">${c.subject}</div>
+          <div style="font-size:12px;color:var(--ts);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.message}</div>
+          <div style="font-size:11px;color:var(--tl);margin-top:2px;">${dateStr}</div>
+        </td>
+        <td>${statusBadge}</td>
+        <td>
+          ${c.adminResponse
+            ? `<span style="font-size:11.5px;color:#0f6e56;font-weight:600;">✓ Responded</span>`
+            : `<span style="font-size:11.5px;color:#ba7517;font-weight:600;">⏳ Awaiting Response</span>`}
+        </td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="openReviewModal(${c.id})">Review & Respond</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function openReviewModal(id) {
+  const c = allConcerns.find(x => x.id === id);
+  if (!c) return;
+  activeConcernId = id;
+
+  document.getElementById('m-title').textContent = `Concern #${c.id} — ${c.subject}`;
+  document.getElementById('m-meta').innerHTML = `
+    <div><strong>Customer:</strong> ${c.customerName} (${c.customerEmail}${c.customerPhone ? ' · ' + c.customerPhone : ''})</div>
+    <div><strong>Category:</strong> ${c.category} ${c.bookingReference ? ' · <strong>Booking:</strong> ' + c.bookingReference : ''}</div>
+    <div><strong>Submitted:</strong> ${new Date(c.createdAt).toLocaleString('en-IN')}</div>
+  `;
+  document.getElementById('m-message').textContent = c.message;
+  document.getElementById('m-status').value = c.status || 'RESOLVED';
+  document.getElementById('m-response').value = c.adminResponse || '';
+
+  document.getElementById('concern-modal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('concern-modal').style.display = 'none';
+  activeConcernId = null;
+}
+
+async function saveResponse() {
+  if (!activeConcernId) return;
+  const btn = document.getElementById('save-response-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const status = document.getElementById('m-status').value;
+  const response = document.getElementById('m-response').value.trim();
+
+  try {
+    await ShringarAdmin.Concerns.respond(activeConcernId, response, status);
+    ShringarAdmin.toast('Response saved and concern updated', 'success');
+    closeModal();
+    loadConcerns();
+  } catch(err) {
+    ShringarAdmin.toast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Send Response & Save';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadConcerns);
+</script>
+<style>
+.active-filter { background:var(--gold) !important; color:var(--td) !important; font-weight:700 !important; border-color:var(--gold) !important; }
+</style>
+</body>
+</html>

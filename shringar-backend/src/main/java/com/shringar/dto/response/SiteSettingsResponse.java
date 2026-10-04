@@ -10,6 +10,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SiteSettingsResponse {
+    private String upiId;
+    private String upiPayeeName;
+    private String upiQrImageUrl;
+    private String logoUrl;
+    private String heroBannerImageUrl;
     private String instagramHandle;
     private String instagramUrl;
     private String youtubeChannelUrl;

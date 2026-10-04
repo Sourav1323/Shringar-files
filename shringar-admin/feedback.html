@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Service Feedback Inbox | Shringar Admin</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="images/shringar-logo.png" class="sidebar-logo-img" alt="Logo" />
+      <div>
+        <div class="sidebar-logo-text">Shringar</div>
+        <div class="sidebar-logo-sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
+      <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
+      <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="concerns.html" class="nav-link" data-nav-link><span class="icon">🙋</span> Concerns</a>
+      <a href="feedback.html" class="nav-link" data-nav-link><span class="icon">💬</span> Feedback Inbox</a>
+      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
+      <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
+      <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-admin">
+        <div class="sidebar-admin-avatar" id="admin-avatar">A</div>
+        <div><div class="sidebar-admin-name" data-admin-name>Admin</div><div class="sidebar-admin-role">Administrator</div></div>
+      </div>
+      <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Service Feedback Inbox</div>
+        <div class="topbar-sub">Customer ratings and reviews submitted at the end of appointment fulfillment</div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="loadFeedback()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- STATS -->
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:20px;">
+        <div class="stat-card">
+          <div class="stat-icon">💬</div>
+          <div>
+            <div class="stat-value" id="s-total-reviews">0</div>
+            <div class="stat-label">Total Reviews</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⭐</div>
+          <div>
+            <div class="stat-value" id="s-avg-rating">0.0★</div>
+            <div class="stat-label">Average Rating</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🌸</div>
+          <div>
+            <div class="stat-value" id="s-five-star-count">0</div>
+            <div class="stat-label">5-Star Experiences</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;">
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm btn-outline active-filter" id="f-all" onclick="setRatingFilter(null)">All Ratings</button>
+          <button class="btn btn-sm btn-outline" id="f-5" onclick="setRatingFilter(5)">⭐⭐⭐⭐⭐ 5 Stars</button>
+          <button class="btn btn-sm btn-outline" id="f-4" onclick="setRatingFilter(4)">⭐⭐⭐⭐ 4+ Stars</button>
+          <button class="btn btn-sm btn-outline" id="f-low" onclick="setRatingFilter('low')">≤ 3 Stars (Needs Attention)</button>
+        </div>
+        <div style="flex:1;min-width:240px;">
+          <input type="text" id="feedback-search" placeholder="Search feedback, artist, customer, city…"
+            class="form-input" style="padding:7px 12px;font-size:13px;" oninput="renderFeedback()"/>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Booking Ref</th>
+                <th>Customer</th>
+                <th>Artist</th>
+                <th>Rating</th>
+                <th>Customer Feedback Review</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="feedback-tbody">
+              <tr><td colspan="7" class="loading-state">Loading feedback inbox…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin-api.js"></script>
+<script src="js/admin-api-extra.js"></script>
+<script>
+if (!ShringarAdmin.requireAdmin()) throw new Error('redirect');
+ShringarAdmin.paintAdminName();
+ShringarAdmin.paintAdminLogo();
+ShringarAdmin.paintActiveNav();
+document.getElementById('admin-avatar').textContent = (ShringarAdmin.getAdmin()?.firstName?.[0]||'A').toUpperCase();
+
+let allFeedback = [];
+let currentRatingFilter = null;
+
+async function loadFeedback() {
+  const tbody = document.getElementById('feedback-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="loading-state">Loading feedback inbox…</td></tr>';
+  try {
+    allFeedback = await ShringarAdmin.Feedback.all();
+    computeStats();
+    renderFeedback();
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red);padding:24px;">Failed to load feedback: ${err.message}</td></tr>`;
+  }
+}
+
+function computeStats() {
+  const total = allFeedback.length;
+  document.getElementById('s-total-reviews').textContent = total;
+
+  if (total === 0) {
+    document.getElementById('s-avg-rating').textContent = '0.0★';
+    document.getElementById('s-five-star-count').textContent = '0';
+    return;
+  }
+
+  const rated = allFeedback.filter(f => f.rating);
+  const sum = rated.reduce((acc, f) => acc + f.rating, 0);
+  const avg = rated.length > 0 ? (sum / rated.length).toFixed(1) : '5.0';
+  const fiveStars = allFeedback.filter(f => f.rating === 5).length;
+
+  document.getElementById('s-avg-rating').textContent = avg + '★';
+  document.getElementById('s-five-star-count').textContent = fiveStars;
+}
+
+function setRatingFilter(filter) {
+  currentRatingFilter = filter;
+  document.querySelectorAll('[id^="f-"]').forEach(btn => btn.classList.remove('active-filter'));
+  if (filter === null) document.getElementById('f-all').classList.add('active-filter');
+  else if (filter === 5) document.getElementById('f-5').classList.add('active-filter');
+  else if (filter === 4) document.getElementById('f-4').classList.add('active-filter');
+  else if (filter === 'low') document.getElementById('f-low').classList.add('active-filter');
+  renderFeedback();
+}
+
+function renderFeedback() {
+  const tbody = document.getElementById('feedback-tbody');
+  const q = document.getElementById('feedback-search').value.toLowerCase().trim();
+
+  let filtered = allFeedback.filter(f => {
+    if (currentRatingFilter === 5 && f.rating !== 5) return false;
+    if (currentRatingFilter === 4 && (!f.rating || f.rating < 4)) return false;
+    if (currentRatingFilter === 'low' && (f.rating && f.rating > 3)) return false;
+
+    if (q) {
+      const matchCustomer = (f.customerName || '').toLowerCase().includes(q);
+      const matchEmail = (f.customerEmail || '').toLowerCase().includes(q);
+      const matchRef = (f.bookingReference || '').toLowerCase().includes(q);
+      const matchArtist = (f.artistName || '').toLowerCase().includes(q);
+      const matchCity = (f.city || '').toLowerCase().includes(q);
+      const matchText = (f.feedback || '').toLowerCase().includes(q);
+      return matchCustomer || matchEmail || matchRef || matchArtist || matchCity || matchText;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--tl);">No feedback matching filter.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(f => {
+    const stars = f.rating ? '⭐'.repeat(f.rating) : '—';
+    const dateStr = f.confirmedAt ? new Date(f.confirmedAt).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '—';
+
+    return `
+      <tr>
+        <td style="font-size:12px;color:var(--tl);">${dateStr}</td>
+        <td><strong style="font-family:monospace;font-size:12px;">${f.bookingReference}</strong></td>
+        <td>
+          <div style="font-weight:600;color:var(--td);">${f.customerName}</div>
+          <div style="font-size:11.5px;color:var(--ts);">${f.customerEmail}</div>
+          ${f.city ? `<div style="font-size:11px;color:var(--ts);">📍 ${f.area ? f.area + ', ' : ''}${f.city}</div>` : ''}
+        </td>
+        <td>
+          <div style="font-weight:600;font-size:13px;color:var(--m);">👩‍🎨 ${f.artistName}</div>
+        </td>
+        <td>
+          <div style="font-size:15px;color:#d99b00;letter-spacing:1px;">${stars}</div>
+          <div style="font-size:11.5px;font-weight:700;color:var(--td);">${f.rating ? f.rating + '/5' : ''}</div>
+        </td>
+        <td style="max-width:320px;">
+          ${f.feedback ? `
+            <div style="font-size:13px;line-height:1.6;color:var(--td);background:#fffaf3;border-left:3px solid var(--gold);padding:8px 12px;border-radius:0 8px 8px 0;">
+              "${f.feedback}"
+            </div>
+          ` : '<span style="color:var(--tl);font-style:italic;font-size:12px;">No written comments (Star rating only)</span>'}
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline" style="border-color:var(--gold);color:var(--td);" onclick="featureTestimonial(${f.bookingId})">
+            ⭐ Feature on Site
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function featureTestimonial(bookingId) {
+  if (!confirm('Feature this customer review as a testimonial on the live homepage?')) return;
+  try {
+    await ShringarAdmin.Feedback.featureTestimonial(bookingId);
+    ShringarAdmin.toast('Featured as testimonial on the live website!', 'success');
+  } catch(err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadFeedback);
+</script>
+<style>
+.active-filter { background:var(--gold) !important; color:var(--td) !important; font-weight:700 !important; border-color:var(--gold) !important; }
+</style>
+</body>
+</html>

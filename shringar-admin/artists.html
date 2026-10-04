@@ -6,6 +6,8 @@
 <meta http-equiv="Expires" content="0"/>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Artists — Shringar Admin</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
 <link rel="stylesheet" href="css/admin.css"/>
 </head>
 <body>
@@ -14,8 +16,9 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
+      <img src="images/shringar-logo.png" class="sidebar-logo-img" alt="Logo" />
       <div>
-        <div class="sidebar-logo-text">✦ Shringar</div>
+        <div class="sidebar-logo-text">Shringar</div>
         <div class="sidebar-logo-sub">Admin Portal</div>
       </div>
     </div>
@@ -24,6 +27,8 @@
       <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
       <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
       <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="concerns.html" class="nav-link" data-nav-link><span class="icon">🙋</span> Concerns</a>
+      <a href="feedback.html" class="nav-link" data-nav-link><span class="icon">💬</span> Feedback Inbox</a>
       <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
       <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
       <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
@@ -129,8 +134,20 @@
           <input class="form-input" type="number" min="0" id="f-experience" placeholder="e.g. 9"/>
         </div>
         <div class="form-field">
-          <label class="form-label">Avatar Emoji (fallback)</label>
-          <input class="form-input" id="f-avatar-emoji" placeholder="👩‍🎨" maxlength="4"/>
+          <label class="form-label">Profile Icon (shown until a real photo is uploaded)</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input class="form-input" id="f-avatar-emoji" placeholder="👩‍🎨" maxlength="4" style="flex:1;" oninput="document.getElementById('avatar-preview').textContent=this.value||'👩‍🎨'"/>
+            <div id="avatar-preview" style="width:42px;height:42px;flex-shrink:0;border-radius:50%;background:var(--cd);display:flex;align-items:center;justify-content:center;font-size:20px;">👩‍🎨</div>
+          </div>
+          <div class="form-hint">
+            A small icon shown on the artist's card before a real profile photo is uploaded. Tap one:
+            <span style="display:inline-flex;gap:4px;margin-left:4px;">
+              <button type="button" onclick="setAvatarEmoji('👩‍🎨')" style="border:1px solid var(--cd);background:var(--white);border-radius:6px;padding:2px 6px;cursor:pointer;font-size:15px;">👩‍🎨</button>
+              <button type="button" onclick="setAvatarEmoji('👩')" style="border:1px solid var(--cd);background:var(--white);border-radius:6px;padding:2px 6px;cursor:pointer;font-size:15px;">👩</button>
+              <button type="button" onclick="setAvatarEmoji('🧕')" style="border:1px solid var(--cd);background:var(--white);border-radius:6px;padding:2px 6px;cursor:pointer;font-size:15px;">🧕</button>
+              <button type="button" onclick="setAvatarEmoji('👱‍♀️')" style="border:1px solid var(--cd);background:var(--white);border-radius:6px;padding:2px 6px;cursor:pointer;font-size:15px;">👱‍♀️</button>
+            </span>
+          </div>
         </div>
 
         <div class="form-field">
@@ -192,6 +209,7 @@
 <script>
 if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
 ShringarAdmin.paintAdminName();
+ShringarAdmin.paintAdminLogo();
 ShringarAdmin.paintActiveNav();
 const admin = ShringarAdmin.getAdmin();
 if (admin) document.getElementById('admin-avatar').textContent = (admin.firstName?.[0] || 'A').toUpperCase();
@@ -282,6 +300,11 @@ function renderTable() {
 }
 
 // ───────────────────────── Modal open/close ─────────────────────────
+
+function setAvatarEmoji(emoji) {
+  document.getElementById('f-avatar-emoji').value = emoji;
+  document.getElementById('avatar-preview').textContent = emoji;
+}
 
 function openCreateModal() {
   editingId = null;
@@ -438,25 +461,54 @@ async function saveArtist() {
   const name = document.getElementById('f-name').value.trim();
   const city = document.getElementById('f-city').value.trim();
   const email = document.getElementById('f-email').value.trim();
+  const specialization = document.getElementById('f-specialization').value.trim();
 
   if (!name || !city || !email) {
     errorEl.textContent = 'Please fill in Name, City and Email.';
     errorEl.style.display = 'block';
     return;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errorEl.textContent = 'Please enter a valid email address.';
+  if (!/^[A-Za-z][A-Za-z\s.'-]{1,59}$/.test(name)) {
+    errorEl.textContent = 'Artist name should contain only letters, spaces, and hyphens (e.g. "Sunita Verma").';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    errorEl.textContent = 'Please enter a valid email address (e.g. artist@shringar.in).';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (specialization && specialization.length < 3) {
+    errorEl.textContent = 'Specialization looks too short — describe it in a few words (e.g. "Bridal & Arabic").';
+    errorEl.style.display = 'block';
+    return;
+  }
+  const ratingVal = parseFloatOrNull('f-rating');
+  if (ratingVal !== null && (ratingVal < 0 || ratingVal > 5)) {
+    errorEl.textContent = 'Rating must be between 0 and 5.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  const reviewCountVal = parseIntOrNull('f-review-count');
+  if (reviewCountVal !== null && reviewCountVal < 0) {
+    errorEl.textContent = 'Review count cannot be negative.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  const experienceVal = parseIntOrNull('f-experience');
+  if (experienceVal !== null && (experienceVal < 0 || experienceVal > 60)) {
+    errorEl.textContent = 'Years of experience should be a realistic number (0–60).';
     errorEl.style.display = 'block';
     return;
   }
 
   const payload = {
     name,
-    specialization: document.getElementById('f-specialization').value.trim(),
+    specialization,
     city,
     serviceAreas: areasList,
-    rating: parseFloatOrNull('f-rating'),
-    reviewCount: parseIntOrNull('f-review-count'),
+    rating: ratingVal,
+    reviewCount: reviewCountVal,
     avatarEmoji: document.getElementById('f-avatar-emoji').value.trim() || '👩‍🎨',
     profileImageUrl,
     portfolioImageUrls,

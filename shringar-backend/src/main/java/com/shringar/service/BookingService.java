@@ -155,7 +155,11 @@ public class BookingService {
             throw new BadRequestException("Completed bookings cannot be cancelled");
         }
 
-        boolean freeCancellation = booking.canCancelFree();
+        if (!booking.canCancelFree()) {
+            throw new BadRequestException("The free cancellation window has expired (0 hours left). Cancellations can only be made while the timer is active.");
+        }
+
+        boolean freeCancellation = true;
 
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancelledAt(LocalDateTime.now());
@@ -197,11 +201,9 @@ public class BookingService {
             throw new BadRequestException("This booking cannot be rescheduled in its current status.");
         }
 
-        // Enforce a minimum notice period: customer must reschedule at least 24 hours ahead
-        LocalDateTime currentAppointmentStart = booking.getAppointmentDate().atTime(9, 0);
-        if (LocalDateTime.now().isAfter(currentAppointmentStart.minusHours(24))) {
-            throw new BadRequestException(
-                "Rescheduling is only possible up to 24 hours before your current appointment time.");
+        // Enforce the dynamic modification window
+        if (!booking.canCancelFree()) {
+            throw new BadRequestException("The rescheduling window has expired (0 hours left). Rescheduling can only be made while the timer is active.");
         }
 
         if (!request.getNewDate().isAfter(LocalDate.now())) {
@@ -252,6 +254,59 @@ public class BookingService {
         return toResponse(booking);
     }
 
+    /**
+     * Customer says they've paid the advance via UPI. This does NOT mark the
+     * booking as paid — it just flags it for the admin to manually verify
+     * against their own bank/UPI app and confirm. No payment gateway means no
+     * automatic verification, which is the trade-off of the zero-fee UPI path.
+     */
+    @Transactional
+    public BookingResponse submitUpiPayment(Long userId, Long bookingId, String transactionRef) {
+        Booking booking = bookingRepository.findByIdAndUserId(bookingId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        if (Boolean.TRUE.equals(booking.getIsAdvancePaid())) {
+            throw new BadRequestException("This booking's advance has already been confirmed as paid.");
+        }
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new BadRequestException("This booking has been cancelled.");
+        }
+
+        booking.setUpiPaymentSubmitted(true);
+        booking.setUpiTransactionRef(transactionRef != null && !transactionRef.isBlank() ? transactionRef.trim() : null);
+        booking.setUpiSubmittedAt(LocalDateTime.now());
+
+        bookingRepository.save(booking);
+        return toResponse(booking);
+    }
+
+    /**
+     * Admin has checked their own UPI app/bank statement and confirms the
+     * advance genuinely arrived. This is the manual equivalent of what a
+     * payment gateway's webhook would normally do automatically — fires the
+     * exact same booking-confirmed notifications as the Razorpay path so the
+     * customer, admin team, and assigned artist all still get notified.
+     */
+    @Transactional
+    public BookingResponse confirmUpiPayment(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        booking.setIsAdvancePaid(true);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        bookingRepository.save(booking);
+
+        // Force-initialize the lazy artist association inside this transaction —
+        // notifications fire on a separate async thread after this method returns.
+        if (booking.getArtist() != null) {
+            booking.getArtist().getName();
+        }
+
+        bookingNotificationService.notifyBookingConfirmed(booking);
+
+        return toResponse(booking);
+    }
+
     private BookingResponse toResponse(Booking b) {
         List<BookingItemResponse> items = b.getItems().stream()
                 .map(i -> BookingItemResponse.builder()
@@ -261,6 +316,13 @@ public class BookingService {
                         .price(i.getPriceAtBooking())
                         .build())
                 .toList();
+
+        LocalDateTime deadline = b.getCancellationDeadline();
+        Long remainingSeconds = null;
+        if (deadline != null) {
+            long secs = java.time.Duration.between(LocalDateTime.now(), deadline).getSeconds();
+            remainingSeconds = Math.max(0, secs);
+        }
 
         return BookingResponse.builder()
                 .id(b.getId())
@@ -282,7 +344,10 @@ public class BookingService {
                 .balanceAmount(b.getBalanceAmount())
                 .status(b.getStatus())
                 .isAdvancePaid(b.getIsAdvancePaid())
+                .upiPaymentSubmitted(b.getUpiPaymentSubmitted())
                 .canCancelFree(b.canCancelFree())
+                .cancellationDeadline(deadline)
+                .cancellationRemainingSeconds(remainingSeconds)
                 .customerConfirmedCompletion(b.getCustomerConfirmedCompletion())
                 .designerConfirmedCompletion(b.getDesignerConfirmedCompletion())
                 .fulfillmentRating(b.getFulfillmentRating())

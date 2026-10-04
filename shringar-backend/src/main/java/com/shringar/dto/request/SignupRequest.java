@@ -13,7 +13,6 @@ public class SignupRequest {
 
     private String lastName;
 
-    @NotBlank(message = "Phone number is required")
     private String phone;
 
     @Email(message = "Enter a valid email")

@@ -122,7 +122,179 @@ const Shringar = (() => {
   const Auth = {
     signup: (data) => post('/auth/signup', data, false),
     login: (identifier, password) => post('/auth/login', { identifier, password }, false),
+    phoneLogin: (phone, code, firstName) => post('/auth/phone-login', { phone, code, firstName }, false),
     me: () => get('/users/me'),
+    checkExists: (data) => post('/auth/check-exists', data, false),
+    sendOtp: (identifier, channel, forSignup = false) => post('/auth/send-otp', { identifier, channel, forSignup: String(forSignup) }, false),
+    verifyOtp: (identifier, channel, code) => post('/auth/verify-otp', { identifier, channel, code }, false),
+    confirmFirebasePhone: (phone) => post('/auth/confirm-firebase-phone', { phone }, false),
+    sendPhoneOtpToEmail: (phone, email, forSignup = false) => post('/auth/send-phone-otp-to-email', { phone, email, forSignup: String(forSignup) }, false),
+    forgotPassword: (identifier) => post('/auth/forgot-password', { identifier }, false),
+    resetPassword: (identifier, code, newPassword) => post('/auth/reset-password', { identifier, code, newPassword }, false),
+  };
+
+  const Favorites = {
+    KEY: 'shringar_favorites_v2',
+    getAll: () => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(Favorites.KEY) || localStorage.getItem('shringar_favorites') || '[]');
+        return raw.map(item => typeof item === 'object' && item !== null ? item : { id: Number(item) });
+      } catch {
+        return [];
+      }
+    },
+    has: (id) => {
+      const targetId = Number(id);
+      return Favorites.getAll().some(item => Number(item.id) === targetId);
+    },
+    toggle: (itemOrId) => {
+      let item = typeof itemOrId === 'object' && itemOrId !== null ? { ...itemOrId } : { id: Number(itemOrId) };
+      item.id = Number(item.id);
+      let list = Favorites.getAll();
+      const idx = list.findIndex(i => Number(i.id) === item.id);
+      let added = false;
+      if (idx > -1) {
+        list.splice(idx, 1);
+        added = false;
+        toast('🤍 Removed from saved favorites', 'info');
+      } else {
+        list.push(item);
+        added = true;
+        toast('❤️ Saved to your favorites!', 'success');
+      }
+      localStorage.setItem(Favorites.KEY, JSON.stringify(list));
+      Favorites.updateBadges();
+      Favorites.renderModalContent();
+
+      // Trigger smooth pulse transition on heart buttons
+      try {
+        document.querySelectorAll(`[data-fav-id="${item.id}"], .fav-btn[data-id="${item.id}"]`).forEach(btn => {
+          btn.classList.add('heart-pop');
+          setTimeout(() => btn.classList.remove('heart-pop'), 450);
+        });
+      } catch (e) {}
+
+      return added;
+    },
+    remove: (id) => {
+      const targetId = Number(id);
+      let list = Favorites.getAll().filter(i => Number(i.id) !== targetId);
+      localStorage.setItem(Favorites.KEY, JSON.stringify(list));
+      Favorites.updateBadges();
+      Favorites.renderModalContent();
+      toast('🤍 Removed from saved favorites', 'info');
+    },
+    clear: () => {
+      localStorage.removeItem(Favorites.KEY);
+      localStorage.removeItem('shringar_favorites');
+      Favorites.updateBadges();
+      Favorites.renderModalContent();
+      toast('Favorites list cleared', 'info');
+    },
+    count: () => Favorites.getAll().length,
+    updateBadges: () => {
+      const c = Favorites.count();
+      document.querySelectorAll('.fav-badge').forEach(b => {
+        b.textContent = c;
+        b.style.display = c > 0 ? 'inline-flex' : 'none';
+      });
+      document.querySelectorAll('.fav-count').forEach(b => {
+        b.textContent = c;
+      });
+      document.querySelectorAll('[data-fav-id]').forEach(btn => {
+        const dId = Number(btn.getAttribute('data-fav-id'));
+        const isFav = Favorites.has(dId);
+        btn.classList.toggle('favorited', isFav);
+        const icon = btn.querySelector('.fav-icon') || btn;
+        if (icon && icon.classList.contains('fav-icon')) {
+          icon.textContent = isFav ? '❤️' : '🤍';
+        } else if (icon === btn && !btn.querySelector('*')) {
+          btn.textContent = isFav ? '❤️' : '🤍';
+        }
+      });
+    },
+    openModal: () => {
+      let modal = document.getElementById('shringar-fav-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'shringar-fav-modal';
+        modal.className = 'fav-modal-overlay';
+        modal.innerHTML = `
+          <div class="fav-modal-drawer" role="dialog" aria-modal="true" aria-label="Saved Designs">
+            <div class="fav-modal-header">
+              <div class="fav-modal-title">
+                <span>🤍</span> Saved Designs
+                <span class="fav-count-pill" id="fav-modal-count">0</span>
+              </div>
+              <button class="fav-modal-close" onclick="Shringar.Favorites.closeModal()" aria-label="Close">✕</button>
+            </div>
+            <div class="fav-modal-body" id="fav-modal-list"></div>
+            <div class="fav-modal-footer" id="fav-modal-footer">
+              <button class="fav-btn-clear" onclick="Shringar.Favorites.clear()">Clear All</button>
+              <a href="index.html#designs-section" class="fav-btn-browse" onclick="Shringar.Favorites.closeModal()">Explore More</a>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) Favorites.closeModal();
+        });
+      }
+      Favorites.renderModalContent();
+      requestAnimationFrame(() => modal.classList.add('open'));
+      document.body.style.overflow = 'hidden';
+    },
+    closeModal: () => {
+      const modal = document.getElementById('shringar-fav-modal');
+      if (modal) {
+        modal.classList.remove('open');
+      }
+      document.body.style.overflow = '';
+    },
+    renderModalContent: () => {
+      const listEl = document.getElementById('fav-modal-list');
+      const countEl = document.getElementById('fav-modal-count');
+      const footerEl = document.getElementById('fav-modal-footer');
+      if (!listEl) return;
+      const items = Favorites.getAll();
+      if (countEl) countEl.textContent = items.length;
+      if (footerEl) footerEl.style.display = items.length > 0 ? 'flex' : 'none';
+
+      if (items.length === 0) {
+        listEl.innerHTML = `
+          <div class="fav-empty-state">
+            <div class="fav-empty-icon">🤍</div>
+            <h3>Your Favorites List is Empty</h3>
+            <p>Save your favorite mehendi designs by tapping the heart icon on any design card.</p>
+            <a href="index.html#designs-section" class="btn-gold" style="display:inline-block;padding:12px 28px;border-radius:24px;text-decoration:none;font-weight:600;font-size:13px;margin-top:10px;color:var(--td,#2a1a08);background:var(--gold,#c9a227);" onclick="Shringar.Favorites.closeModal()">Browse Designs</a>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = items.map(item => {
+        const title = item.name || `Design #${item.id}`;
+        const price = item.price || '';
+        const imgHtml = item.img 
+          ? `<img src="${item.img}" alt="${title}" class="fav-item-thumb" onerror="this.outerHTML='<span class=\\'fav-item-emoji\\'>${item.emoji || '🤲'}</span>'"/>`
+          : `<span class="fav-item-emoji">${item.emoji || '🤲'}</span>`;
+
+        return `
+          <div class="fav-item" id="fav-item-${item.id}">
+            <div class="fav-item-media">${imgHtml}</div>
+            <div class="fav-item-info">
+              <a href="design-detail.html?id=${item.id}" class="fav-item-title" onclick="Shringar.Favorites.closeModal()">${title}</a>
+              ${price ? `<div class="fav-item-price">${price}</div>` : ''}
+              <div class="fav-item-actions">
+                <a href="design-detail.html?id=${item.id}" class="fav-link-view" onclick="Shringar.Favorites.closeModal()">View Details</a>
+                <button class="fav-link-cart" onclick="Shringar.Cart.addItem(${item.id}, 1).then(() => { Shringar.toast('✅ Added to cart', 'success'); }).catch(e => Shringar.toast(e.message, 'error'))">+ Add to Cart</button>
+              </div>
+            </div>
+            <button class="fav-item-del" onclick="Shringar.Favorites.remove(${item.id})" title="Remove from favorites" aria-label="Remove">✕</button>
+          </div>
+        `;
+      }).join('');
+    }
   };
 
   const Designs = {
@@ -170,6 +342,7 @@ const Shringar = (() => {
     cancel: (id, reason) => patch(`/bookings/${id}/cancel`, { reason }),
     reschedule: (id, newDate, reason) => patch(`/bookings/${id}/reschedule`, { newDate, reason }),
     confirmFulfillment: (id, rating, feedback) => patch(`/bookings/${id}/confirm-fulfillment`, { rating, feedback }),
+    submitUpiPayment: (id, transactionRef) => patch(`/bookings/${id}/submit-upi-payment`, { transactionRef }),
   };
 
   const Public = {
@@ -181,6 +354,11 @@ const Shringar = (() => {
   const Payments = {
     createAdvanceOrder: (bookingId) => post(`/payments/advance-order/${bookingId}`, {}),
     verify: (payload) => post('/payments/verify', payload),
+  };
+
+  const Support = {
+    createConcern: (data) => post('/support/concerns', data, false),
+    myConcerns: (email) => get(email ? `/support/concerns/my?email=${encodeURIComponent(email)}` : '/support/concerns/my', false),
   };
 
   const Settings = {
@@ -225,12 +403,13 @@ const Shringar = (() => {
 
   function resolveUploadUrl(path) {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
+    if (path.startsWith('images/') || path.startsWith('./images/')) return path;
     const apiHost = API_BASE.replace(/\/api$/, '');
-    return apiHost + path;
+    return apiHost + (path.startsWith('/') ? path : '/' + path);
   }
 
-  /** Lightweight toast — used instead of alert() for non-blocking feedback */
+  /** Lightweight toast — supports types: 'success', 'error', 'info' */
   function toast(message, type = 'info') {
     let el = document.getElementById('shringar-toast');
     if (!el) {
@@ -239,11 +418,21 @@ const Shringar = (() => {
       el.style.cssText = `
         position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
         background:#493313;color:#fdf6ec;padding:13px 24px;border-radius:30px;
-        font-family:'Jost',sans-serif;font-size:13px;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.25);
-        opacity:0;transition:all 0.3s;max-width:90%;text-align:center;border:1px solid rgba(201,162,39,0.4);`;
+        font-family:'Jost',sans-serif;font-size:13.5px;font-weight:500;z-index:99999;box-shadow:0 8px 28px rgba(0,0,0,0.3);
+        opacity:0;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);max-width:90%;text-align:center;border:1px solid rgba(201,162,39,0.4);
+        pointer-events:none;`;
       document.body.appendChild(el);
     }
-    el.style.background = type === 'error' ? '#7a2c1a' : '#493313';
+    if (type === 'success') {
+      el.style.background = '#0f6e56';
+      el.style.borderColor = '#38a169';
+    } else if (type === 'error') {
+      el.style.background = '#7a2c1a';
+      el.style.borderColor = '#e53e3e';
+    } else {
+      el.style.background = '#493313';
+      el.style.borderColor = 'rgba(201,162,39,0.5)';
+    }
     el.textContent = message;
     requestAnimationFrame(() => {
       el.style.opacity = '1';
@@ -314,7 +503,7 @@ const Shringar = (() => {
       document.querySelectorAll('[data-contact="phone"]').forEach(el => {
         if (settings.contactPhone) {
           el.textContent = settings.contactPhone;
-          if (el.tagName === 'A' && el.getAttribute('href')?.startsWith('tel:')) {
+          if (el.tagName === 'A') {
             el.setAttribute('href', 'tel:' + settings.contactPhone.replace(/[^\d+]/g, ''));
           }
         }
@@ -322,7 +511,7 @@ const Shringar = (() => {
       document.querySelectorAll('[data-contact="email"]').forEach(el => {
         if (settings.contactEmail) {
           el.textContent = settings.contactEmail;
-          if (el.tagName === 'A' && el.getAttribute('href')?.startsWith('mailto:')) {
+          if (el.tagName === 'A') {
             el.setAttribute('href', 'mailto:' + settings.contactEmail);
           }
         }
@@ -344,9 +533,132 @@ const Shringar = (() => {
     }
   }
 
+  // ───────────────────────── Smooth Transitions & Motion System ─────────────────────────
+  const Transitions = {
+    init: () => {
+      // 1. Reading / Scroll Progress Bar
+      if (!document.getElementById('shringar-scroll-progress') && document.body) {
+        const bar = document.createElement('div');
+        bar.id = 'shringar-scroll-progress';
+        document.body.prepend(bar);
+
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+          if (!ticking) {
+            window.requestAnimationFrame(() => {
+              const max = document.documentElement.scrollHeight - window.innerHeight;
+              if (max > 120) {
+                const pct = Math.min(100, Math.max(0, (window.scrollY / max) * 100));
+                bar.style.width = pct + '%';
+                if (window.scrollY > 40) bar.classList.add('active');
+                else bar.classList.remove('active');
+              }
+              ticking = false;
+            });
+            ticking = true;
+          }
+        }, { passive: true });
+      }
+
+      // 2. IntersectionObserver for Smooth Scroll Reveal
+      Transitions.observeReveals();
+
+      // 3. Smooth page link transitions (progressive enhancement for browsers without native View Transitions)
+      if (!('startViewTransition' in document) && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && document.body) {
+        document.body.style.opacity = '1';
+        document.body.style.transition = 'opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1)';
+        document.addEventListener('click', (e) => {
+          const a = e.target.closest('a');
+          if (!a) return;
+          const href = a.getAttribute('href');
+          // Only transition internal same-origin pages, ignore hashes, scripts, tel/mail, target blank
+          if (href && !href.startsWith('#') && !href.startsWith('javascript') && !href.startsWith('mailto:') && !href.startsWith('tel:') && !a.target && !e.ctrlKey && !e.metaKey) {
+            try {
+              const url = new URL(a.href, window.location.href);
+              if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+                e.preventDefault();
+                document.body.style.opacity = '0';
+                setTimeout(() => {
+                  window.location.href = a.href;
+                }, 180);
+              }
+            } catch (err) {}
+          }
+        });
+      }
+    },
+
+    observeReveals: (container = document) => {
+      if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const targets = container.querySelectorAll(`
+          .design-card:not(.is-revealed), .artist-card:not(.is-revealed), .category-card:not(.is-revealed),
+          .testi-card:not(.is-revealed), .review-card:not(.is-revealed), .perk:not(.is-revealed),
+          .step-card:not(.is-revealed), .how-step:not(.is-revealed), .stat:not(.is-revealed),
+          .faq-item:not(.is-revealed), .location-card:not(.is-revealed), .order-card:not(.is-revealed),
+          .reveal-on-scroll:not(.is-revealed)
+        `);
+
+        // Index within each section to stagger children
+        const parents = new Map();
+        targets.forEach(el => {
+          const parent = el.parentElement;
+          if (parent) {
+            const count = parents.get(parent) || 0;
+            el.style.setProperty('--reveal-delay', Math.min(count, 8));
+            parents.set(parent, count + 1);
+          }
+        });
+
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-revealed');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, {
+          root: null,
+          rootMargin: '0px 0px -30px 0px',
+          threshold: 0.06
+        });
+
+        targets.forEach(el => revealObserver.observe(el));
+      } else {
+        container.querySelectorAll(`
+          .design-card, .artist-card, .category-card, .testi-card,
+          .review-card, .perk, .step-card, .how-step, .stat, .faq-item,
+          .location-card, .order-card, .reveal-on-scroll
+        `).forEach(el => el.classList.add('is-revealed'));
+      }
+    }
+  };
+
+  const Ai = {
+    /**
+     * Calls Gemini AI vision endpoint to analyze a hand photo for skin tone,
+     * undertone, hand shape, and personalized mehendi recommendations.
+     * @param {string} imageBase64 - Hand photo as data URL or base64 string
+     * @param {string} [manualTone] - Optional manual skin tone fallback
+     * @param {string} [apiKey] - Optional custom Gemini API key
+     */
+    async analyzeHand(imageBase64, manualTone = null, apiKey = null) {
+      const payload = {
+        image: imageBase64 || null,
+        manualTone: manualTone || null,
+        apiKey: apiKey || localStorage.getItem('shringar_gemini_key') || null
+      };
+      return await request('/ai/analyze-hand', {
+        method: 'POST',
+        body: payload,
+        auth: false
+      });
+    }
+  };
+
   return {
     API_BASE, getToken, setSession, getUser, clearSession, isLoggedIn, logout, requireAuth,
-    Auth, Designs, Cart, Cities, Artists, Bookings, Payments, Settings, Public,
+    Auth, Designs, Cart, Cities, Artists, Bookings, Payments, Settings, Public, Favorites, Support,
+    Ai, Transitions,
     paintAuthNav, toast, formatINR, youtubeEmbedUrl, renderYoutubeEmbed, paintSocialLinks,
     resolveUploadUrl
   };
@@ -355,4 +667,6 @@ const Shringar = (() => {
 document.addEventListener('DOMContentLoaded', () => {
   Shringar.paintAuthNav();
   Shringar.paintSocialLinks();
+  Shringar.Favorites.updateBadges();
+  Shringar.Transitions.init();
 });

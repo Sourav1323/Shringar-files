@@ -4,18 +4,28 @@
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
 <title>Coupons — Shringar Admin</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
 <link rel="stylesheet" href="css/admin.css"/>
 </head>
 <body>
 <div class="admin-shell">
   <aside class="sidebar">
-    <div class="sidebar-logo"><div><div class="sidebar-logo-text">✦ Shringar</div><div class="sidebar-logo-sub">Admin Portal</div></div></div>
+    <div class="sidebar-logo">
+      <img src="images/shringar-logo.png" class="sidebar-logo-img" alt="Logo" />
+      <div>
+        <div class="sidebar-logo-text">Shringar</div>
+        <div class="sidebar-logo-sub">Admin Portal</div>
+      </div>
+    </div>
     <nav class="sidebar-nav">
       <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
       <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
       <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
       <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
-      <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
+      <a href="concerns.html" class="nav-link" data-nav-link><span class="icon">🙋</span> Concerns</a>
+      <a href="feedback.html" class="nav-link" data-nav-link><span class="icon">💬</span> Feedback Inbox</a>
+      <a href="coupons.html" class="nav-link active" data-nav-link><span class="icon">🏷️</span> Coupons</a>
       <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
       <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
       <a href="settings.html" class="nav-link" data-nav-link><span class="icon">⚙️</span> Settings</a>
@@ -118,7 +128,8 @@
 <script src="js/admin-api-extra.js"></script>
 <script>
 if (!ShringarAdmin.requireAdmin()) throw new Error('redirect');
-ShringarAdmin.paintAdminName(); ShringarAdmin.paintActiveNav();
+ShringarAdmin.paintAdminName();
+ShringarAdmin.paintAdminLogo(); ShringarAdmin.paintActiveNav();
 document.getElementById('admin-avatar').textContent = (ShringarAdmin.getAdmin()?.firstName?.[0]||'A').toUpperCase();
 
 // Live preview

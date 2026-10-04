@@ -1,5 +1,6 @@
 package com.shringar.service.notification;
 
+import com.shringar.model.ArtistApplication;
 import com.shringar.model.Booking;
 
 /**
@@ -17,4 +18,19 @@ public interface EmailService {
     void sendBookingNotificationToArtist(Booking booking);
 
     void sendBookingCancellationToCustomer(Booking booking);
+
+    void sendArtistApplicationNotification(ArtistApplication application);
+
+    /** Synchronous (not @Async like the notifications above) — the caller needs to
+     *  know immediately whether the OTP actually went out before telling the user
+     *  "check your email". Returns false on any failure rather than throwing, so
+     *  OtpService can give a clean "couldn't send, try again" message. */
+    boolean sendOtpEmail(String toEmail, String otpCode);
+
+    boolean sendPasswordResetOtpEmail(String toEmail, String otpCode);
+
+    boolean sendPhoneOtpToEmail(String toEmail, String phone, String otpCode);
+
+    /** Returns true if a real SMTP server and credentials are configured (not dummy placeholders). */
+    boolean isConfigured();
 }

@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>My Orders — Shringar</title>
+<title>My Bookings & Orders — Shringar</title>
+<meta name="description" content="View and manage your upcoming, past, and completed mehendi appointments and bookings on Shringar."/>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="stylesheet" href="css/responsive.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400&family=Cinzel:wght@600&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--m:#493313;--ml:#6b4a1e;--mr:#7a2c1a;--cream:#fdf6ec;--cd:#f5e8d0;--cdd:#e8d0b0;--gold:#c9a227;--goldd:#a07e18;--td:#2a1a08;--tm:#5c3d1e;--tl:#8a6040;--white:#fff;--green:#0f6e56;--greenl:#e1f5ee;--red:#a32d2d;--redl:#fcebeb;}
+:root{--m:#493313;--ml:#6b4a1e;--mr:#7a2c1a;--cream:#fdf6ec;--cd:#f5e8d0;--cdd:#e8d0b0;--gold:#c9a227;--goldd:#a07e18;--td:#2a1a08;--tm:#5c3d1e;--tl:#3b2311;--white:#fff;--green:#0f6e56;--greenl:#e1f5ee;--red:#a32d2d;--redl:#fcebeb;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--td);}
 
 /* NAV */
-nav{background:var(--m);padding:0 5%;display:flex;justify-content:space-between;align-items:center;height:64px;position:sticky;top:0;z-index:100;}
+nav{background:var(--m);padding:0 5%;display:flex;justify-content:space-between;align-items:center;height:74px;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(201,162,39,0.25);box-shadow:0 4px 20px rgba(0,0,0,0.25);}
 .nav-logo{font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--cream);letter-spacing:0.06em;text-decoration:none;}
 .nav-logo span{font-family:'Jost',sans-serif;font-size:9px;display:block;letter-spacing:0.22em;color:rgba(253,246,236,0.5);text-transform:uppercase;}
 .nav-right{display:flex;gap:10px;align-items:center;}
@@ -21,15 +22,15 @@ nav{background:var(--m);padding:0 5%;display:flex;justify-content:space-between;
 /* PAGE */
 .page-shell{max-width:860px;margin:0 auto;padding:32px 5% 60px;}
 .page-header{display:flex;align-items:center;gap:16px;margin-bottom:28px;}
-.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1.5px solid var(--cd);border-radius:9px;font-family:'Jost',sans-serif;font-size:13px;color:var(--m);cursor:pointer;background:transparent;text-decoration:none;transition:all 0.2s;}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1.5px solid var(--cd);border-radius:9px;font-family:'Jost',sans-serif;font-size:14px;color:var(--m);cursor:pointer;background:transparent;text-decoration:none;transition:all 0.2s;}
 .back-btn:hover{border-color:var(--m);background:rgba(73,51,19,0.04);}
 .page-title{font-family:'Cinzel',Georgia,serif;font-size:24px;color:var(--td);}
-.page-sub{font-size:13px;color:var(--tl);margin-top:4px;}
+.page-sub{font-size:13.5px;color:var(--tl);margin-top:4px;}
 
 /* FILTER TABS */
 .filter-tabs{display:flex;gap:8px;margin-bottom:22px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
 .filter-tabs::-webkit-scrollbar{display:none;}
-.filter-tab{padding:9px 18px;border:1.5px solid var(--cd);border-radius:20px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;background:var(--white);color:var(--tm);transition:all 0.2s;flex-shrink:0;}
+.filter-tab{padding:9px 18px;border:1.5px solid var(--cd);border-radius:20px;font-family:'Jost',sans-serif;font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap;background:var(--white);color:var(--tm);transition:all 0.2s;flex-shrink:0;}
 .filter-tab:hover{border-color:var(--m);}
 .filter-tab.active{background:var(--m);color:var(--cream);border-color:var(--m);}
 
@@ -38,21 +39,21 @@ nav{background:var(--m);padding:0 5%;display:flex;justify-content:space-between;
 .order-card:hover{box-shadow:0 4px 20px rgba(73,51,19,0.08);}
 
 .order-card-header{padding:16px 20px;border-bottom:1px solid var(--cd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
-.order-ref{font-family:monospace;font-size:13px;font-weight:700;color:var(--m);letter-spacing:0.04em;}
-.order-date-chip{font-size:12px;color:var(--tl);background:var(--cream);padding:5px 12px;border-radius:20px;border:1px solid var(--cd);}
+.order-ref{font-family:monospace;font-size:13.5px;font-weight:700;color:var(--m);letter-spacing:0.04em;}
+.order-date-chip{font-size:14px;color:var(--tl);background:var(--cream);padding:5px 12px;border-radius:20px;border:1px solid var(--cd);}
 
 .order-card-body{padding:16px 20px;}
 .order-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
 .order-info{flex:1;}
-.order-designs{font-size:14px;font-weight:600;color:var(--td);margin-bottom:4px;}
-.order-location{font-size:12.5px;color:var(--tl);}
-.order-artist{font-size:12.5px;color:var(--tl);margin-top:3px;}
+.order-designs{font-size:15px;font-weight:600;color:var(--td);margin-bottom:4px;}
+.order-location{font-size:13.5px;color:var(--tl);}
+.order-artist{font-size:13.5px;color:var(--tl);margin-top:3px;}
 .order-amounts{text-align:right;flex-shrink:0;}
 .order-total{font-size:18px;font-weight:700;font-family:'Cinzel',Georgia,serif;color:var(--td);}
-.order-advance-label{font-size:11.5px;color:var(--tl);margin-top:3px;}
+.order-advance-label{font-size:13.5px;color:var(--tl);margin-top:3px;}
 
 /* STATUS BADGES */
-.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:0.02em;}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:0.02em;}
 .badge-confirmed{background:var(--greenl);color:var(--green);}
 .badge-pending{background:#fdf0db;color:#7a5000;}
 .badge-completed{background:#e8f4fd;color:#1a5f8a;}
@@ -117,12 +118,53 @@ nav{background:var(--m);padding:0 5%;display:flex;justify-content:space-between;
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo">✦ Shringar<span>मेहंदी कला</span></a>
-  <div class="nav-right">
-    <a href="cart.html" class="nav-icon">🛒</a>
-    <a href="profile.html" class="nav-icon" data-auth-icon>👤</a>
+  <a href="index.html" id="site-logo-link" style="display:flex;align-items:center;gap:14px;text-decoration:none;" title="Shringar — Luxury Mehendi Art">
+    <img src="images/shringar-logo.png" alt="Shringar Logo" style="width:58px;height:58px;border-radius:50%;object-fit:cover;border:2.5px solid #ffd700;box-shadow:0 0 16px rgba(255,215,0,0.65);flex-shrink:0;" />
+    <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;">
+      <span style="font-family:'Cinzel Decorative','Cinzel','Playfair Display',Georgia,serif;font-size:20px;color:#ffd700;font-weight:700;letter-spacing:0.12em;text-shadow:0 2px 8px rgba(0,0,0,0.6);">SHRINGAR</span>
+      <span style="font-size:11.5px;letter-spacing:0.24em;text-transform:uppercase;color:#fdf6ec;font-weight:600;opacity:0.9;">Luxury Mehendi Art</span>
+    </div>
+  </a>
+  <div class="nav-right nav-right-icons">
+    <button class="nav-fav-btn" onclick="Shringar.Favorites.openModal()" title="Saved Favorites" aria-label="Saved Designs">🤍<span class="fav-badge">0</span></button>
+    <a href="cart.html" class="nav-icon" title="Cart">🛒</a>
+    <a href="profile.html" class="nav-icon" data-auth-icon title="Account">👤</a>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
+
+<div class="mobile-menu" id="mobile-menu">
+  <a href="index.html"><span style="font-size:18px;">🏠</span> Home</a>
+  <a href="cart.html"><span style="font-size:18px;">🛒</span> Cart</a>
+  <a href="javascript:void(0)" onclick="Shringar.Favorites.openModal()"><span style="font-size:18px;">🤍</span> Saved Designs (<span class="fav-count">0</span>)</a>
+  <div class="menu-divider"></div>
+  <a href="booking.html"><span style="font-size:18px;">📅</span> Book a Design</a>
+  <a href="orders.html"><span style="font-size:18px;">📋</span> My Bookings</a>
+  <a href="help.html"><span style="font-size:18px;">❓</span> Help & Support</a>
+  <div class="menu-divider"></div>
+  <a href="login.html" id="mobile-auth-link"><span style="font-size:18px;">👤</span> Sign In</a>
+</div>
+<script>
+function toggleMobileMenu() {
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('mobile-menu');
+  if (!btn || !menu) return;
+  btn.classList.toggle('open');
+  menu.classList.toggle('open');
+  document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+}
+document.querySelectorAll('.mobile-menu a').forEach(function(a) {
+  a.addEventListener('click', function() {
+    var btn = document.getElementById('hamburger-btn');
+    var menu = document.getElementById('mobile-menu');
+    if (btn) btn.classList.remove('open');
+    if (menu) menu.classList.remove('open');
+    document.body.style.overflow = '';
+  });
+});
+</script>
 
 <div class="page-shell">
 
@@ -246,10 +288,13 @@ function renderOrders() {
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="icon">📦</div>
-        <h3>No orders found</h3>
-        <p>${currentFilter === 'all' ? "You haven't placed any bookings yet." : "No bookings match this filter."}</p>
-        <a href="booking.html" class="btn-sm btn-gold">📅 Book an Appointment</a>
+        <div class="icon">📅</div>
+        <h3>${currentFilter === 'all' ? "No Bookings Yet" : "No Matching Bookings"}</h3>
+        <p>${currentFilter === 'all' ? "You haven't booked any mehendi appointments yet. Explore our handcrafted designs or schedule an artist for your upcoming event." : "No appointments match this filter. Try selecting 'All' to see all your bookings."}</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+          <a href="index.html#designs-section" class="btn-sm btn-gold">🎨 Explore Designs</a>
+          <a href="booking.html" class="btn-sm btn-outline">📅 Book an Appointment</a>
+        </div>
       </div>`;
     return;
   }
@@ -259,7 +304,8 @@ function renderOrders() {
 
 function renderOrderCard(o) {
   const upcoming = isFuture(o);
-  const canAction = upcoming && ['CONFIRMED','PENDING','RESCHEDULED'].includes(o.status);
+  const canAction = upcoming && ['CONFIRMED','PENDING','RESCHEDULED'].includes(o.status) && !!o.canCancelFree;
+  const cancelClosed = upcoming && ['CONFIRMED','PENDING','RESCHEDULED'].includes(o.status) && !o.canCancelFree;
   const needsConfirm = !upcoming && o.status !== 'CANCELLED' && o.status !== 'COMPLETED' && !o.customerConfirmedCompletion;
   const alreadyConfirmed = o.customerConfirmedCompletion;
   const designs = (o.items || []).map(i => (i.emojiIcon || '🤲') + ' ' + i.designName).join(', ') || 'Mehendi appointment';
@@ -298,12 +344,13 @@ function renderOrderCard(o) {
         <div class="footer-status">
           ${upcoming ? `<span style="color:var(--green);">🟢 Upcoming appointment</span>` : `<span style="color:var(--tl);">Past appointment</span>`}
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <a href="order.html?ref=${encodeURIComponent(o.bookingReference)}" class="btn-sm btn-outline">View Details</a>
           ${canAction ? `
             <button class="btn-sm btn-outline" onclick="openReschedule(${o.id},'${o.appointmentDate}')">📅 Reschedule</button>
-            <button class="btn-danger-sm" onclick="openCancel(${o.id},'${o.bookingReference}',${!!o.canCancelFree})">✕ Cancel</button>
+            <button class="btn-danger-sm" onclick="openCancel(${o.id},'${o.bookingReference}',${o.advanceAmount||0})">✕ Cancel</button>
           ` : ''}
+          ${cancelClosed ? `<span style="font-size:11.5px;color:var(--tl);padding:4px 8px;background:var(--cream);border-radius:6px;">🔒 Cancel window closed</span>` : ''}
         </div>
       </div>
     </div>`;
@@ -418,12 +465,10 @@ async function submitReschedule() {
 
 let cancelBookingId = null;
 
-function openCancel(id, ref, canFree) {
+function openCancel(id, ref, advAmount) {
   cancelBookingId = id;
   const sub = document.getElementById('cancel-modal-sub');
-  sub.textContent = canFree
-    ? `Cancelling "${ref}" will trigger a full refund of your advance to your original payment method (5–7 working days).`
-    : `Your appointment is within 48 hours. Your advance is non-refundable as per our cancellation policy. Are you sure?`;
+  sub.textContent = `Cancelling "${ref}" while your free cancellation timer is active (hours left) will trigger a 100% full refund of your advance (${Shringar.formatINR(advAmount || 0)}) to your original payment method.`;
   document.getElementById('cancel-modal').classList.add('open');
 }
 

@@ -133,6 +133,7 @@ const ShringarAdmin = (() => {
   const Auth = {
     /** Same /auth/login the customer site uses — we just check role === 'ADMIN' on the response. */
     login: (identifier, password) => request('/auth/login', { method: 'POST', body: { identifier, password }, auth: false }),
+    signupAdmin: (data) => request('/auth/signup-admin', { method: 'POST', body: data, auth: false }),
   };
 
   // ───────────────────────── Dashboard ─────────────────────────
@@ -142,6 +143,7 @@ const ShringarAdmin = (() => {
     popularDesigns: () => get('/admin/dashboard/popular-designs'),
     orders: (page = 0, size = 20, status = null) =>
       get(`/admin/dashboard/orders?page=${page}&size=${size}` + (status ? `&status=${status}` : '')),
+    confirmUpiPayment: (id) => request(`/admin/dashboard/orders/${id}/confirm-upi-payment`, { method: 'PATCH' }),
   };
 
   // ───────────────────────── Cities (read-only, for area-name suggestions) ─────────────────────────
@@ -290,10 +292,25 @@ const ShringarAdmin = (() => {
     });
   }
 
+  /** Swaps the default ✦ Shringar text mark for an uploaded logo, if Settings → Branding
+   *  has one set. Fails silently (keeps the default text mark) — this must never block
+   *  a page from rendering. */
+  async function paintAdminLogo() {
+    try {
+      const settings = await request('/admin/settings');
+      if (settings && settings.logoUrl) {
+        const url = resolveUploadUrl(settings.logoUrl);
+        document.querySelectorAll('.sidebar-logo').forEach(el => {
+          el.innerHTML = `<img src="${url}" alt="Shringar" style="height:34px;max-width:170px;object-fit:contain;"/>`;
+        });
+      }
+    } catch { /* non-critical */ }
+  }
+
   return {
     API_BASE, getToken, setSession, getAdmin, clearSession, isLoggedIn, logout, requireAdmin,
     Auth, Dashboard, Cities, Designs, Artists, uploadImage, resolveUploadUrl,
-    toast, formatINR, formatDate, paintAdminName, paintActiveNav
+    toast, formatINR, formatDate, paintAdminName, paintActiveNav, paintAdminLogo
   };
 })();
 

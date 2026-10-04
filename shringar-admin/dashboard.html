@@ -6,6 +6,8 @@
 <meta http-equiv="Expires" content="0"/>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Dashboard — Shringar Admin</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
 <link rel="stylesheet" href="css/admin.css"/>
 </head>
 <body>
@@ -14,8 +16,9 @@
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
+      <img src="images/shringar-logo.png" class="sidebar-logo-img" alt="Logo" />
       <div>
-        <div class="sidebar-logo-text">✦ Shringar</div>
+        <div class="sidebar-logo-text">Shringar</div>
         <div class="sidebar-logo-sub">Admin Portal</div>
       </div>
     </div>
@@ -24,6 +27,8 @@
       <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
       <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
       <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
+      <a href="concerns.html" class="nav-link" data-nav-link><span class="icon">🙋</span> Concerns</a>
+      <a href="feedback.html" class="nav-link" data-nav-link><span class="icon">💬</span> Feedback Inbox</a>
       <a href="coupons.html" class="nav-link" data-nav-link><span class="icon">🏷️</span> Coupons</a>
       <a href="locations.html" class="nav-link" data-nav-link><span class="icon">📍</span> Locations</a>
       <a href="testimonials.html" class="nav-link" data-nav-link><span class="icon">⭐</span> Testimonials</a>
@@ -100,6 +105,7 @@
 if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
 
 ShringarAdmin.paintAdminName();
+ShringarAdmin.paintAdminLogo();
 ShringarAdmin.paintActiveNav();
 
 const admin = ShringarAdmin.getAdmin();

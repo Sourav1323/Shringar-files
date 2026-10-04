@@ -81,6 +81,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/ai/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/designs/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/designs/*/click").permitAll()
                 .requestMatchers(HttpMethod.GET, "/cities/**").permitAll()
@@ -88,8 +89,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/settings").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/public/artist-applications").permitAll()
                 .requestMatchers(HttpMethod.GET, "/coupons/public").permitAll()
                 .requestMatchers(HttpMethod.GET, "/testimonials").permitAll()
+                .requestMatchers("/support/**").permitAll()
                 .requestMatchers("/payments/webhook").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Admin-only

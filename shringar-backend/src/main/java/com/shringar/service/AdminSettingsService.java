@@ -27,6 +27,11 @@ public class AdminSettingsService {
         SiteSettings s = getSettings();
 
         // ── Social / Contact ──
+        if (updates.containsKey("upiId")) s.setUpiId((String) updates.get("upiId"));
+        if (updates.containsKey("upiPayeeName")) s.setUpiPayeeName((String) updates.get("upiPayeeName"));
+        if (updates.containsKey("upiQrImageUrl")) s.setUpiQrImageUrl((String) updates.get("upiQrImageUrl"));
+        if (updates.containsKey("logoUrl")) s.setLogoUrl((String) updates.get("logoUrl"));
+        if (updates.containsKey("heroBannerImageUrl")) s.setHeroBannerImageUrl((String) updates.get("heroBannerImageUrl"));
         if (updates.containsKey("instagramHandle")) s.setInstagramHandle((String) updates.get("instagramHandle"));
         if (updates.containsKey("instagramUrl"))    s.setInstagramUrl((String) updates.get("instagramUrl"));
         if (updates.containsKey("youtubeChannelUrl")) s.setYoutubeChannelUrl((String) updates.get("youtubeChannelUrl"));

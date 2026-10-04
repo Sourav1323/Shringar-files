@@ -83,4 +83,18 @@ public class BookingController {
         BookingResponse booking = bookingService.customerConfirmFulfillment(currentUser.getCurrentUserId(), id, rating, feedback);
         return ResponseEntity.ok(ApiResponse.success("Thank you for confirming!", booking));
     }
+
+    /**
+     * PATCH /api/bookings/{id}/submit-upi-payment
+     * Customer has paid via UPI directly (no gateway) and is flagging it for
+     * admin verification. body: { "transactionRef": "..." } — optional UTR/reference.
+     */
+    @PatchMapping("/{id}/submit-upi-payment")
+    public ResponseEntity<ApiResponse<BookingResponse>> submitUpiPayment(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, Object> body) {
+        String transactionRef = body != null ? (String) body.get("transactionRef") : null;
+        BookingResponse booking = bookingService.submitUpiPayment(currentUser.getCurrentUserId(), id, transactionRef);
+        return ResponseEntity.ok(ApiResponse.success("Payment submitted — we'll confirm it shortly", booking));
+    }
 }

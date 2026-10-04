@@ -13,4 +13,12 @@ public interface SmsService {
      * @param message       plain-text SMS body, keep under ~300 chars
      */
     void sendSms(String toPhoneNumber, String message);
+
+    /**
+     * Sends a 6-digit OTP code synchronously and returns true if accepted by the provider.
+     */
+    boolean sendOtpSms(String toPhoneNumber, String code);
+
+    /** Returns true if a real SMS provider is enabled and configured. */
+    boolean isConfigured();
 }
