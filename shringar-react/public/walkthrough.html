@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shringar (शृंगार) — Codebase Architecture & React Masterclass</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.85); }
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #ffd700 0%, #ffae19 50%, #fef08a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c9a227;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-4 md:p-8 custom-scrollbar">
+
+  <!-- Header Banner -->
+  <header class="max-w-6xl mx-auto mb-8 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-amber-900/40 pb-6">
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-full border-2 border-amber-400 p-1 flex items-center justify-center bg-red-950/80 shadow-lg shadow-amber-500/20">
+        <span class="text-2xl">✨</span>
+      </div>
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-wide gold-gradient-text">
+          SHRINGAR (शृंगार) ARCHITECTURE TOUR
+        </h1>
+        <p class="text-sm text-amber-200/70">Interactive Video & Codebase Masterclass • Spring Boot, MySQL & React Roadmap</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-700/60">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Backend Connected
+      </span>
+      <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60">
+        Java 21 • Spring Boot 3.2
+      </span>
+    </div>
+  </header>
+
+  <!-- Video Player Section -->
+  <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Screen & Controls (2 Cols) -->
+    <div class="lg:col-span-2 flex flex-col gap-4">
+      
+      <!-- Video Screen Frame -->
+      <div class="relative w-full aspect-video bg-gradient-to-br from-slate-900 via-slate-950 to-neutral-900 rounded-2xl border-2 border-amber-600/40 overflow-hidden shadow-2xl flex flex-col justify-between p-6">
+        
+        <!-- Screen Top Bar -->
+        <div class="flex items-center justify-between z-10">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-red-500"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            <span id="scene-tag" class="ml-2 text-xs font-mono uppercase px-2.5 py-0.5 rounded bg-black/60 border border-amber-500/30 text-amber-300">
+              Chapter 1 of 5
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400 font-mono">
+            <span id="rec-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span>VIDEO WALKTHROUGH</span>
+          </div>
+        </div>
+
+        <!-- Video Scene Content -->
+        <div id="video-content" class="my-auto z-10 transition-all duration-500 transform">
+          <!-- Dynamic Content rendered via JS -->
+        </div>
+
+        <!-- Captions / Voice Subtitles -->
+        <div class="z-10 bg-black/85 backdrop-blur-md rounded-xl p-3 border border-amber-500/30 text-center">
+          <p id="caption-text" class="text-sm font-medium text-amber-100 tracking-wide leading-relaxed">
+            Welcome to the Shringar platform architecture walkthrough. Let's explore how every layer functions.
+          </p>
+        </div>
+
+        <!-- Ambient Video Glow Effect -->
+        <div class="absolute inset-0 bg-radial from-amber-500/5 via-transparent to-transparent pointer-events-none"></div>
+      </div>
+
+      <!-- Video Player Control Bar -->
+      <div class="bg-slate-900/90 border border-amber-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-lg">
+        
+        <!-- Timeline Progress Bar -->
+        <div class="flex items-center gap-3">
+          <span id="time-current" class="text-xs font-mono text-amber-400">00:00</span>
+          <div class="relative flex-1 h-2 bg-slate-800 rounded-full overflow-hidden cursor-pointer" id="progress-bar-container" onclick="seekByClick(event)">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full transition-all duration-300" style="width: 20%;"></div>
+          </div>
+          <span id="time-total" class="text-xs font-mono text-slate-400">05:00</span>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <button onclick="prevChapter()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 transition">
+              ⏮ Prev
+            </button>
+            <button id="play-btn" onclick="togglePlay()" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-md transition">
+              <span id="play-icon">▶</span> <span id="play-text">Play & Narrate</span>
+            </button>
+            <button onclick="nextChapter()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 transition">
+              Next ⏭
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <!-- Voice Audio Toggle -->
+            <button id="voice-btn" onclick="toggleVoice()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold flex items-center gap-1.5 border border-amber-500/20 transition">
+              🔊 Voice: <span id="voice-status">ON</span>
+            </button>
+            <!-- Speed Selector -->
+            <select id="speed-select" onchange="changeSpeed(this.value)" class="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 outline-none">
+              <option value="1">1.0x Speed</option>
+              <option value="1.25">1.25x Speed</option>
+              <option value="1.5">1.5x Speed</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Right Sidebar: Chapters & Navigation -->
+    <div class="flex flex-col gap-4">
+      <div class="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-5 shadow-xl flex flex-col h-full">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
+          <span>📑</span> Video Chapters
+        </h3>
+        
+        <div class="flex flex-col gap-2.5 overflow-y-auto max-h-[460px] pr-1 custom-scrollbar" id="chapter-list">
+          <!-- Dynamic Chapter Buttons -->
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400 leading-relaxed">
+          💡 Click any chapter to jump directly to that explanation. Turn on <strong class="text-amber-300">Voice Narration</strong> to listen to the speech walkthrough.
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Deep Dive Educational Sections -->
+  <section class="max-w-6xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+
+    <!-- Card 1: Why Entity vs Model -->
+    <div class="bg-slate-900/80 border border-amber-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="flex items-center gap-3 mb-4">
+        <span class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-xl">🏛️</span>
+        <div>
+          <h2 class="text-lg font-bold text-amber-300">Why are Entities inside "model/"?</h2>
+          <p class="text-xs text-slate-400">Package Naming Convention Clarification</p>
+        </div>
+      </div>
+      <p class="text-sm text-slate-300 leading-relaxed mb-4">
+        In Spring Boot and Enterprise Java architectures, <strong><code class="text-amber-300">model</code></strong> and <strong><code class="text-amber-300">entity</code></strong> are two names for the <em>exact same architectural layer</em> (the Domain Layer).
+      </p>
+      <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-300 mb-4">
+        <div class="text-amber-400 font-bold mb-2">📁 shringar-backend/src/main/java/com/shringar/model/</div>
+        <div class="grid grid-cols-2 gap-2 text-slate-400">
+          <div>• User.java (@Entity)</div>
+          <div>• Booking.java (@Entity)</div>
+          <div>• Design.java (@Entity)</div>
+          <div>• Artist.java (@Entity)</div>
+          <div>• Coupon.java (@Entity)</div>
+          <div>• CustomerConcern.java</div>
+          <div>• Cart.java (@Entity)</div>
+          <div>• Payment.java (@Entity)</div>
+        </div>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Every class in <code class="text-amber-300">com.shringar.model</code> has the <code>@Entity</code> and <code>@Table</code> annotations and maps directly to MySQL database tables. If you prefer the folder to be named <code>entity/</code>, we can rename the package with zero disruption.
+      </p>
+    </div>
+
+    <!-- Card 2: End-to-End Execution Flow -->
+    <div class="bg-slate-900/80 border border-amber-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="flex items-center gap-3 mb-4">
+        <span class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-xl">⚡</span>
+        <div>
+          <h2 class="text-lg font-bold text-emerald-300">How Functions Are Made & Run</h2>
+          <p class="text-xs text-slate-400">Full Request-Response Lifecycle Flow</p>
+        </div>
+      </div>
+      
+      <div class="space-y-3 text-xs">
+        <div class="flex items-start gap-3 bg-slate-950/70 p-3 rounded-lg border border-slate-800">
+          <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold flex-shrink-0">1</span>
+          <div>
+            <strong class="text-slate-200">Browser / UI Trigger:</strong>
+            <p class="text-slate-400">User clicks button (e.g. "Send OTP" or "Create Booking"). JavaScript dispatches an asynchronous <code class="text-amber-300">fetch('/api/auth/signup')</code> request.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 bg-slate-950/70 p-3 rounded-lg border border-slate-800">
+          <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold flex-shrink-0">2</span>
+          <div>
+            <strong class="text-slate-200">Security Filter Gate:</strong>
+            <p class="text-slate-400"><code class="text-amber-300">JwtAuthFilter</code> intercepts the HTTP header. If it's a protected route like <code class="text-amber-300">/admin/**</code>, it verifies the JWT signature and extracts the user's role.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 bg-slate-950/70 p-3 rounded-lg border border-slate-800">
+          <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold flex-shrink-0">3</span>
+          <div>
+            <strong class="text-slate-200">Controller -> Service -> Repository:</strong>
+            <p class="text-slate-400"><code class="text-amber-300">AuthController</code> receives DTO, calls <code class="text-amber-300">AuthService</code> for business validation, and uses <code class="text-amber-300">UserRepository</code> (Spring Data JPA) to execute SQL queries on MySQL.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- React Modernization Blueprint Section -->
+  <section class="max-w-6xl mx-auto mt-12 bg-slate-900/90 border border-amber-500/30 rounded-2xl p-8 shadow-2xl">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-800">
+      <div>
+        <h2 class="text-xl font-bold text-amber-300 flex items-center gap-2">
+          <span>⚛️</span> Professional React Modernization Blueprint
+        </h2>
+        <p class="text-sm text-slate-400 mt-1">Transforming Multi-Page Vanilla HTML into a Modern, High-Performance React App</p>
+      </div>
+      <span class="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
+        Vite + React 18/19 + Tailwind CSS + Lucide
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <div class="bg-slate-950/80 p-5 rounded-xl border border-slate-800">
+        <div class="text-amber-400 font-bold text-sm mb-2 flex items-center gap-2">
+          <span>📁</span> Component Hierarchy
+        </div>
+        <ul class="text-xs text-slate-300 space-y-2">
+          <li>• <code class="text-amber-300">&lt;Navbar /&gt;</code> & <code class="text-amber-300">&lt;Footer /&gt;</code> (Shared luxury branding)</li>
+          <li>• <code class="text-amber-300">&lt;HeroBanner /&gt;</code> with smooth parallax</li>
+          <li>• <code class="text-amber-300">&lt;DesignCard /&gt;</code> (Price, duration, cone tags)</li>
+          <li>• <code class="text-amber-300">&lt;AiTryOnModal /&gt;</code> (Gemini camera upload)</li>
+          <li>• <code class="text-amber-300">&lt;BookingWizard /&gt;</code> (4-step checkout flow)</li>
+        </ul>
+      </div>
+
+      <div class="bg-slate-950/80 p-5 rounded-xl border border-slate-800">
+        <div class="text-cyan-400 font-bold text-sm mb-2 flex items-center gap-2">
+          <span>🔄</span> State Management
+        </div>
+        <ul class="text-xs text-slate-300 space-y-2">
+          <li>• <strong class="text-slate-100">AuthContext:</strong> JWT token, user profile, role guard (Admin vs Customer).</li>
+          <li>• <strong class="text-slate-100">CartContext:</strong> Persistent cart state, promo coupons, live total.</li>
+          <li>• <strong class="text-slate-100">TanStack Query:</strong> Auto-caching & background refetching for design catalog.</li>
+        </ul>
+      </div>
+
+      <div class="bg-slate-950/80 p-5 rounded-xl border border-slate-800">
+        <div class="text-emerald-400 font-bold text-sm mb-2 flex items-center gap-2">
+          <span>✨</span> Professional UX Benefits
+        </div>
+        <ul class="text-xs text-slate-300 space-y-2">
+          <li>• <strong class="text-slate-100">Zero Page Reloads:</strong> Instant seamless navigation via React Router.</li>
+          <li>• <strong class="text-slate-100">Rich UI Feedback:</strong> Toast notifications, skeleton loaders, and Framer Motion transitions.</li>
+          <li>• <strong class="text-slate-100">Type-Safe Clean Code:</strong> Modular, maintainable components ready for enterprise scale.</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Interactive JavaScript Video Logic -->
+  <script>
+    const CHAPTERS = [
+      {
+        id: 0,
+        title: "1. Platform Overview & Tech Stack",
+        duration: "01:00",
+        tag: "Chapter 1 of 5",
+        caption: "Shringar is an enterprise bridal Mehendi platform running Java 21, Spring Boot 3.2, and MySQL on the backend, with responsive web clients.",
+        html: `
+          <div class="flex flex-col items-center justify-center text-center p-4">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-400 flex items-center justify-center text-3xl mb-4 shadow-lg shadow-amber-500/30">
+              💎
+            </div>
+            <h2 class="text-2xl font-black gold-gradient-text mb-2">SHRINGAR MEHENDI PLATFORM</h2>
+            <p class="text-sm text-slate-300 max-w-lg mb-4">A complete luxury henna booking, designer showcase, and Gemini AI hand analysis portal.</p>
+            <div class="flex flex-wrap gap-2 justify-center text-xs font-mono">
+              <span class="px-3 py-1 rounded-md bg-red-950/80 text-amber-300 border border-amber-500/40">Backend: Spring Boot 3.2 (Java 21)</span>
+              <span class="px-3 py-1 rounded-md bg-blue-950/80 text-blue-300 border border-blue-500/40">Database: MySQL 8.0</span>
+              <span class="px-3 py-1 rounded-md bg-purple-950/80 text-purple-300 border border-purple-500/40">AI: Google Gemini Flash</span>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 1,
+        title: "2. The Backend Entities ('model' vs 'entity')",
+        duration: "02:00",
+        tag: "Chapter 2 of 5",
+        caption: "Why is there no 'entity' folder? Because in this Spring Boot architecture, all 16 database JPA entities are placed inside the 'model' package.",
+        html: `
+          <div class="p-4">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-2xl">📂</span>
+              <h3 class="text-lg font-bold text-amber-300">com.shringar.model = Your Database Entities</h3>
+            </div>
+            <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+              Every class inside <code class="text-amber-400 font-mono">com.shringar.model</code> is annotated with <code class="text-amber-400 font-mono">@Entity</code> and represents a persistent table.
+            </p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-mono">
+              <div class="bg-slate-900/90 p-2.5 rounded border border-amber-500/20 text-center">User.java</div>
+              <div class="bg-slate-900/90 p-2.5 rounded border border-amber-500/20 text-center">Booking.java</div>
+              <div class="bg-slate-900/90 p-2.5 rounded border border-amber-500/20 text-center">Design.java</div>
+              <div class="bg-slate-900/90 p-2.5 rounded border border-amber-500/20 text-center">Artist.java</div>
+              <div class="bg-slate-900/90 p-2.5 rounded border border-amber-500/20 text-center">Coupon.java</div>
+              <div class="bg-slate-900/90 p-2.5 rounded border border-amber-500/20 text-center">Payment.java</div>
+              <div class="bg-slate-900/90 p-2.5 rounded border border-amber-500/20 text-center">Cart.java</div>
+              <div class="bg-slate-900/90 p-2.5 rounded border border-amber-500/20 text-center">CustomerConcern.java</div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 2,
+        title: "3. How Functions Are Made & Executed",
+        duration: "03:00",
+        tag: "Chapter 3 of 5",
+        caption: "Let's trace how a function executes: from browser fetch to Security Filter, Controller, Service logic, and MySQL database persistence.",
+        html: `
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-emerald-300 mb-2">The Complete Execution Pipeline</h3>
+            <div class="flex flex-col gap-2.5 text-xs font-mono">
+              <div class="flex items-center gap-2 bg-slate-900/80 p-2 rounded border border-slate-700">
+                <span class="text-amber-400 font-bold">1. UI / Fetch:</span>
+                <span class="text-slate-300">Browser calls POST /api/auth/signup with JSON payload</span>
+              </div>
+              <div class="flex items-center gap-2 bg-slate-900/80 p-2 rounded border-l-4 border-amber-500">
+                <span class="text-amber-400 font-bold">2. Security Gate:</span>
+                <span class="text-slate-300">JwtAuthFilter inspects token or lets public routes pass</span>
+              </div>
+              <div class="flex items-center gap-2 bg-slate-900/80 p-2 rounded border-l-4 border-emerald-500">
+                <span class="text-emerald-400 font-bold">3. Controller:</span>
+                <span class="text-slate-300">AuthController validates @Valid DTO and delegates to Service</span>
+              </div>
+              <div class="flex items-center gap-2 bg-slate-900/80 p-2 rounded border-l-4 border-cyan-500">
+                <span class="text-cyan-400 font-bold">4. Service & DB:</span>
+                <span class="text-slate-300">AuthService verifies OTP, encodes password & calls UserRepository</span>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 3,
+        title: "4. Real Gmail SMTP & Gemini AI Engine",
+        duration: "04:00",
+        tag: "Chapter 4 of 5",
+        caption: "We simplified signup to require only Email OTP sent via real Gmail SMTP, and connected Google Gemini AI for smart virtual henna try-on.",
+        html: `
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-900/90 p-4 rounded-xl border border-amber-500/30">
+              <h4 class="text-sm font-bold text-amber-300 mb-2 flex items-center gap-1.5">
+                <span>✉️</span> Real Gmail SMTP OTP
+              </h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Sends genuine 6-digit verification codes to the customer's inbox via <code class="text-amber-300">smtp.gmail.com</code> using an authenticated App Password.
+              </p>
+            </div>
+            <div class="bg-slate-900/90 p-4 rounded-xl border border-purple-500/30">
+              <h4 class="text-sm font-bold text-purple-300 mb-2 flex items-center gap-1.5">
+                <span>🤖</span> Gemini AI Vision Engine
+              </h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Customers take a photo of their hands. The AI analyzes skin tone, wrist proportions, and recommends the perfect henna design!
+              </p>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 4,
+        title: "5. Transitioning to Professional React",
+        duration: "05:00",
+        tag: "Chapter 5 of 5",
+        caption: "Moving to React gives us reusable components, single-page navigation without reloads, type-safe data handling, and luxury UI polish.",
+        html: `
+          <div class="p-4 text-center">
+            <div class="w-14 h-14 rounded-2xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg shadow-cyan-500/30">
+              ⚛️
+            </div>
+            <h3 class="text-xl font-bold text-cyan-300 mb-2">Modern React Architecture Roadmap</h3>
+            <p class="text-xs text-slate-300 max-w-md mx-auto mb-4">
+              Break down the HTML files into clean React components, state hooks, and React Router navigation.
+            </p>
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-950/80 border border-cyan-700 text-xs font-mono text-cyan-200">
+              Vite 5 + React 18 + Tailwind CSS + Lucide Icons + Axios
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    let currentChapter = 0;
+    let isPlaying = false;
+    let voiceEnabled = true;
+    let playbackSpeed = 1.0;
+
+    function renderChapter(index) {
+      currentChapter = index;
+      const ch = CHAPTERS[index];
+      
+      document.getElementById('scene-tag').textContent = ch.tag;
+      document.getElementById('video-content').innerHTML = ch.html;
+      document.getElementById('caption-text').textContent = ch.caption;
+      
+      const pct = ((index + 1) / CHAPTERS.length) * 100;
+      document.getElementById('progress-bar').style.width = pct + '%';
+      document.getElementById('time-current').textContent = `0${index + 1}:00`;
+      
+      renderChapterList();
+
+      if (isPlaying && voiceEnabled) {
+        speakCaption(ch.caption);
+      }
+    }
+
+    function renderChapterList() {
+      const listEl = document.getElementById('chapter-list');
+      listEl.innerHTML = '';
+      CHAPTERS.forEach((ch, idx) => {
+        const isActive = idx === currentChapter;
+        const btn = document.createElement('button');
+        btn.onclick = () => {
+          renderChapter(idx);
+          if (isPlaying && voiceEnabled) speakCaption(ch.caption);
+        };
+        btn.className = `text-left p-3 rounded-xl text-xs font-medium transition flex items-center justify-between border ${
+          isActive 
+            ? 'bg-amber-500/20 border-amber-400/80 text-amber-200 shadow-md shadow-amber-500/10' 
+            : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-800/80'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+              isActive ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'
+            }">${idx + 1}</span>
+            <span>${ch.title}</span>
+          </div>
+          <span class="font-mono text-[10px] opacity-60">${ch.duration}</span>
+        `;
+        listEl.appendChild(btn);
+      });
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      const playIcon = document.getElementById('play-icon');
+      const playText = document.getElementById('play-text');
+      
+      if (isPlaying) {
+        playIcon.textContent = '⏸';
+        playText.textContent = 'Pause';
+        if (voiceEnabled) speakCaption(CHAPTERS[currentChapter].caption);
+      } else {
+        playIcon.textContent = '▶';
+        playText.textContent = 'Play & Narrate';
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    function nextChapter() {
+      if (currentChapter < CHAPTERS.length - 1) {
+        renderChapter(currentChapter + 1);
+      } else {
+        renderChapter(0);
+      }
+    }
+
+    function prevChapter() {
+      if (currentChapter > 0) {
+        renderChapter(currentChapter - 1);
+      }
+    }
+
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      const st = document.getElementById('voice-status');
+      st.textContent = voiceEnabled ? 'ON' : 'OFF';
+      st.className = voiceEnabled ? 'text-emerald-400 font-bold' : 'text-slate-400';
+      if (!voiceEnabled) window.speechSynthesis.cancel();
+      else if (isPlaying) speakCaption(CHAPTERS[currentChapter].caption);
+    }
+
+    function changeSpeed(val) {
+      playbackSpeed = parseFloat(val);
+      if (isPlaying && voiceEnabled) {
+        speakCaption(CHAPTERS[currentChapter].caption);
+      }
+    }
+
+    function speakCaption(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = playbackSpeed;
+      utter.pitch = 1.0;
+      
+      utter.onend = () => {
+        if (isPlaying) {
+          setTimeout(() => {
+            if (isPlaying) nextChapter();
+          }, 1200);
+        }
+      };
+      
+      window.speechSynthesis.speak(utter);
+    }
+
+    function seekByClick(e) {
+      const container = document.getElementById('progress-bar-container');
+      const rect = container.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+      const targetIndex = Math.min(CHAPTERS.length - 1, Math.floor(ratio * CHAPTERS.length));
+      renderChapter(targetIndex);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderChapter(0);
+    });
+  </script>
+
+</body>
+</html>
