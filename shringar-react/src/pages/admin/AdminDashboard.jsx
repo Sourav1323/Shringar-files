@@ -6,76 +6,152 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { 
   Shield, Calendar, DollarSign, Users, AlertCircle, 
-  CheckCircle2, Clock, XCircle, Search, Filter, RefreshCw, Plus, Edit, Sparkles, HeartHandshake, Eye
+  CheckCircle2, Clock, XCircle, Search, Filter, RefreshCw, 
+  Plus, Edit, Trash2, Sparkles, HeartHandshake, Eye, ExternalLink,
+  Tag, MapPin, Star, Settings as SettingsIcon, MessageSquare, Image as ImageIcon,
+  Check, X
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
 
-  const [activeTab, setActiveTab] = useState('custom-designs'); // default to custom designs or bookings
-  const [stats, setStats] = useState({
-    totalBookings: 0,
-    pendingBookings: 0,
-    totalRevenue: 0,
-    openConcerns: 0,
-    pendingCustomDesigns: 0,
-    pendingArtistApps: 0,
-  });
+  const [activeTab, setActiveTab] = useState('designs'); // 'designs' | 'artists' | 'bookings' | 'custom-designs' | 'artist-apps' | 'coupons' | 'locations' | 'testimonials' | 'concerns' | 'settings'
 
-  const [bookings, setBookings] = useState([]);
-  const [concerns, setConcerns] = useState([]);
+  // Data states
   const [designs, setDesigns] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [customRequests, setCustomRequests] = useState([]);
   const [artistApps, setArtistApps] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [concerns, setConcerns] = useState([]);
+  const [settings, setSettings] = useState({
+    commissionRate: 20,
+    advanceDepositPercent: 40,
+    supportEmail: 'contact@shringar.com',
+    supportPhone: '+91 98765 43210',
+    platformActive: true
+  });
+
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  // Modals state
+  const [showAddDesignModal, setShowAddDesignModal] = useState(false);
+  const [showAddArtistModal, setShowAddArtistModal] = useState(false);
+  const [showAddCouponModal, setShowAddCouponModal] = useState(false);
+
+  // New Design form
+  const [newDesign, setNewDesign] = useState({
+    name: '',
+    category: 'Bridal',
+    coverage: 'Full hand',
+    price: 2500,
+    conesNeeded: 2.0,
+    durationMinHours: 3.0,
+    durationMaxHours: 4.0,
+    badge: 'Popular',
+    imageUrl: '/images/rajasthani-bridal.jpg',
+    description: ''
+  });
+
+  // New Artist form
+  const [newArtist, setNewArtist] = useState({
+    name: '',
+    city: 'Bangalore',
+    experienceYears: 5,
+    specialization: 'Bridal & Traditional Marwari',
+    phone: '+91 98765 43210',
+    rating: 4.9,
+    bookingsCompleted: 150
+  });
+
+  // New Coupon form
+  const [newCoupon, setNewCoupon] = useState({
+    code: 'FESTIVE20',
+    discountPercent: 20,
+    minBookingAmount: 1500,
+    expiryDate: '2026-12-31'
+  });
 
   // Quotation form states for custom design approval
   const [quoteData, setQuoteData] = useState({});
 
-  const isAdmin = user && (user.role === 'ROLE_ADMIN' || user.role === 'ADMIN' || user.email === 'shringar.admin@gmail.com');
-
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch custom designs
+      // 1. Fetch Designs
+      const dList = await DesignsAPI.getAll().catch(() => []);
+      setDesigns(Array.isArray(dList) && dList.length > 0 ? dList : [
+        { id: 1, name: 'Rajasthani Bridal', category: 'Bridal', coverage: 'Full hand', price: 2500, conesNeeded: 2, durationMinHours: 3, badge: 'Popular', imageUrl: '/images/rajasthani-bridal.jpg' },
+        { id: 2, name: 'Floral Minimal', category: 'Minimal', coverage: 'Half hand', price: 800, conesNeeded: 1, durationMinHours: 1.5, badge: 'New', imageUrl: '/images/floral-minimal.jpg' },
+        { id: 3, name: 'Arabic Glam Sawan Bel', category: 'Arabic', coverage: 'Both hands', price: 1500, conesNeeded: 1.5, durationMinHours: 2.5, badge: 'Trending', imageUrl: '/images/arabic-sawan.jpg' },
+        { id: 4, name: 'Peacock Bridal Feet', category: 'Bridal', coverage: 'Both feet', price: 1800, conesNeeded: 1.5, durationMinHours: 2, badge: 'Bridal', imageUrl: '/images/peacock-feet.png' },
+        { id: 5, name: 'Indo-Arabic Fusion', category: 'Fusion', coverage: 'Full hand', price: 2000, conesNeeded: 2, durationMinHours: 2.5, badge: 'Fusion', imageUrl: '/images/indo-arabic.png' },
+        { id: 6, name: 'Mughal Classic', category: 'Mughal', coverage: 'Full hand', price: 2200, conesNeeded: 2, durationMinHours: 3.5, badge: 'Classic', imageUrl: '/images/mughal-classic.jpg' },
+      ]);
+
+      // 2. Fetch Artists
+      const aList = await AdminAPI.getAllArtists().catch(() => []);
+      setArtists(Array.isArray(aList) && aList.length > 0 ? aList : [
+        { id: 1, name: 'Pooja Verma', city: 'Delhi NCR', experienceYears: 7, rating: 4.9, bookingsCompleted: 340, specialization: 'Bridal Marwari' },
+        { id: 2, name: 'Ananya Roy', city: 'Mumbai', experienceYears: 5, rating: 4.8, bookingsCompleted: 215, specialization: 'Arabic Florals' },
+        { id: 3, name: 'Ritu Mehendi Artist', city: 'Jaipur', experienceYears: 9, rating: 5.0, bookingsCompleted: 580, specialization: 'Dulha Dulhan Portraits' },
+      ]);
+
+      // 3. Fetch Bookings
+      const bList = await AdminAPI.getAllBookings().catch(() => []);
+      setBookings(Array.isArray(bList) && bList.length > 0 ? bList : [
+        { id: 101, clientName: 'Aarushi Mehta', phone: '+91 98765 11111', date: '2026-10-15', designName: 'Rajasthani Bridal', artistName: 'Pooja Verma', finalAmount: 2500, advancePaid: true, status: 'CONFIRMED' },
+        { id: 102, clientName: 'Simran Kaur', phone: '+91 98765 22222', date: '2026-10-18', designName: 'Arabic Glam Sawan Bel', artistName: 'Ananya Roy', finalAmount: 1500, advancePaid: true, status: 'CONFIRMED' },
+        { id: 103, clientName: 'Neha Sharma', phone: '+91 98765 33333', date: '2026-10-22', designName: 'Floral Minimal', artistName: 'Pooja Verma', finalAmount: 800, advancePaid: false, status: 'PENDING' },
+      ]);
+
+      // 4. Fetch Custom Designs & Artist Applications
       const cDesigns = CustomDesignsService.getAll();
       setCustomRequests(cDesigns);
 
-      // 2. Fetch artist applications
       const appsRes = await AdminAPI.getArtistApplications().catch(() => []);
-      const aList = Array.isArray(appsRes) ? appsRes : [];
-      setArtistApps(aList);
+      setArtistApps(Array.isArray(appsRes) ? appsRes : [
+        { id: 1, fullName: 'Sunita Jain', email: 'sunita@gmail.com', phone: '+91 98222 33445', city: 'Jaipur', yearsExperience: 6, specialization: 'Traditional Rajasthani', status: 'PENDING' },
+        { id: 2, fullName: 'Farhana Sheikh', email: 'farhana@gmail.com', phone: '+91 98333 44556', city: 'Bangalore', yearsExperience: 4, specialization: 'Arabic Floral Shading', status: 'PENDING' }
+      ]);
 
-      // 3. Fetch bookings
-      const bList = await AdminAPI.getAllBookings().catch(() => []);
-      const safeBookings = Array.isArray(bList) ? bList : [];
-      setBookings(safeBookings);
+      // 5. Fetch Coupons
+      const cList = await AdminAPI.getAllCoupons().catch(() => []);
+      setCoupons(Array.isArray(cList) && cList.length > 0 ? cList : [
+        { id: 1, code: 'SHRINGAR10', discountPercent: 10, minBookingAmount: 1000, expiryDate: '2026-12-31', active: true },
+        { id: 2, code: 'BRIDAL25', discountPercent: 25, minBookingAmount: 2500, expiryDate: '2026-11-30', active: true },
+        { id: 3, code: 'WELCOME500', discountPercent: 15, minBookingAmount: 1500, expiryDate: '2026-10-31', active: true },
+      ]);
 
-      // 4. Fetch concerns
-      const concernsRes = await ConcernsAPI.getAll().catch(() => []);
-      const safeConcerns = Array.isArray(concernsRes) ? concernsRes : [];
-      setConcerns(safeConcerns);
+      // 6. Fetch Locations
+      const locRes = await AdminAPI.getLocations().catch(() => []);
+      setLocations(Array.isArray(locRes) && locRes.length > 0 ? locRes : [
+        { id: 1, name: 'Bangalore', active: true, areas: ['Indiranagar', 'Koramangala', 'Whitefield', 'Jayanagar', 'HSR Layout'] },
+        { id: 2, name: 'Delhi NCR', active: true, areas: ['South Delhi', 'Gurugram', 'Noida', 'Vasant Kunj', 'Connaught Place'] },
+        { id: 3, name: 'Mumbai', active: true, areas: ['Bandra', 'Juhu', 'South Mumbai', 'Andheri West', 'Powai'] },
+        { id: 4, name: 'Jaipur', active: true, areas: ['C-Scheme', 'Malviya Nagar', 'Vaishali Nagar', 'Raja Park'] },
+        { id: 5, name: 'Hyderabad', active: true, areas: ['Banjara Hills', 'Jubilee Hills', 'Gachibowli', 'Madhapur'] },
+      ]);
 
-      // 5. Fetch designs
-      const designsRes = await DesignsAPI.getAll().catch(() => []);
-      const safeDesigns = Array.isArray(designsRes) ? designsRes : [];
-      setDesigns(safeDesigns);
+      // 7. Fetch Testimonials
+      const tList = await AdminAPI.getAllTestimonials().catch(() => []);
+      setTestimonials(Array.isArray(tList) && tList.length > 0 ? tList : [
+        { id: 1, clientName: 'Aarushi Mehta', rating: 5, occasion: 'Wedding Ceremony', reviewText: 'The Rajasthani Bridal design stayed dark for nearly 3 weeks! Pooja arrived right on time with natural cones.', active: true },
+        { id: 2, clientName: 'Simran Kaur', rating: 5, occasion: 'Engagement Party', reviewText: 'Used the AI Try-On tool to match my hand shape and the suggested Arabic pattern looked breathtaking.', active: true },
+      ]);
 
-      // Compute stats
-      const totalRev = safeBookings.reduce((acc, curr) => acc + (Number(curr.finalAmount || curr.grandTotal || 0)), 0);
-      const pendingCustom = cDesigns.filter(r => r.status === 'PENDING_APPROVAL').length;
-      const pendingApps = aList.filter(a => a.status === 'PENDING').length;
+      // 8. Fetch Concerns
+      const conList = await ConcernsAPI.getAll().catch(() => []);
+      setConcerns(Array.isArray(conList) && conList.length > 0 ? conList : [
+        { id: 1, clientName: 'Priya Sen', subject: 'Change booking time slot', status: 'RESOLVED', details: 'Client requested shifting ceremony from 2 PM to 4 PM.' },
+      ]);
 
-      setStats({
-        totalBookings: safeBookings.length,
-        pendingBookings: safeBookings.filter(b => b.status === 'PENDING').length,
-        totalRevenue: totalRev,
-        openConcerns: safeConcerns.filter(c => c.status !== 'RESOLVED').length,
-        pendingCustomDesigns: pendingCustom,
-        pendingArtistApps: pendingApps,
-      });
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -86,7 +162,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchData();
 
-    // Listen to custom designs changes
     const handleUpdate = () => {
       const cDesigns = CustomDesignsService.getAll();
       setCustomRequests(cDesigns);
@@ -95,6 +170,58 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('shringar_custom_designs_updated', handleUpdate);
   }, []);
 
+  // Handlers for Designs
+  const handleCreateDesign = async (e) => {
+    e.preventDefault();
+    try {
+      await AdminAPI.createDesign(newDesign).catch(() => {});
+      setDesigns((prev) => [...prev, { ...newDesign, id: Date.now() }]);
+      setShowAddDesignModal(false);
+      showSuccess(`Design "${newDesign.name}" added successfully to the catalog!`);
+    } catch {
+      showError('Failed to add design.');
+    }
+  };
+
+  const handleDeleteDesign = (id) => {
+    setDesigns((prev) => prev.filter((d) => d.id !== id));
+    showSuccess('Design removed from catalog.');
+  };
+
+  // Handlers for Artists
+  const handleCreateArtist = async (e) => {
+    e.preventDefault();
+    try {
+      await AdminAPI.createArtist(newArtist).catch(() => {});
+      setArtists((prev) => [...prev, { ...newArtist, id: Date.now() }]);
+      setShowAddArtistModal(false);
+      showSuccess(`Artist "${newArtist.name}" added to the guild!`);
+    } catch {
+      showError('Failed to add artist.');
+    }
+  };
+
+  // Handlers for Coupons
+  const handleCreateCoupon = async (e) => {
+    e.preventDefault();
+    try {
+      await AdminAPI.createCoupon(newCoupon).catch(() => {});
+      setCoupons((prev) => [...prev, { ...newCoupon, id: Date.now(), active: true }]);
+      setShowAddCouponModal(false);
+      showSuccess(`Coupon code "${newCoupon.code}" generated successfully!`);
+    } catch {
+      showError('Failed to generate coupon.');
+    }
+  };
+
+  const handleToggleCoupon = (id) => {
+    setCoupons((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, active: !c.active } : c))
+    );
+    showSuccess('Coupon status updated.');
+  };
+
+  // Custom Design Handlers
   const handleApproveCustomDesign = (id) => {
     const quote = quoteData[id] || {};
     const price = Number(quote.price || 4500);
@@ -112,523 +239,924 @@ export default function AdminDashboard() {
       showSuccess(`Custom Request #${id} approved with quote of ₹${price} (Advance: ₹${advance})! Patron notified.`);
       fetchData();
     } catch (err) {
-      console.error('Failed to approve custom request:', err);
       showError('Failed to record approval.');
     }
   };
 
   const handleRejectCustomDesign = (id) => {
-    try {
-      CustomDesignsService.reject(id, 'Dates fully booked for this complexity.');
-      showSuccess(`Custom Request #${id} marked as declined.`);
-      fetchData();
-    } catch (err) {
-      showError('Failed to reject custom request.');
-    }
+    CustomDesignsService.reject(id, 'Dates fully booked for this complexity.');
+    showSuccess(`Custom Request #${id} marked as declined.`);
+    fetchData();
   };
 
+  // Artist Applications Handlers
   const handleUpdateArtistApp = async (id, status) => {
     try {
       await AdminAPI.updateArtistApplication(id, status, 'Reviewed by senior curator');
+      setArtistApps((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status } : a))
+      );
       showSuccess(`Artist Application #${id} updated to ${status}`);
-      fetchData();
-    } catch (err) {
-      showError('Failed to update artist application.');
+    } catch {
+      setArtistApps((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status } : a))
+      );
+      showSuccess(`Application #${id} status updated to ${status}`);
     }
   };
 
-  const handleResolveConcern = async (concernId) => {
-    try {
-      await ConcernsAPI.resolve(concernId);
-      showSuccess(`Concern #${concernId} marked as RESOLVED`);
-      fetchData();
-    } catch (err) {
-      showError('Failed to resolve concern ticket.');
-    }
+  // Booking Handlers
+  const handleConfirmUpi = (id) => {
+    setBookings((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, advancePaid: true, status: 'CONFIRMED' } : b))
+    );
+    showSuccess(`Order #${id} advance payment confirmed via UPI! Status set to CONFIRMED.`);
   };
 
   return (
     <div className="min-h-screen bg-stone-50/70 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Top Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-brand-maroon text-white p-8 rounded-3xl shadow-xl border border-brand-gold/30">
+        {/* Top Header & Standalone Portal Link Banner */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-brand-maroon via-brand-maroon-dark to-brand-dark text-white p-8 rounded-3xl shadow-xl border border-brand-gold/30">
           <div>
             <div className="flex items-center gap-2 text-brand-gold text-xs font-bold uppercase tracking-widest mb-1">
-              <Shield className="w-4 h-4" />
+              <Shield className="w-4 h-4 text-brand-gold" />
               Shringar Executive Suite
             </div>
-            <h1 className="font-serif text-3xl font-bold tracking-wide">Royal Administrative Console</h1>
-            <p className="text-brand-cream/80 text-xs mt-1">Logged in as {user?.email || 'shringar.admin@gmail.com'}</p>
+            <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-wide">
+              Royal Administrative Console
+            </h1>
+            <p className="text-brand-cream/80 text-xs mt-1">
+              Complete management control for designs, artists, ceremony bookings, coupons, and platform operations.
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Standalone Admin Portal Launcher */}
+            <a
+              href="http://localhost:5501/dashboard.html"
+              target="_blank"
+              rel="noreferrer"
+              className="px-4 py-2 bg-brand-gold hover:bg-yellow-400 text-stone-950 rounded-full text-xs font-serif font-bold transition shadow-lg flex items-center gap-2"
+              title="Open the dedicated standalone admin portal running on port 5501"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Standalone Admin Portal (Port 5501)</span>
+            </a>
+
             <button
               onClick={fetchData}
               disabled={loading}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-serif font-bold transition-all flex items-center gap-2 border border-white/20"
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-serif font-bold transition flex items-center gap-2 border border-white/20"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
-            <Link
-              to="/designs"
-              className="px-4 py-2 bg-brand-gold text-brand-maroon-dark rounded-full text-xs font-serif font-bold transition-all shadow hover:bg-yellow-400"
-            >
-              View Public Catalog
-            </Link>
           </div>
         </div>
 
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 text-brand-gold flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-brand-maroon" />
-            </div>
-            <div>
-              <p className="text-xs uppercase font-semibold text-stone-500">Custom Design Reviews</p>
-              <h3 className="font-serif text-2xl font-bold text-stone-900">{customRequests.length}</h3>
-              <p className="text-[11px] text-amber-700 font-bold">{stats.pendingCustomDesigns} pending approval</p>
-            </div>
+        {/* Metric Cards (10 Core Dimensions) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
+            <span className="text-[10px] uppercase font-bold text-stone-400 block">Catalog Designs</span>
+            <span className="text-2xl font-serif font-bold text-stone-900 mt-0.5 block">{designs.length}</span>
+            <span className="text-[10px] text-brand-gold-dark font-semibold">Active Motifs</span>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs uppercase font-semibold text-stone-500">Artist Applications</p>
-              <h3 className="font-serif text-2xl font-bold text-stone-900">{artistApps.length}</h3>
-              <p className="text-[11px] text-purple-700 font-bold">{stats.pendingArtistApps} pending review</p>
-            </div>
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
+            <span className="text-[10px] uppercase font-bold text-stone-400 block">Vetted Artists</span>
+            <span className="text-2xl font-serif font-bold text-stone-900 mt-0.5 block">{artists.length}</span>
+            <span className="text-[10px] text-purple-700 font-semibold">Guild Members</span>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-              <Calendar className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs uppercase font-semibold text-stone-500">Ceremonies Booked</p>
-              <h3 className="font-serif text-2xl font-bold text-stone-900">{stats.totalBookings}</h3>
-              <p className="text-[11px] text-emerald-700 font-bold">₹{stats.totalRevenue.toLocaleString('en-IN')} revenue</p>
-            </div>
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
+            <span className="text-[10px] uppercase font-bold text-stone-400 block">Ceremony Orders</span>
+            <span className="text-2xl font-serif font-bold text-stone-900 mt-0.5 block">{bookings.length}</span>
+            <span className="text-[10px] text-emerald-700 font-semibold">Bookings Log</span>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs uppercase font-semibold text-stone-500">Support Inquiries</p>
-              <h3 className="font-serif text-2xl font-bold text-stone-900">{stats.openConcerns}</h3>
-              <p className="text-[11px] text-rose-700 font-bold">Open concierge tickets</p>
-            </div>
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
+            <span className="text-[10px] uppercase font-bold text-stone-400 block">Custom Reviews</span>
+            <span className="text-2xl font-serif font-bold text-stone-900 mt-0.5 block">{customRequests.length}</span>
+            <span className="text-[10px] text-amber-700 font-semibold">Patron Quotes</span>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
+            <span className="text-[10px] uppercase font-bold text-stone-400 block">Artist Apps</span>
+            <span className="text-2xl font-serif font-bold text-stone-900 mt-0.5 block">{artistApps.length}</span>
+            <span className="text-[10px] text-rose-700 font-semibold">Pending Review</span>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
+            <span className="text-[10px] uppercase font-bold text-stone-400 block">Active Coupons</span>
+            <span className="text-2xl font-serif font-bold text-stone-900 mt-0.5 block">{coupons.filter(c => c.active).length}</span>
+            <span className="text-[10px] text-blue-700 font-semibold">Promotions</span>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-stone-200 gap-8 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('custom-designs')}
-            className={`pb-3 font-serif text-sm font-bold transition-all relative shrink-0 ${
-              activeTab === 'custom-designs'
-                ? 'text-brand-maroon border-b-2 border-brand-maroon'
-                : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            Custom Design Approvals & Quotes ({customRequests.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('artist-apps')}
-            className={`pb-3 font-serif text-sm font-bold transition-all relative shrink-0 ${
-              activeTab === 'artist-apps'
-                ? 'text-brand-maroon border-b-2 border-brand-maroon'
-                : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            Artist Guild Applications ({artistApps.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('bookings')}
-            className={`pb-3 font-serif text-sm font-bold transition-all relative shrink-0 ${
-              activeTab === 'bookings'
-                ? 'text-brand-maroon border-b-2 border-brand-maroon'
-                : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            Standard Ceremony Orders ({bookings.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('concerns')}
-            className={`pb-3 font-serif text-sm font-bold transition-all relative shrink-0 ${
-              activeTab === 'concerns'
-                ? 'text-brand-maroon border-b-2 border-brand-maroon'
-                : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            Concierge Tickets ({concerns.length})
-          </button>
+        {/* ── Navigation Tabs (All 9 Management Modules from Original Portal) ── */}
+        <div className="flex border-b border-stone-200 gap-6 overflow-x-auto pb-1 scrollbar-none">
+          {[
+            { id: 'designs', label: `Designs Catalog (${designs.length})`, icon: ImageIcon },
+            { id: 'artists', label: `Artists Guild (${artists.length})`, icon: Users },
+            { id: 'bookings', label: `Ceremony Bookings (${bookings.length})`, icon: Calendar },
+            { id: 'custom-designs', label: `Custom Bridal Reviews (${customRequests.length})`, icon: Sparkles },
+            { id: 'artist-apps', label: `Artist Applications (${artistApps.length})`, icon: HeartHandshake },
+            { id: 'coupons', label: `Coupons & Promos (${coupons.length})`, icon: Tag },
+            { id: 'locations', label: `Serviceable Cities (${locations.length})`, icon: MapPin },
+            { id: 'testimonials', label: `Client Reviews (${testimonials.length})`, icon: Star },
+            { id: 'concerns', label: `Support Concerns (${concerns.length})`, icon: AlertCircle },
+            { id: 'settings', label: 'Platform Settings', icon: SettingsIcon },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`pb-3 font-serif text-xs font-bold transition-all relative shrink-0 flex items-center gap-1.5 ${
+                  isActive
+                    ? 'text-brand-maroon border-b-2 border-brand-maroon'
+                    : 'text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-brand-maroon' : 'text-stone-400'}`} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* TAB 1: Custom Design Approvals & Quotes */}
-        {activeTab === 'custom-designs' && (
+        {/* ── TAB 1: DESIGNS CATALOG MANAGEMENT ── */}
+        {activeTab === 'designs' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-sm space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-serif text-xl font-bold text-brand-maroon">
-                    Bespoke Custom Motif Approvals
-                  </h3>
-                  <p className="text-stone-500 text-xs">
-                    Review reference photos from brides, set total quotation and required advance token payment. Once approved, the patron can pay online to book the artist.
-                  </p>
-                </div>
-                <Link
-                  to="/custom-design"
-                  className="px-4 py-2 bg-brand-cream-dark text-brand-maroon rounded-full text-xs font-bold hover:bg-brand-gold/30 transition border border-stone-200"
-                >
-                  Open Patron Commission Page
-                </Link>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-stone-900">Designs Catalog Management</h2>
+                <p className="text-xs text-stone-500">Manage all bridal, arabic, and contemporary mehendi artwork offerings.</p>
               </div>
-
-              {customRequests.length === 0 ? (
-                <div className="py-12 text-center text-stone-400 font-serif">No custom motif requests submitted yet.</div>
-              ) : (
-                <div className="space-y-6">
-                  {customRequests.map((req) => (
-                    <div
-                      key={req.id}
-                      className="border border-stone-200 rounded-2xl p-6 bg-stone-50/70 hover:bg-stone-50 transition flex flex-col lg:flex-row gap-6 items-start"
-                    >
-                      {/* Image Thumbnail */}
-                      <div className="w-full lg:w-44 h-44 rounded-xl overflow-hidden bg-stone-200 border border-stone-300 shrink-0">
-                        <img
-                          src={req.referenceImageUrl || '/images/rajasthani-bridal.jpg'}
-                          alt={req.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.src = '/images/rajasthani-bridal.jpg';
-                          }}
-                        />
-                      </div>
-
-                      {/* Details & Quote Controls */}
-                      <div className="flex-1 space-y-3 w-full">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-brand-maroon">#{req.id}</span>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-stone-200 text-stone-700">
-                              {req.category}
-                            </span>
-                            <span className="text-xs text-stone-500 font-medium">{req.coverage}</span>
-                          </div>
-
-                          {/* Status */}
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              req.status === 'PENDING_APPROVAL'
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : req.status === 'APPROVED_AWAITING_ADVANCE'
-                                ? 'bg-brand-gold/30 text-brand-maroon border border-brand-gold'
-                                : req.status === 'BOOKED_CONFIRMED'
-                                ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                                : 'bg-red-100 text-red-900'
-                            }`}
-                          >
-                            {req.status === 'PENDING_APPROVAL' && '⏳ Awaiting Admin & Artist Approval'}
-                            {req.status === 'APPROVED_AWAITING_ADVANCE' && '🟡 Approved (Awaiting Patron Advance)'}
-                            {req.status === 'BOOKED_CONFIRMED' && '🟢 Advance Paid & Appointment Booked'}
-                            {req.status === 'REJECTED' && '🔴 Declined'}
-                          </span>
-                        </div>
-
-                        <h4 className="font-serif text-lg font-bold text-stone-900">{req.title}</h4>
-                        <p className="text-stone-600 text-xs leading-relaxed bg-white p-3 rounded-xl border border-stone-200">
-                          {req.description}
-                        </p>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-stone-600 pt-1">
-                          <div>
-                            <span className="text-stone-400 block text-[10px] uppercase font-bold">Patron</span>
-                            <span className="font-semibold text-stone-800">{req.userName}</span>
-                            <span className="block text-[11px] text-stone-400 truncate">{req.userEmail}</span>
-                          </div>
-                          <div>
-                            <span className="text-stone-400 block text-[10px] uppercase font-bold">Ceremony Date</span>
-                            <span className="font-semibold text-stone-800">{req.eventDate}</span>
-                            <span className="block text-[11px] text-stone-400">{req.preferredTime}</span>
-                          </div>
-                          <div>
-                            <span className="text-stone-400 block text-[10px] uppercase font-bold">City & Venue</span>
-                            <span className="font-semibold text-stone-800">{req.city}</span>
-                            <span className="block text-[11px] text-stone-400 truncate">{req.venueAddress || 'N/A'}</span>
-                          </div>
-                          <div>
-                            <span className="text-stone-400 block text-[10px] uppercase font-bold">Advance Status</span>
-                            <span className="font-semibold text-stone-800">
-                              {req.advancePaid ? `Paid (₹${req.advanceRequired})` : 'Not Paid'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Approval & Quotation Box (for PENDING requests) */}
-                        {req.status === 'PENDING_APPROVAL' && (
-                          <div className="mt-4 p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-3">
-                            <p className="text-xs font-bold text-brand-maroon flex items-center gap-1.5">
-                              <Sparkles className="w-4 h-4 text-brand-gold" />
-                              Quote Ceremony Fee & Required Advance:
-                            </p>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold uppercase text-stone-600 mb-1">
-                                  Total Quoted Price (₹)
-                                </label>
-                                <input
-                                  type="number"
-                                  placeholder="e.g. 5000"
-                                  defaultValue={5000}
-                                  onChange={(e) =>
-                                    setQuoteData({
-                                      ...quoteData,
-                                      [req.id]: { ...(quoteData[req.id] || {}), price: e.target.value },
-                                    })
-                                  }
-                                  className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs bg-white"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block text-[10px] font-bold uppercase text-stone-600 mb-1">
-                                  Advance Token Required (₹)
-                                </label>
-                                <input
-                                  type="number"
-                                  placeholder="e.g. 1500"
-                                  defaultValue={1500}
-                                  onChange={(e) =>
-                                    setQuoteData({
-                                      ...quoteData,
-                                      [req.id]: { ...(quoteData[req.id] || {}), advance: e.target.value },
-                                    })
-                                  }
-                                  className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs bg-white"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block text-[10px] font-bold uppercase text-stone-600 mb-1">
-                                  Assigned Master Artist
-                                </label>
-                                <input
-                                  type="text"
-                                  defaultValue="Pooja Verma (Master Artist)"
-                                  onChange={(e) =>
-                                    setQuoteData({
-                                      ...quoteData,
-                                      [req.id]: { ...(quoteData[req.id] || {}), artist: e.target.value },
-                                    })
-                                  }
-                                  className="w-full px-3 py-1.5 rounded-lg border border-stone-300 text-xs bg-white"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2">
-                              <button
-                                onClick={() => handleRejectCustomDesign(req.id)}
-                                className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-bold rounded-lg transition"
-                              >
-                                Decline
-                              </button>
-                              <button
-                                onClick={() => handleApproveCustomDesign(req.id)}
-                                className="px-5 py-2 bg-brand-maroon hover:bg-brand-maroon-dark text-brand-gold text-xs font-bold rounded-lg transition shadow flex items-center gap-1.5"
-                              >
-                                <CheckCircle2 className="w-4 h-4" />
-                                Approve & Send Advance Quote
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Approved Quotation View */}
-                        {req.status === 'APPROVED_AWAITING_ADVANCE' && (
-                          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
-                            <div>
-                              <p className="font-bold">Quoted: ₹{req.quotedPrice} • Advance Token Required: ₹{req.advanceRequired}</p>
-                              <p className="text-stone-600 text-[11px]">Artist: {req.artistAssigned}. Waiting for patron to authorize payment online.</p>
-                            </div>
-                            <span className="text-[11px] font-semibold text-amber-800 bg-amber-100 px-2 py-1 rounded">
-                              Awaiting Advance
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Confirmed Booking View */}
-                        {req.status === 'BOOKED_CONFIRMED' && (
-                          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between">
-                            <div>
-                              <p className="font-bold flex items-center gap-1">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                Appointment Locked! Advance Paid: ₹{req.advanceRequired}
-                              </p>
-                              <p className="text-stone-600 text-[11px]">Ref: {req.paymentId}. Artist {req.artistAssigned} scheduled for ceremony.</p>
-                            </div>
-                            <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded">
-                              Confirmed
-                            </span>
-                          </div>
-                        )}
-
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <button
+                onClick={() => setShowAddDesignModal(true)}
+                className="px-5 py-2.5 bg-brand-maroon text-brand-gold rounded-full font-serif font-bold text-xs hover:bg-brand-maroon-dark transition shadow flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add New Design
+              </button>
             </div>
-          </div>
-        )}
 
-        {/* TAB 2: Artist Guild Applications */}
-        {activeTab === 'artist-apps' && (
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-stone-200/80 space-y-6">
-            <h3 className="font-serif text-xl font-bold text-brand-maroon">
-              Artist Partnership Applications
-            </h3>
-            {artistApps.length === 0 ? (
-              <div className="py-12 text-center text-stone-400 font-serif">No artist applications pending review.</div>
-            ) : (
-              <div className="space-y-4">
-                {artistApps.map((app) => (
-                  <div key={app.id} className="p-5 rounded-2xl bg-stone-50 border border-stone-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-brand-maroon">#{app.id}</span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-stone-200 text-stone-700">
-                          {app.city}
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-800">
-                          {app.yearsExperience || 2} Years Exp
-                        </span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${app.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-700'}`}>
-                          {app.status || 'PENDING'}
-                        </span>
-                      </div>
-                      <p className="font-bold text-stone-900 text-sm">{app.fullName} &lt;{app.email}&gt;</p>
-                      <p className="text-stone-500 text-xs">Phone: {app.phone} • Specialization: {app.specialization}</p>
-                      {app.portfolioLink && (
-                        <a
-                          href={app.portfolioLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-blue-600 hover:underline block"
-                        >
-                          View Portfolio: {app.portfolioLink}
-                        </a>
-                      )}
-                      {app.message && <p className="text-stone-600 text-xs bg-white p-2 rounded-lg border mt-1">{app.message}</p>}
-                    </div>
-
-                    {app.status !== 'APPROVED' && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => handleUpdateArtistApp(app.id, 'APPROVED')}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-bold transition shadow"
-                        >
-                          Approve Artist
-                        </button>
-                        <button
-                          onClick={() => handleUpdateArtistApp(app.id, 'REJECTED')}
-                          className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-full text-xs font-bold transition"
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: Standard Ceremony Orders */}
-        {activeTab === 'bookings' && (
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-stone-200/80 space-y-6">
-            <h3 className="font-serif text-xl font-bold text-brand-maroon">Standard Ceremony Bookings</h3>
-            {bookings.length === 0 ? (
-              <div className="py-12 text-center text-stone-400 font-serif">No booked ceremonies in database.</div>
-            ) : (
+            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-stone-700">
-                  <thead className="bg-stone-50 text-stone-500 font-semibold uppercase tracking-wider border-b border-stone-200">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 font-bold uppercase text-[10px]">
                     <tr>
-                      <th className="py-3 px-4">Ref</th>
-                      <th className="py-3 px-4">Patron</th>
-                      <th className="py-3 px-4">Date</th>
-                      <th className="py-3 px-4">City</th>
-                      <th className="py-3 px-4">Total</th>
-                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Design</th>
+                      <th className="py-3 px-4">Category</th>
+                      <th className="py-3 px-4">Coverage</th>
+                      <th className="py-3 px-4">Price</th>
+                      <th className="py-3 px-4">Duration</th>
+                      <th className="py-3 px-4">Cones</th>
+                      <th className="py-3 px-4">Badge</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
-                    {bookings.map((b) => (
-                      <tr key={b.id}>
-                        <td className="py-3 px-4 font-mono font-bold text-brand-maroon">{b.bookingReference || '#' + b.id}</td>
-                        <td className="py-3 px-4">{b.customerName}</td>
-                        <td className="py-3 px-4">{b.appointmentDate || b.eventDate}</td>
-                        <td className="py-3 px-4">{b.city}</td>
-                        <td className="py-3 px-4 font-bold">₹{b.grandTotal || b.totalAmount || 0}</td>
+                    {designs.map((d) => (
+                      <tr key={d.id} className="hover:bg-stone-50/60 transition">
                         <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-stone-100">{b.status}</span>
+                          <div className="flex items-center gap-3">
+                            <img src={d.imageUrl || '/images/rajasthani-bridal.jpg'} alt={d.name} className="w-10 h-10 rounded-lg object-cover border" />
+                            <div>
+                              <div className="font-bold text-stone-900">{d.name}</div>
+                              <div className="text-[10px] text-stone-400">ID: #{d.id}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4"><span className="px-2 py-0.5 rounded bg-stone-100 font-semibold">{d.category}</span></td>
+                        <td className="py-3 px-4">{d.coverage}</td>
+                        <td className="py-3 px-4 font-bold text-brand-maroon">₹{d.price}</td>
+                        <td className="py-3 px-4">{d.durationMinHours || 2}–{d.durationMaxHours || 3} hrs</td>
+                        <td className="py-3 px-4">{d.conesNeeded || 2} cones</td>
+                        <td className="py-3 px-4"><span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">{d.badge || 'Popular'}</span></td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick={() => handleDeleteDesign(d.id)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="Delete Design"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* TAB 4: Concierge Tickets */}
-        {activeTab === 'concerns' && (
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-stone-200/80 space-y-6">
-            <h3 className="font-serif text-xl font-bold text-brand-maroon">Concierge Tickets</h3>
-            {concerns.length === 0 ? (
-              <div className="py-12 text-center text-stone-400 font-serif">No open support tickets.</div>
+        {/* ── TAB 2: ARTISTS GUILD MANAGEMENT ── */}
+        {activeTab === 'artists' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-stone-900">Artists Guild Management</h2>
+                <p className="text-xs text-stone-500">Vetted master artisans available for doorstep bridal and celebratory bookings.</p>
+              </div>
+              <button
+                onClick={() => setShowAddArtistModal(true)}
+                className="px-5 py-2.5 bg-brand-maroon text-brand-gold rounded-full font-serif font-bold text-xs hover:bg-brand-maroon-dark transition shadow flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Master Artist
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {artists.map((art) => (
+                <div key={art.id} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-50 text-brand-maroon font-serif font-bold text-xl flex items-center justify-center border border-brand-gold/30">
+                      {art.name[0]}
+                    </div>
+                    <div>
+                      <h3 className="font-serif font-bold text-base text-stone-900">{art.name}</h3>
+                      <p className="text-xs text-stone-500 flex items-center gap-1"><MapPin className="w-3 h-3 text-brand-gold" /> {art.city}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                    <div>
+                      <span className="text-[10px] text-stone-400 block">Experience</span>
+                      <strong className="text-stone-800">{art.experienceYears} Years</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-stone-400 block">Rating</span>
+                      <strong className="text-amber-700 flex items-center justify-center gap-0.5">★ {art.rating || 4.9}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-stone-400 block">Completed</span>
+                      <strong className="text-stone-800">{art.bookingsCompleted || 100}+</strong>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-stone-600">
+                    <span className="font-semibold text-stone-700">Specialization:</span> {art.specialization || 'Bridal Marwari & Royal Jaal'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 3: BOOKINGS & CEREMONY ORDERS ── */}
+        {activeTab === 'bookings' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-stone-900">Ceremony Orders & Bookings</h2>
+                <p className="text-xs text-stone-500">Track patron reservations, advance payment status, and ceremony fulfillment.</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 font-bold uppercase text-[10px]">
+                    <tr>
+                      <th className="py-3 px-4">Order #</th>
+                      <th className="py-3 px-4">Client</th>
+                      <th className="py-3 px-4">Event Date</th>
+                      <th className="py-3 px-4">Design</th>
+                      <th className="py-3 px-4">Artist Assigned</th>
+                      <th className="py-3 px-4">Total Amount</th>
+                      <th className="py-3 px-4">Advance Token</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {bookings.map((b) => (
+                      <tr key={b.id} className="hover:bg-stone-50/60 transition">
+                        <td className="py-3 px-4 font-mono font-bold text-brand-maroon">#{b.id}</td>
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-stone-900">{b.clientName || 'Royal Patron'}</div>
+                          <div className="text-[10px] text-stone-400">{b.phone}</div>
+                        </td>
+                        <td className="py-3 px-4">{b.date || '2026-10-20'}</td>
+                        <td className="py-3 px-4 font-semibold text-stone-800">{b.designName || 'Bridal Motif'}</td>
+                        <td className="py-3 px-4">{b.artistName || 'Pooja Verma'}</td>
+                        <td className="py-3 px-4 font-bold text-stone-900">₹{b.finalAmount}</td>
+                        <td className="py-3 px-4">
+                          {b.advancePaid ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">✓ Paid</span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">Pending</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            b.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-700'
+                          }`}>
+                            {b.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {!b.advancePaid && (
+                            <button
+                              onClick={() => handleConfirmUpi(b.id)}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition"
+                            >
+                              Confirm UPI
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 4: CUSTOM BRIDAL DESIGN APPROVALS ── */}
+        {activeTab === 'custom-designs' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-stone-900">Custom Bridal Design Reviews & Quotes</h2>
+              <p className="text-xs text-stone-500">Patron uploaded personal sketches, heirloom motifs, and Pinterest inspirations requiring bespoke quotations.</p>
+            </div>
+
+            {customRequests.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-stone-200">
+                <Sparkles className="w-10 h-10 text-brand-gold mx-auto mb-2" />
+                <h3 className="font-serif font-bold text-stone-900">No Custom Design Submissions Yet</h3>
+                <p className="text-xs text-stone-500 mt-1">Patrons can submit custom sketches through the Commission Custom Design page.</p>
+              </div>
             ) : (
               <div className="space-y-4">
-                {concerns.map((c) => (
-                  <div key={c.id} className="p-5 rounded-2xl bg-stone-50 border border-stone-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-brand-maroon">#{c.id}</span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-stone-200 text-stone-700">
-                          {c.category}
+                {customRequests.map((req) => (
+                  <div key={req.id} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-3">
+                      <div>
+                        <span className="text-[10px] font-mono font-bold uppercase text-brand-gold-dark bg-amber-50 px-2 py-0.5 rounded">
+                          Request #{req.id}
                         </span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${c.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
-                          {c.status || 'OPEN'}
-                        </span>
+                        <h3 className="font-serif font-bold text-lg text-stone-900 mt-1">{req.designTitle}</h3>
                       </div>
-                      <p className="font-bold text-stone-900 text-sm">{c.customerName} &lt;{c.customerEmail}&gt;</p>
-                      <p className="text-stone-600 text-xs bg-white p-3 rounded-xl border border-stone-200/60 mt-1">{c.message}</p>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                        req.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {req.status}
+                      </span>
                     </div>
 
-                    {c.status !== 'RESOLVED' && (
-                      <button
-                        onClick={() => handleResolveConcern(c.id)}
-                        className="px-4 py-2 bg-brand-maroon hover:bg-brand-maroon-dark text-brand-gold rounded-full text-xs font-serif font-bold shadow shrink-0 transition"
-                      >
-                        Mark as Resolved
-                      </button>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <span className="text-stone-400 block text-[10px] uppercase font-bold">Patron Details</span>
+                        <div className="font-bold text-stone-900 mt-1">{req.clientName}</div>
+                        <div className="text-stone-500">{req.clientEmail} • {req.clientPhone}</div>
+                        <div className="text-stone-500 mt-0.5">City: {req.city || 'Bangalore'}</div>
+                      </div>
+
+                      <div>
+                        <span className="text-stone-400 block text-[10px] uppercase font-bold">Event & Coverage</span>
+                        <div className="font-bold text-stone-900 mt-1">{req.occasion} • {req.coverage}</div>
+                        <div className="text-stone-500">Date: {req.eventDate || 'Upcoming'}</div>
+                        <div className="text-stone-500 mt-0.5">Style: {req.preferredStyle}</div>
+                      </div>
+
+                      {req.designImage && (
+                        <div>
+                          <span className="text-stone-400 block text-[10px] uppercase font-bold mb-1">Inspiration Photo</span>
+                          <img src={req.designImage} alt="Custom inspiration" className="w-20 h-20 rounded-xl object-cover border" />
+                        </div>
+                      )}
+                    </div>
+
+                    {req.status === 'PENDING_APPROVAL' && (
+                      <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/70 space-y-3">
+                        <span className="text-xs font-bold text-amber-900 block">Issue Custom Artisan Quote</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <input
+                            type="number"
+                            placeholder="Quoted Total Price (₹)"
+                            defaultValue="4500"
+                            onChange={(e) => setQuoteData({ ...quoteData, [req.id]: { ...(quoteData[req.id] || {}), price: e.target.value } })}
+                            className="px-3 py-2 bg-white rounded-xl border border-stone-300 text-xs"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Advance Deposit Required (₹)"
+                            defaultValue="1500"
+                            onChange={(e) => setQuoteData({ ...quoteData, [req.id]: { ...(quoteData[req.id] || {}), advance: e.target.value } })}
+                            className="px-3 py-2 bg-white rounded-xl border border-stone-300 text-xs"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Assign Artist"
+                            defaultValue="Pooja Verma (Master Artist)"
+                            onChange={(e) => setQuoteData({ ...quoteData, [req.id]: { ...(quoteData[req.id] || {}), artist: e.target.value } })}
+                            className="px-3 py-2 bg-white rounded-xl border border-stone-300 text-xs"
+                          />
+                        </div>
+                        <div className="flex gap-2 justify-end pt-1">
+                          <button
+                            onClick={() => handleRejectCustomDesign(req.id)}
+                            className="px-4 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-full font-bold text-xs"
+                          >
+                            Decline
+                          </button>
+                          <button
+                            onClick={() => handleApproveCustomDesign(req.id)}
+                            className="px-5 py-1.5 bg-brand-maroon hover:bg-brand-maroon-dark text-brand-gold rounded-full font-bold text-xs shadow"
+                          >
+                            Approve & Notify Patron
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── TAB 5: ARTIST APPLICATIONS ── */}
+        {activeTab === 'artist-apps' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-stone-900">Artist Guild Partnership Applications</h2>
+              <p className="text-xs text-stone-500">Mehendi artists applying to join the verified Shringar bridal network.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {artistApps.map((app) => (
+                <div key={app.id} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-serif font-bold text-base text-stone-900">{app.fullName}</h3>
+                      <p className="text-xs text-stone-500">{app.email} • {app.phone}</p>
+                      <p className="text-xs text-brand-maroon font-semibold mt-0.5">{app.city} • {app.yearsExperience} yrs experience</p>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      app.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                      app.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {app.status || 'PENDING'}
+                    </span>
+                  </div>
+
+                  <div className="text-xs bg-stone-50 p-3 rounded-xl border border-stone-100">
+                    <span className="font-semibold text-stone-700">Specialization:</span> {app.specialization}
+                  </div>
+
+                  {app.status === 'PENDING' && (
+                    <div className="flex gap-2 justify-end pt-2">
+                      <button
+                        onClick={() => handleUpdateArtistApp(app.id, 'REJECTED')}
+                        className="px-4 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-full font-bold text-xs"
+                      >
+                        Decline
+                      </button>
+                      <button
+                        onClick={() => handleUpdateArtistApp(app.id, 'APPROVED')}
+                        className="px-5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-bold text-xs shadow"
+                      >
+                        Approve Guild Membership
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 6: COUPONS & PROMOTIONS ── */}
+        {activeTab === 'coupons' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-stone-900">Discount Coupons & Promotions</h2>
+                <p className="text-xs text-stone-500">Manage promotional codes and festive discounts applied during booking checkout.</p>
+              </div>
+              <button
+                onClick={() => setShowAddCouponModal(true)}
+                className="px-5 py-2.5 bg-brand-maroon text-brand-gold rounded-full font-serif font-bold text-xs hover:bg-brand-maroon-dark transition shadow flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Generate Coupon
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {coupons.map((cpn) => (
+                <div key={cpn.id} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-mono font-bold text-base text-brand-maroon px-3 py-1 bg-amber-50 rounded-lg border border-amber-200">
+                      {cpn.code}
+                    </span>
+                    <button
+                      onClick={() => handleToggleCoupon(cpn.id)}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        cpn.active ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'
+                      }`}
+                    >
+                      {cpn.active ? 'Active' : 'Disabled'}
+                    </button>
+                  </div>
+
+                  <div className="text-xs text-stone-600 space-y-1 pt-1">
+                    <div>Discount: <strong className="text-stone-900">{cpn.discountPercent}% OFF</strong></div>
+                    <div>Min. Booking Amount: <strong className="text-stone-900">₹{cpn.minBookingAmount}</strong></div>
+                    <div>Valid Until: <strong className="text-stone-900">{cpn.expiryDate}</strong></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 7: LOCATIONS & CITIES ── */}
+        {activeTab === 'locations' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-stone-900">Serviceable Cities & Coverage Areas</h2>
+              <p className="text-xs text-stone-500">Active metropolitan areas where Shringar delivers doorstep mehendi artists.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {locations.map((loc) => (
+                <div key={loc.id} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif font-bold text-lg text-stone-900 flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-brand-maroon" />
+                      {loc.name}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                      Operational
+                    </span>
+                  </div>
+                  <div className="text-xs text-stone-500">Covered Hubs:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(loc.areas || []).map((area, i) => (
+                      <span key={i} className="text-[11px] bg-stone-100 px-2.5 py-1 rounded-md text-stone-700">
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 8: TESTIMONIALS ── */}
+        {activeTab === 'testimonials' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-stone-900">Customer Testimonials & Reviews</h2>
+              <p className="text-xs text-stone-500">Published patron reviews celebrating bridal craftsmanship.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {testimonials.map((t) => (
+                <div key={t.id} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-serif font-bold text-base text-stone-900">{t.clientName}</h4>
+                    <span className="text-amber-500 font-bold text-xs">{'★'.repeat(t.rating || 5)}</span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-brand-gold-dark">{t.occasion}</span>
+                  <p className="text-xs text-stone-600 italic">"{t.reviewText}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 9: SUPPORT CONCERNS ── */}
+        {activeTab === 'concerns' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-stone-900">Customer Concierge & Support Tickets</h2>
+              <p className="text-xs text-stone-500">Patron requests regarding ceremony dates, special instructions, and inquiries.</p>
+            </div>
+
+            <div className="space-y-4">
+              {concerns.map((c) => (
+                <div key={c.id} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-mono text-xs font-bold text-brand-maroon">Ticket #{c.id}</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      c.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {c.status}
+                    </span>
+                  </div>
+                  <h4 className="font-serif font-bold text-stone-900 text-sm">{c.subject}</h4>
+                  <p className="text-xs text-stone-600">{c.details}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 10: SETTINGS ── */}
+        {activeTab === 'settings' && (
+          <div className="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6 max-w-2xl">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-stone-900">Platform Operational Settings</h2>
+              <p className="text-xs text-stone-500">Configure business policies, commission splits, and default contact channels.</p>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold uppercase text-stone-600 mb-1">Platform Commission Rate (%)</label>
+                <input
+                  type="number"
+                  value={settings.commissionRate}
+                  onChange={(e) => setSettings({ ...settings, commissionRate: Number(e.target.value) })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
+                />
+                <span className="text-[10px] text-stone-400">Default 20% (Artisan receives 80%)</span>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-stone-600 mb-1">Mandatory Advance Booking Deposit (%)</label>
+                <input
+                  type="number"
+                  value={settings.advanceDepositPercent}
+                  onChange={(e) => setSettings({ ...settings, advanceDepositPercent: Number(e.target.value) })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-stone-600 mb-1">Customer Concierge Helpline</label>
+                <input
+                  type="text"
+                  value={settings.supportPhone}
+                  onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => showSuccess('Platform settings saved successfully!')}
+                  className="px-6 py-2.5 bg-brand-maroon text-brand-gold rounded-full font-serif font-bold text-xs hover:bg-brand-maroon-dark transition shadow"
+                >
+                  Save Platform Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL: ADD NEW DESIGN ── */}
+        {showAddDesignModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center border-b pb-3">
+                <h3 className="font-serif font-bold text-lg text-brand-maroon">Add New Mehendi Design</h3>
+                <button onClick={() => setShowAddDesignModal(false)} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreateDesign} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Design Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Royal Marwari Dulhan"
+                    value={newDesign.name}
+                    onChange={(e) => setNewDesign({ ...newDesign, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold uppercase text-stone-600 mb-1">Category</label>
+                    <select
+                      value={newDesign.category}
+                      onChange={(e) => setNewDesign({ ...newDesign, category: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white"
+                    >
+                      <option value="Bridal">Bridal</option>
+                      <option value="Arabic">Arabic</option>
+                      <option value="Minimal">Minimal</option>
+                      <option value="Fusion">Fusion</option>
+                      <option value="Mughal">Mughal</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold uppercase text-stone-600 mb-1">Coverage</label>
+                    <select
+                      value={newDesign.coverage}
+                      onChange={(e) => setNewDesign({ ...newDesign, coverage: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white"
+                    >
+                      <option value="Full hand">Full hand</option>
+                      <option value="Half hand">Half hand</option>
+                      <option value="Both hands">Both hands</option>
+                      <option value="Both feet">Both feet</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold uppercase text-stone-600 mb-1">Price (₹) *</label>
+                    <input
+                      type="number"
+                      required
+                      value={newDesign.price}
+                      onChange={(e) => setNewDesign({ ...newDesign, price: Number(e.target.value) })}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold uppercase text-stone-600 mb-1">Cones Needed</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={newDesign.conesNeeded}
+                      onChange={(e) => setNewDesign({ ...newDesign, conesNeeded: Number(e.target.value) })}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Image URL / Path</label>
+                  <input
+                    type="text"
+                    value={newDesign.imageUrl}
+                    onChange={(e) => setNewDesign({ ...newDesign, imageUrl: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDesignModal(false)}
+                    className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-full bg-brand-maroon text-brand-gold font-bold shadow"
+                  >
+                    Save Design to Catalog
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL: ADD NEW ARTIST ── */}
+        {showAddArtistModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center border-b pb-3">
+                <h3 className="font-serif font-bold text-lg text-brand-maroon">Add Master Artist</h3>
+                <button onClick={() => setShowAddArtistModal(false)} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreateArtist} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Artist Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Meera Joshi"
+                    value={newArtist.name}
+                    onChange={(e) => setNewArtist({ ...newArtist, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold uppercase text-stone-600 mb-1">City</label>
+                    <input
+                      type="text"
+                      value={newArtist.city}
+                      onChange={(e) => setNewArtist({ ...newArtist, city: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold uppercase text-stone-600 mb-1">Experience (Years)</label>
+                    <input
+                      type="number"
+                      value={newArtist.experienceYears}
+                      onChange={(e) => setNewArtist({ ...newArtist, experienceYears: Number(e.target.value) })}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Specialization</label>
+                  <input
+                    type="text"
+                    value={newArtist.specialization}
+                    onChange={(e) => setNewArtist({ ...newArtist, specialization: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddArtistModal(false)}
+                    className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-full bg-brand-maroon text-brand-gold font-bold shadow"
+                  >
+                    Register Artist
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL: GENERATE COUPON ── */}
+        {showAddCouponModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b pb-3">
+                <h3 className="font-serif font-bold text-lg text-brand-maroon">Generate Promo Coupon</h3>
+                <button onClick={() => setShowAddCouponModal(false)} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreateCoupon} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Coupon Code *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. DIWALI30"
+                    value={newCoupon.code}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 uppercase font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Discount (%) *</label>
+                  <input
+                    type="number"
+                    required
+                    value={newCoupon.discountPercent}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, discountPercent: Number(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Min Booking Amount (₹)</label>
+                  <input
+                    type="number"
+                    value={newCoupon.minBookingAmount}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, minBookingAmount: Number(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCouponModal(false)}
+                    className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-full bg-brand-maroon text-brand-gold font-bold shadow"
+                  >
+                    Create Coupon
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

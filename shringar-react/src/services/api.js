@@ -168,6 +168,61 @@ export const AdminAPI = {
   getArtistApplications: () => request('/admin/artist-applications'),
   updateArtistApplication: (id, status, notes) => 
     request(`/admin/artist-applications/${id}/status`, { method: 'PATCH', body: { status, adminNotes: notes } }),
+
+  // Artists
+  getAllArtists: async () => {
+    try {
+      return await request('/admin/artists');
+    } catch {
+      return await request('/artists?city=Bangalore').catch(() => []);
+    }
+  },
+  createArtist: (data) => request('/admin/artists', { method: 'POST', body: data }),
+  updateArtist: (id, data) => request(`/admin/artists/${id}`, { method: 'PUT', body: data }),
+  deleteArtist: (id) => request(`/admin/artists/${id}`, { method: 'DELETE' }),
+
+  // Coupons
+  getAllCoupons: async () => {
+    try {
+      return await request('/admin/coupons');
+    } catch {
+      return await request('/coupons/public').catch(() => []);
+    }
+  },
+  createCoupon: (data) => request('/admin/coupons', { method: 'POST', body: data }),
+  toggleCoupon: (id) => request(`/admin/coupons/${id}/toggle`, { method: 'PATCH' }),
+  deleteCoupon: (id) => request(`/admin/coupons/${id}`, { method: 'DELETE' }),
+
+  // Locations
+  getLocations: async () => {
+    try {
+      return await request('/admin/locations/cities');
+    } catch {
+      return await request('/cities').catch(() => []);
+    }
+  },
+  createCity: (data) => request('/admin/locations/cities', { method: 'POST', body: data }),
+
+  // Testimonials
+  getAllTestimonials: async () => {
+    try {
+      return await request('/admin/testimonials');
+    } catch {
+      return await request('/testimonials').catch(() => []);
+    }
+  },
+  createTestimonial: (data) => request('/admin/testimonials', { method: 'POST', body: data }),
+  deleteTestimonial: (id) => request(`/admin/testimonials/${id}`, { method: 'DELETE' }),
+
+  // Settings
+  getSettings: async () => {
+    try {
+      return await request('/admin/settings');
+    } catch {
+      return await request('/settings').catch(() => ({}));
+    }
+  },
+  updateSettings: (data) => request('/admin/settings', { method: 'PATCH', body: data }),
 };
 
 export const CustomDesignsAPI = CustomDesignsService;

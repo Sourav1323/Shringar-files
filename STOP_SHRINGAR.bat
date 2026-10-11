@@ -11,6 +11,9 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8080 ^| findstr LISTENING') 
 echo Stopping services on port 3000 (React Vite)...
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000 ^| findstr LISTENING') do taskkill /f /pid %%a 2>nul
 
+echo Stopping services on port 5501 (Standalone Admin)...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5501 ^| findstr LISTENING') do taskkill /f /pid %%a 2>nul
+
 echo.
 echo All Shringar services stopped successfully.
 pause

@@ -82,6 +82,7 @@ export default function App() {
                   <Route path="/help" element={<HelpPage />} />
 
                   {/* Royal Admin Dashboard */}
+                  <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
                   {/* Fallback to Home */}

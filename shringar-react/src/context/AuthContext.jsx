@@ -75,7 +75,7 @@ export function AuthProvider({ children }) {
   };
 
   const isAuthenticated = !!token && !!user;
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = !!(user && (user.role === 'ADMIN' || user.role === 'ROLE_ADMIN' || user.email === 'shringar.admin@gmail.com'));
 
   return (
     <AuthContext.Provider
