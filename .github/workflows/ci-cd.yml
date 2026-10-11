@@ -1,0 +1,188 @@
+name: Shringar CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, dev, staging ]
+  pull_request:
+    branches: [ main, dev ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/${{ github.repository }}/backend
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository }}/frontend
+  IMAGE_ADMIN: ghcr.io/${{ github.repository }}/admin
+
+jobs:
+  # ============================================================================
+  # STAGE 1: Code Quality, Automated Testing & Build Validation
+  # ============================================================================
+  test-and-verify:
+    name: 🧪 Automated Testing & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ── Java Backend Tests & Verification ──
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build & Test Backend (Maven)
+        run: |
+          cd shringar-backend
+          mvn clean test -B
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+      # ── React Frontend Build & Lint Verification ──
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: shringar-react/package-lock.json
+
+      - name: Install Frontend Dependencies & Build
+        run: |
+          cd shringar-react
+          npm ci
+          npm run build
+
+  # ============================================================================
+  # STAGE 2: Build & Push Docker Container Images
+  # ============================================================================
+  build-and-push-docker:
+    name: 🐳 Build & Push Docker Images
+    needs: test-and-verify
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/docker-setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: actions/docker-login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Determine environment tags
+      - name: Extract Docker Metadata
+        id: meta
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "ENV_TAG=latest" >> $GITHUB_OUTPUT
+            echo "DEPLOY_TARGET=production" >> $GITHUB_OUTPUT
+          else
+            echo "ENV_TAG=staging" >> $GITHUB_OUTPUT
+            echo "DEPLOY_TARGET=staging" >> $GITHUB_OUTPUT
+          fi
+
+      # 1. Build & Push Backend Image
+      - name: Build & Push Backend Container
+        uses: actions/docker-build-push-action@v5
+        with:
+          context: ./shringar-backend
+          file: ./shringar-backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+            ${{ env.IMAGE_BACKEND }}:${{ steps.meta.outputs.ENV_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 2. Build & Push React Frontend Image
+      - name: Build & Push React Frontend Container
+        uses: actions/docker-build-push-action@v5
+        with:
+          context: ./shringar-react
+          file: ./shringar-react/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+            ${{ env.IMAGE_FRONTEND }}:${{ steps.meta.outputs.ENV_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 3. Build & Push Admin Portal Image
+      - name: Build & Push Admin Portal Container
+        uses: actions/docker-build-push-action@v5
+        with:
+          context: ./shringar-admin
+          file: ./shringar-admin/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_ADMIN }}:${{ github.sha }}
+            ${{ env.IMAGE_ADMIN }}:${{ steps.meta.outputs.ENV_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================================
+  # STAGE 3: Continuous Deployment to Virtual Server (Staging or Production)
+  # ============================================================================
+  deploy:
+    name: 🚀 Deploy to Virtual Server
+    needs: build-and-push-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Determine Server Secrets
+        id: server_env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "target=production" >> $GITHUB_OUTPUT
+            echo "host=${{ secrets.PROD_SERVER_HOST }}" >> $GITHUB_OUTPUT
+            echo "user=${{ secrets.PROD_SERVER_USER }}" >> $GITHUB_OUTPUT
+            echo "key=${{ secrets.PROD_SSH_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
+          else
+            echo "target=staging" >> $GITHUB_OUTPUT
+            echo "host=${{ secrets.STAGING_SERVER_HOST }}" >> $GITHUB_OUTPUT
+            echo "user=${{ secrets.STAGING_SERVER_USER }}" >> $GITHUB_OUTPUT
+            echo "key=${{ secrets.STAGING_SSH_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy on Remote Virtual Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        if: steps.server_env.outputs.host != ''
+        with:
+          host: ${{ steps.server_env.outputs.host }}
+          username: ${{ steps.server_env.outputs.user }}
+          key: ${{ steps.server_env.outputs.key }}
+          script: |
+            set -e
+            echo "🚀 Deploying Shringar update to ${{ steps.server_env.outputs.target }} server..."
+
+            # 1. Navigate to application deployment directory
+            cd /opt/shringar || (mkdir -p /opt/shringar && cd /opt/shringar)
+
+            # 2. Authenticate Docker with GHCR
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            # 3. Pull latest images
+            export DOCKER_REGISTRY="ghcr.io/${{ github.repository }}"
+            export IMAGE_TAG="${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}"
+            docker compose -f docker-compose.prod.yml pull
+
+            # 4. Perform zero-downtime rolling update
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # 5. Clean up stale dangling images to conserve disk space
+            docker image prune -f
+
+            # 6. Automated Health Verification Check
+            echo "🔍 Running post-deployment health check..."
+            sleep 15
+            curl -k -f https://localhost/api/settings || curl -f http://localhost:8080/api/settings || exit 1
+            echo "✅ Deployment successful and verified healthy!"

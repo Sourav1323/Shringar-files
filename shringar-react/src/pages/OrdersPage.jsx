@@ -79,19 +79,27 @@ export default function OrdersPage() {
                     Booked on {new Date(b.createdAt || Date.now()).toLocaleDateString()}
                   </div>
                 </div>
-                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                  {b.status || 'CONFIRMED'}
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  b.status === 'CONFIRMED'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : b.status === 'COMPLETED'
+                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : b.status === 'CANCELLED'
+                    ? 'bg-red-100 text-red-800 border border-red-300'
+                    : 'bg-amber-100 text-amber-800 border border-amber-300'
+                }`}>
+                  {b.status === 'PENDING' ? '⏳ Awaiting UPI Verification' : (b.status || 'PENDING')}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-stone-700">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-brand-gold-dark" />
-                  <span>{b.eventDate || 'Scheduled Date'}</span>
+                  <span>{b.appointmentDate || b.eventDate || 'Scheduled Date'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-brand-gold-dark" />
-                  <span>{b.timeSlot || 'Time Slot'}</span>
+                  <span>{b.preferredTime ? `${b.preferredTime} Slot` : (b.timeSlot || 'Time Slot')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-brand-gold-dark" />
@@ -99,12 +107,24 @@ export default function OrdersPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t text-xs">
-                <div>
-                  <span className="text-stone-500">Total Price: </span>
-                  <strong className="text-brand-maroon font-bold text-sm">
-                    {formatPrice(b.totalAmount)}
-                  </strong>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t text-xs gap-2">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <span className="text-stone-500">Grand Total: </span>
+                    <strong className="text-brand-maroon font-bold text-sm">
+                      {formatPrice(b.grandTotal ?? b.totalAmount)}
+                    </strong>
+                  </div>
+                  {b.advanceAmount && (
+                    <div className="text-[11px] text-stone-500">
+                      Advance: <span className="font-semibold text-stone-700">{formatPrice(b.advanceAmount)}</span>
+                    </div>
+                  )}
+                  {b.upiTransactionRef && (
+                    <div className="text-[11px] text-stone-500 font-mono">
+                      UTR: <span className="font-semibold text-stone-700">{b.upiTransactionRef}</span>
+                    </div>
+                  )}
                 </div>
                 <Link
                   to="/help"

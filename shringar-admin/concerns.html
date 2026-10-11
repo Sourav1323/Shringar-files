@@ -9,10 +9,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css"/>
+  <link rel="stylesheet" href="css/admin.css?v=2.1"/>
 </head>
 <body>
-<div class="layout">
+<div class="admin-shell">
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="images/shringar-logo.png" class="sidebar-logo-img" alt="Logo" />
@@ -58,9 +58,9 @@
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;">
         <div style="display:flex;gap:6px;">
           <button class="btn btn-sm btn-outline active-filter" id="f-all" onclick="setFilter('ALL')">All</button>
-          <button class="btn btn-sm btn-outline" id="f-open" onclick="setFilter('OPEN')">⚪ Open</button>
-          <button class="btn btn-sm btn-outline" id="f-in-review" onclick="setFilter('IN_REVIEW')">🟡 Under Review</button>
-          <button class="btn btn-sm btn-outline" id="f-resolved" onclick="setFilter('RESOLVED')">🟢 Resolved</button>
+          <button class="btn btn-sm btn-outline" id="f-open" onclick="setFilter('OPEN')">Open</button>
+          <button class="btn btn-sm btn-outline" id="f-in-review" onclick="setFilter('IN_REVIEW')">Under Review</button>
+          <button class="btn btn-sm btn-outline" id="f-resolved" onclick="setFilter('RESOLVED')">Resolved</button>
         </div>
         <div style="flex:1;min-width:240px;position:relative;">
           <input type="text" id="search-input" placeholder="Search customer, email, booking ref, or subject…"
@@ -203,8 +203,8 @@ function renderConcerns() {
   tbody.innerHTML = filtered.map(c => {
     const isResolved = c.status === 'RESOLVED';
     const statusBadge = isResolved
-      ? `<span class="badge badge-success">✓ Resolved</span>`
-      : (c.status === 'IN_REVIEW' ? `<span class="badge badge-warning">⏳ Under Review</span>` : `<span class="badge badge-secondary">⚪ Open</span>`);
+      ? `<span class="badge badge-green">Resolved</span>`
+      : (c.status === 'IN_REVIEW' ? `<span class="badge badge-amber">Under Review</span>` : `<span class="badge badge-gray">Open</span>`);
 
     const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
 
@@ -226,8 +226,8 @@ function renderConcerns() {
         <td>${statusBadge}</td>
         <td>
           ${c.adminResponse
-            ? `<span style="font-size:11.5px;color:#0f6e56;font-weight:600;">✓ Responded</span>`
-            : `<span style="font-size:11.5px;color:#ba7517;font-weight:600;">⏳ Awaiting Response</span>`}
+            ? `<span style="font-size:11.5px;color:#0f6e56;font-weight:600;">Responded</span>`
+            : `<span style="font-size:11.5px;color:#ba7517;font-weight:600;">Awaiting Response</span>`}
         </td>
         <td>
           <button class="btn btn-sm btn-primary" onclick="openReviewModal(${c.id})">Review & Respond</button>
@@ -275,7 +275,7 @@ async function saveResponse() {
   } catch(err) {
     ShringarAdmin.toast(err.message, 'error');
   } finally {
-    btn.disabled = false; btn.textContent = '💾 Send Response & Save';
+    btn.disabled = false; btn.textContent = 'Send Response & Save';
   }
 }
 

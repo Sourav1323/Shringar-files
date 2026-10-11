@@ -6,7 +6,7 @@
 <title>Testimonials — Shringar Admin</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
-<link rel="stylesheet" href="css/admin.css"/>
+<link rel="stylesheet" href="css/admin.css?v=2.1"/>
 </head>
 <body>
 <div class="admin-shell">
@@ -142,31 +142,40 @@ async function loadTestimonials(btn) {
       b.innerHTML = '✓ Refreshed';
       setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
     }
-    if (!list.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">⭐</div>No reviews yet. Add your first customer review!</td></tr>`; return; }
-    tbody.innerHTML = list.map(t => `<tr>
-      <td style="color:var(--tl);font-size:12px;">${t.sortOrder ?? 0}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="cell-emoji" style="width:36px;height:36px;">${t.avatarEmoji||'👩'}</div>
-          <div>
-            <div class="cell-name">${t.customerName}</div>
-            <div class="cell-sub">${t.location||''}</div>
+    if (!list.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">★</div>No reviews yet. Add your first customer review!</td></tr>`; return; }
+    tbody.innerHTML = list.map(t => {
+      const initials = (t.customerName || 'Bride').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      return `<tr>
+        <td style="color:var(--tl);font-size:12px;">${t.sortOrder ?? 0}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="client-avatar-badge">${initials}</div>
+            <div>
+              <div class="cell-name">${t.customerName}</div>
+              <div class="cell-sub">${t.location||''}</div>
+            </div>
           </div>
-        </div>
-      </td>
-      <td style="max-width:220px;font-size:12.5px;color:var(--tm);">"${t.review.length>80 ? t.review.slice(0,80)+'…' : t.review}"</td>
-      <td>${'⭐'.repeat(t.rating||5)}</td>
-      <td style="font-size:12.5px;color:var(--tl);">${t.occasion||'—'}</td>
-      <td>${t.isActive ? '<span class="badge badge-green">Visible</span>' : '<span class="badge badge-gray">Hidden</span>'}</td>
-      <td>
-        <div class="row-actions">
-          <button class="btn btn-sm btn-outline" onclick="openEditModal(${t.id})">Edit</button>
-          <button class="btn btn-sm btn-outline" onclick="toggleVisibility(${t.id},${!t.isActive})">${t.isActive ? 'Hide' : 'Show'}</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteTestimonial(${t.id},'${t.customerName.replace(/'/g,"\\'")}')">Delete</button>
-        </div>
-      </td>
-    </tr>`).join('');
-  } catch(err) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">⚠️ ${err.message}</td></tr>`; }
+        </td>
+        <td style="max-width:220px;font-size:12.5px;color:var(--tm);">"${t.review.length>80 ? t.review.slice(0,80)+'…' : t.review}"</td>
+        <td style="color:var(--gold);font-size:13px;letter-spacing:1px;">${'★'.repeat(t.rating||5)}</td>
+        <td style="font-size:12.5px;color:var(--tl);">${t.occasion||'—'}</td>
+        <td>${t.isActive ? '<span class="badge badge-green">Visible</span>' : '<span class="badge badge-gray">Hidden</span>'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm btn-outline" onclick="openEditModal(${t.id})">Edit</button>
+            <button class="btn btn-sm btn-outline" onclick="toggleVisibility(${t.id},${!t.isActive})">${t.isActive ? 'Hide' : 'Show'}</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteTestimonial(${t.id},'${t.customerName.replace(/'/g,"\\'")}')">Delete</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">⚠️ ${err.message}</td></tr>`;
+    if (b) {
+      b.innerHTML = '↻ Refresh';
+      b.disabled = false;
+    }
+  }
 }
 
 function openModal() {

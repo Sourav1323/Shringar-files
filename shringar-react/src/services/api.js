@@ -64,11 +64,50 @@ export const AuthAPI = {
   signup: (userData) => 
     request('/auth/signup', { method: 'POST', body: userData }),
 
-  sendOtp: (email) => 
-    request('/auth/send-otp', { method: 'POST', body: { email } }),
+  sendOtp: (identifier, channel = 'EMAIL', forSignup = true) => {
+    const id = typeof identifier === 'object' ? (identifier.identifier || identifier.email) : identifier;
+    const ch = (typeof identifier === 'object' ? identifier.channel : channel) || 'EMAIL';
+    const fs = typeof identifier === 'object' ? identifier.forSignup : forSignup;
+    return request('/auth/send-otp', {
+      method: 'POST',
+      body: {
+        identifier: id,
+        channel: ch,
+        forSignup: String(fs)
+      }
+    });
+  },
 
-  verifyOtp: (email, otp) => 
-    request('/auth/verify-otp', { method: 'POST', body: { email, otp } }),
+  verifyOtp: (identifier, channel = 'EMAIL', code) => {
+    let id = identifier;
+    let ch = channel;
+    let cd = code;
+    if (typeof identifier === 'object') {
+      id = identifier.identifier || identifier.email;
+      ch = identifier.channel || 'EMAIL';
+      cd = identifier.code || identifier.otp;
+    } else if (!code && channel && channel.length === 6 && !['EMAIL', 'PHONE'].includes(channel.toUpperCase())) {
+      ch = 'EMAIL';
+      cd = channel;
+    }
+    return request('/auth/verify-otp', {
+      method: 'POST',
+      body: {
+        identifier: id,
+        channel: ch || 'EMAIL',
+        code: cd
+      }
+    });
+  },
+
+  checkExists: (email, phone) =>
+    request('/auth/check-exists', { method: 'POST', body: { email, phone } }),
+
+  forgotPassword: (identifier) =>
+    request('/auth/forgot-password', { method: 'POST', body: { identifier } }),
+
+  resetPassword: (identifier, code, newPassword) =>
+    request('/auth/reset-password', { method: 'POST', body: { identifier, code, newPassword } }),
 };
 
 export const DesignsAPI = {
@@ -126,15 +165,32 @@ export const SettingsAPI = {
   get: () => request('/settings'),
 };
 
+export const CartAPI = {
+  get: () => request('/cart'),
+  addItem: (designId, quantity = 1, coverageNote = '') => 
+    request('/cart/items', { method: 'POST', body: { designId, quantity, coverageNote } }),
+  removeItem: (cartItemId) => 
+    request(`/cart/items/${cartItemId}`, { method: 'DELETE' }),
+  clear: () => 
+    request('/cart', { method: 'DELETE' }),
+  applyCoupon: (code) => 
+    request('/cart/coupon', { method: 'POST', body: { code } }),
+  removeCoupon: () => 
+    request('/cart/coupon', { method: 'DELETE' }),
+};
+
 export const BookingsAPI = {
   create: (bookingData) => 
     request('/bookings', { method: 'POST', body: bookingData }),
 
   getMyBookings: () => 
-    request('/bookings/my'),
+    request('/bookings'),
 
   getById: (id) => 
     request(`/bookings/${id}`),
+
+  submitUpiPayment: (id, transactionRef) => 
+    request(`/bookings/${id}/submit-upi-payment`, { method: 'PATCH', body: { transactionRef } }),
 };
 
 export const ConcernsAPI = {
@@ -234,6 +290,9 @@ export const AdminAPI = {
     }
   },
   updateSettings: (data) => request('/admin/settings', { method: 'PATCH', body: data }),
+
+  // Administrator Accounts
+  createAdmin: (data) => request('/auth/signup-admin', { method: 'POST', body: data }),
 };
 
 export const CustomDesignsAPI = CustomDesignsService;

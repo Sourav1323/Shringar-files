@@ -68,7 +68,12 @@ export default function LoginPage() {
     try {
       const res = await AuthAPI.sendOtp(signupEmail.trim(), 'EMAIL', true);
       setIsOtpSent(true);
-      toast.success(`6-digit verification code dispatched to ${signupEmail}! Please check inbox.`);
+      if (res && res.devCode) {
+        setEmailOtp(res.devCode);
+        toast.success(`Verification code: ${res.devCode} (Auto-filled for testing)`);
+      } else {
+        toast.success(`6-digit verification code dispatched to ${signupEmail}! Please check your inbox.`);
+      }
     } catch (err) {
       toast.error(err.message || 'Could not send verification email. Try again.');
     } finally {
@@ -88,7 +93,7 @@ export default function LoginPage() {
       await AuthAPI.verifyOtp(signupEmail.trim(), 'EMAIL', emailOtp.trim());
       setIsEmailVerified(true);
       setIsOtpSent(false);
-      toast.success('Email verified successfully! ✅');
+      toast.success('Email verified successfully!');
     } catch (err) {
       toast.error(err.message || 'Invalid or expired verification code.');
     } finally {

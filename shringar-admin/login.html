@@ -8,7 +8,7 @@
 <title>Admin Login — Shringar</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
-<link rel="stylesheet" href="css/admin.css"/>
+<link rel="stylesheet" href="css/admin.css?v=2.1"/>
 <style>
 body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--cream),var(--cd));}
 .login-box{background:var(--white);border-radius:18px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(73,51,19,0.15);overflow:hidden;}
@@ -50,8 +50,8 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
         <label class="form-label">Password</label>
         <div style="position:relative;display:flex;align-items:center;">
           <input class="form-input" type="password" id="login-password" placeholder="••••••••" style="padding-right:44px;" autocomplete="current-password"/>
-          <button type="button" id="toggle-pw-btn" onclick="togglePasswordVisibility('login-password', this)" style="position:absolute;right:8px;background:none;border:none;cursor:pointer;font-size:16px;color:var(--tl);padding:6px;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;" title="Show or hide password">
-            👁️
+          <button type="button" id="toggle-pw-btn" class="eye-btn" onclick="ShringarAdmin.togglePassword('login-password', this)" title="Show or hide password">
+            <svg class="eye-svg" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
@@ -75,20 +75,6 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
 // If already logged in as admin, skip straight to dashboard
 if (ShringarAdmin.isLoggedIn() && ShringarAdmin.getAdmin()?.role === 'ADMIN') {
   window.location.href = 'dashboard.html';
-}
-
-function togglePasswordVisibility(inputId, btn) {
-  const input = document.getElementById(inputId);
-  if (!input) return;
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.textContent = '🙈';
-    btn.title = 'Hide password';
-  } else {
-    input.type = 'password';
-    btn.textContent = '👁️';
-    btn.title = 'Show password';
-  }
 }
 
 function showError(msg) {

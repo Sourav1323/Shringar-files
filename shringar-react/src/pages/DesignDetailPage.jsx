@@ -623,25 +623,6 @@ export default function DesignDetailPage() {
 
           </div>
 
-          {/* 4 Interactive Angle Selector Pills */}
-          <div className="grid grid-cols-4 gap-2">
-            {angles.map((ang, idx) => (
-              <button
-                key={ang.id}
-                onClick={() => setActiveAngleIndex(idx)}
-                className={`py-2 px-1 text-center rounded-xl text-xs font-semibold transition border flex flex-col items-center gap-0.5 ${
-                  activeAngleIndex === idx
-                    ? 'bg-brand-maroon text-brand-gold border-brand-maroon shadow-md'
-                    : 'bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200'
-                }`}
-              >
-                <span className="text-sm">
-                  {idx === 0 ? '🤲' : idx === 1 ? '🖐️' : idx === 2 ? '✨' : '📐'}
-                </span>
-                <span className="truncate w-full text-[11px]">{ang.badge}</span>
-              </button>
-            ))}
-          </div>
 
           {/* 4 Interactive Thumbnails Strip */}
           <div className="grid grid-cols-4 gap-3 pt-1">
@@ -855,7 +836,7 @@ export default function DesignDetailPage() {
               className="w-full py-2.5 rounded-full bg-white hover:bg-rose-50 text-stone-700 hover:text-rose-700 border border-stone-200 text-xs font-bold transition flex items-center justify-center gap-2"
             >
               <Heart className={`w-4 h-4 ${favorited ? 'fill-rose-600 text-rose-600' : 'text-stone-400'}`} />
-              <span>{favorited ? '❤️ Saved in Your Favorites' : '🤍 Save to Favorites List'}</span>
+              <span>{favorited ? 'Saved in Your Favorites' : 'Save to Favorites List'}</span>
             </button>
           </div>
 

@@ -6,7 +6,7 @@
 <title>Locations — Shringar Admin</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
-<link rel="stylesheet" href="css/admin.css"/>
+<link rel="stylesheet" href="css/admin.css?v=2.1"/>
 <style>
 .city-card{background:var(--white);border:1px solid var(--cd);border-radius:14px;margin-bottom:20px;overflow:hidden;}
 .city-header{padding:16px 20px;background:linear-gradient(135deg,rgba(73,51,19,0.06),rgba(73,51,19,0.02));border-bottom:1px solid var(--cd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
@@ -129,7 +129,7 @@ async function loadCities(btn) {
       b.innerHTML = '✓ Refreshed';
       setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
     }
-    if (!allCities.length) { container.innerHTML = '<div class="empty-state"><div class="icon">📍</div>No cities configured yet.</div>'; return; }
+    if (!allCities.length) { container.innerHTML = '<div class="empty-state"><div class="icon"><svg class="icon-svg" style="width:26px;height:26px;margin:0 auto 6px;display:block;" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 5.2 8 12 8 12s8-6.8 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg></div>No cities configured yet.</div>'; return; }
     container.innerHTML = allCities.map(c => renderCityCard(c)).join('');
   } catch(err) {
     container.innerHTML = `<div class="empty-state">⚠️ ${err.message}</div>`;
@@ -165,7 +165,7 @@ function renderCityCard(c) {
         <span class="area-chip ${!a.isActive ? 'inactive' : ''}">
           ${a.name}
           <button class="area-chip-btn" title="${a.isActive ? 'Disable' : 'Enable'} area" onclick="toggleArea(${c.id},'${a.name.replace(/'/g,"\\'")}')">
-            ${a.isActive ? '👁' : '🚫'}
+            ${a.isActive ? '<span style="font-size:11px;color:#0f6e56;font-weight:600;">Active</span>' : '<span style="font-size:11px;color:#a32d2d;font-weight:600;">Off</span>'}
           </button>
           <button class="area-chip-btn" title="Remove area" onclick="removeArea(${c.id},'${a.name.replace(/'/g,"\\'")}')">✕</button>
         </span>`).join('')}

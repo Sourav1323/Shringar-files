@@ -1,0 +1,167 @@
+services:
+
+  # ── 1. Production MySQL Database (Isolated, No Public Ports) ──
+  mysql:
+    image: mysql:8.0
+    container_name: shringar-prod-mysql
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=512M
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-shringar_db}
+      MYSQL_USER: ${DB_USER:-shringar_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backups:/backups
+    # No exposed ports to public internet for security — only reachable internally
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    networks:
+      - shringar-internal
+
+  # ── 2. Production Spring Boot Backend ──
+  backend:
+    image: ${DOCKER_REGISTRY:-ghcr.io/your-username}/shringar-backend:${IMAGE_TAG:-latest}
+    build:
+      context: ./shringar-backend
+      dockerfile: Dockerfile
+    container_name: shringar-prod-backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${DB_NAME:-shringar_db}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-shringar_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      FILE_UPLOAD_DIR: /app/uploads
+      APP_FRONTEND_BASE_URL: https://${DOMAIN_NAME}
+      SPRING_MAIL_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SMTP_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
+    volumes:
+      - uploads_data:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/settings || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 1200M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    networks:
+      - shringar-internal
+
+  # ── 3. Production React Frontend ──
+  frontend:
+    image: ${DOCKER_REGISTRY:-ghcr.io/your-username}/shringar-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ./shringar-react
+      dockerfile: Dockerfile
+    container_name: shringar-prod-frontend
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - shringar-internal
+
+  # ── 4. Production Standalone Admin Portal ──
+  admin:
+    image: ${DOCKER_REGISTRY:-ghcr.io/your-username}/shringar-admin:${IMAGE_TAG:-latest}
+    build:
+      context: ./shringar-admin
+      dockerfile: Dockerfile
+    container_name: shringar-prod-admin
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - shringar-internal
+
+  # ── 5. Production SSL Reverse Proxy Gateway ──
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: shringar-prod-gateway
+    restart: always
+    depends_on:
+      - backend
+      - frontend
+      - admin
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - uploads_data:/var/www/uploads:ro
+      - certbot_etc:/etc/letsencrypt:ro
+      - certbot_var:/var/lib/letsencrypt:ro
+      - certbot_challenge:/var/www/certbot:ro
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    networks:
+      - shringar-internal
+
+volumes:
+  mysql_data:
+  uploads_data:
+  certbot_etc:
+  certbot_var:
+  certbot_challenge:
+
+networks:
+  shringar-internal:
+    driver: bridge

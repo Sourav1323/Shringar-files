@@ -8,7 +8,7 @@
 <title>Dashboard — Shringar Admin</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
-<link rel="stylesheet" href="css/admin.css"/>
+<link rel="stylesheet" href="css/admin.css?v=2.1"/>
 </head>
 <body>
 <div class="admin-shell">
@@ -118,41 +118,41 @@ async function loadStats() {
 
     grid.innerHTML = `
       <div class="stat-card gold">
-        <div class="stat-icon">📦</div>
+        <div class="stat-icon" style="color:var(--gold);"><svg class="icon-svg" style="width:24px;height:24px;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
         <div class="stat-label">Total Orders</div>
         <div class="stat-value">${s.totalOrders ?? 0}</div>
         <div class="stat-meta">${s.totalBookingAttempts ?? 0} total checkout attempts</div>
       </div>
       <div class="stat-card green">
-        <div class="stat-icon">💰</div>
+        <div class="stat-icon" style="color:var(--green);"><svg class="icon-svg" style="width:24px;height:24px;" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
         <div class="stat-label">Total Order Value</div>
         <div class="stat-value">${ShringarAdmin.formatINR(s.totalOrderValue)}</div>
         <div class="stat-meta">Across all confirmed orders</div>
       </div>
       <div class="stat-card amber">
-        <div class="stat-icon">💵</div>
+        <div class="stat-icon" style="color:var(--amber);"><svg class="icon-svg" style="width:24px;height:24px;" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
         <div class="stat-label">Advance Received</div>
         <div class="stat-value">${ShringarAdmin.formatINR(s.totalAdvanceReceived)}</div>
         <div class="stat-meta">30% paid upfront, collected via Razorpay</div>
       </div>
       <div class="stat-card red">
-        <div class="stat-icon">⏳</div>
+        <div class="stat-icon" style="color:var(--red);"><svg class="icon-svg" style="width:24px;height:24px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
         <div class="stat-label">Balance Pending</div>
         <div class="stat-value">${ShringarAdmin.formatINR(s.totalBalancePending)}</div>
         <div class="stat-meta">Owed to artists, collected in person</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">👥</div>
+        <div class="stat-icon" style="color:var(--tl);"><svg class="icon-svg" style="width:24px;height:24px;" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <div class="stat-label">Total Customers</div>
         <div class="stat-value">${s.totalCustomers ?? 0}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">🎨</div>
+        <div class="stat-icon" style="color:var(--tl);"><svg class="icon-svg" style="width:24px;height:24px;" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12c0 3.6 2 6.8 5 8.5 0-.5.1-1.1.4-1.6.5-1.1 1.5-1.9 2.6-2.4-.2-.5-.3-1.1-.3-1.7 0-2.2 1.8-4 4-4s4 1.8 4 4c0 .6-.1 1.2-.3 1.7 1.1.5 2.1 1.3 2.6 2.4.3.5.4 1.1.4 1.6 3-1.7 5-4.9 5-8.5 0-5.5-4.5-10-10-10z"/><circle cx="8" cy="9" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="16" cy="9" r="1.5"/></svg></div>
         <div class="stat-label">Active Designs</div>
         <div class="stat-value">${s.totalDesigns ?? 0}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">👩‍🎨</div>
+        <div class="stat-icon" style="color:var(--tl);"><svg class="icon-svg" style="width:24px;height:24px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></div>
         <div class="stat-label">Total Artists</div>
         <div class="stat-value">${s.totalArtists ?? 0}</div>
       </div>

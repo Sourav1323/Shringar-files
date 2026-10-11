@@ -7,7 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { 
   Shield, Calendar, DollarSign, Users, AlertCircle, 
   CheckCircle2, Clock, XCircle, Search, Filter, RefreshCw, 
-  Plus, Edit, Trash2, Sparkles, HeartHandshake, Eye, ExternalLink,
+  Plus, Edit, Trash2, Sparkles, HeartHandshake, Eye, EyeOff, ExternalLink,
   Tag, MapPin, Star, Settings as SettingsIcon, MessageSquare, Image as ImageIcon,
   Check, X
 } from 'lucide-react';
@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [locations, setLocations] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [concerns, setConcerns] = useState([]);
+  const [adminsList, setAdminsList] = useState([]);
   const [settings, setSettings] = useState({
     commissionRate: 20,
     advanceDepositPercent: 40,
@@ -45,6 +46,18 @@ export default function AdminDashboard() {
   const [showAddDesignModal, setShowAddDesignModal] = useState(false);
   const [showAddArtistModal, setShowAddArtistModal] = useState(false);
   const [showAddCouponModal, setShowAddCouponModal] = useState(false);
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+
+  // New Admin form
+  const [newAdmin, setNewAdmin] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: ''
+  });
 
   // New Design form
   const [newDesign, setNewDesign] = useState({
@@ -153,6 +166,26 @@ export default function AdminDashboard() {
         { id: 1, clientName: 'Priya Sen', subject: 'Change booking time slot', status: 'RESOLVED', details: 'Client requested shifting ceremony from 2 PM to 4 PM.' },
       ]);
 
+      // 9. Administrator Accounts
+      const currentAdmin = user ? {
+        id: user.id || 1,
+        firstName: user.firstName || 'Executive',
+        lastName: user.lastName || 'Admin',
+        email: user.email || 'admin@shringar.com',
+        phone: user.phone || '+91 98765 43210',
+        role: 'SUPER_ADMIN',
+        active: true
+      } : {
+        id: 1,
+        firstName: 'Executive',
+        lastName: 'Admin',
+        email: 'admin@shringar.com',
+        phone: '+91 98765 43210',
+        role: 'SUPER_ADMIN',
+        active: true
+      };
+      setAdminsList([currentAdmin]);
+
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -234,6 +267,32 @@ export default function AdminDashboard() {
     showSuccess('Coupon status updated.');
   };
 
+  // Administrator Account Provisioning Handler
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    if (!newAdmin.firstName || !newAdmin.email || !newAdmin.password) {
+      showError('Please fill in First Name, Email, and Password.');
+      return;
+    }
+    if (newAdmin.password.length < 8) {
+      showError('Password must be at least 8 characters.');
+      return;
+    }
+
+    setIsCreatingAdmin(true);
+    try {
+      await AdminAPI.createAdmin(newAdmin);
+      setAdminsList(prev => [...prev, { ...newAdmin, id: Date.now(), role: 'ADMIN', active: true }]);
+      setShowAddAdminModal(false);
+      setNewAdmin({ firstName: '', lastName: '', email: '', phone: '', password: '' });
+      showSuccess(`Administrator account provisioned for ${newAdmin.firstName}!`);
+    } catch (err) {
+      showError(err.message || 'Could not provision administrator account.');
+    } finally {
+      setIsCreatingAdmin(false);
+    }
+  };
+
   // Custom Design Handlers
   const handleApproveCustomDesign = (id) => {
     const quote = quoteData[id] || {};
@@ -279,7 +338,12 @@ export default function AdminDashboard() {
   };
 
   // Booking Handlers
-  const handleConfirmUpi = (id) => {
+  const handleConfirmUpi = async (id) => {
+    try {
+      await AdminAPI.confirmUpiPayment(id);
+    } catch (err) {
+      console.warn('Backend confirm error:', err);
+    }
     setBookings((prev) =>
       prev.map((b) => (b.id === id ? { ...b, advancePaid: true, status: 'CONFIRMED' } : b))
     );
@@ -291,41 +355,81 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Top Header & Standalone Portal Link Banner */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-brand-maroon via-brand-maroon-dark to-brand-dark text-white p-8 rounded-3xl shadow-xl border border-brand-gold/30">
-          <div>
-            <div className="flex items-center gap-2 text-brand-gold text-xs font-bold uppercase tracking-widest mb-1">
-              <Shield className="w-4 h-4 text-brand-gold" />
-              Shringar Executive Suite
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 bg-gradient-to-r from-brand-maroon via-brand-maroon-dark to-brand-dark text-white p-7 sm:p-8 rounded-3xl shadow-xl border border-brand-gold/30">
+          
+          {/* Logo & Console Title */}
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <img 
+                src="/images/shringar-logo.png" 
+                alt="Shringar Royal Emblem" 
+                className="w-16 h-16 rounded-full border-2 border-brand-gold shadow-lg object-cover bg-amber-50"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+              <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-brand-dark rounded-full flex items-center justify-center text-[10px]" title="Active Admin Session">
+                ✓
+              </span>
             </div>
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-wide">
-              Royal Administrative Console
-            </h1>
-            <p className="text-brand-cream/80 text-xs mt-1">
-              Complete management control for designs, artists, ceremony bookings, coupons, and platform operations.
-            </p>
+            <div>
+              <div className="flex items-center gap-2 text-brand-gold text-xs font-bold uppercase tracking-widest mb-1">
+                <Shield className="w-4 h-4 text-brand-gold" />
+                <span>Shringar Executive Suite</span>
+              </div>
+              <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide">
+                Royal Administrative Console
+              </h1>
+              <p className="text-brand-cream/80 text-xs mt-0.5">
+                Complete management control for designs, artists, ceremony bookings, coupons, and platform operations.
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Standalone Admin Portal Launcher */}
-            <a
-              href="http://localhost:5501/dashboard.html"
-              target="_blank"
-              rel="noreferrer"
-              className="px-4 py-2 bg-brand-gold hover:bg-yellow-400 text-stone-950 rounded-full text-xs font-serif font-bold transition shadow-lg flex items-center gap-2"
-              title="Open the dedicated standalone admin portal running on port 5501"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Standalone Admin Portal (Port 5501)</span>
-            </a>
+          {/* Admin User Info Card & Actions */}
+          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
+            
+            {/* Admin User Profile Card */}
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/10 border border-brand-gold/30 backdrop-blur-sm shadow-inner">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-gold to-yellow-600 text-brand-dark font-serif font-bold text-sm flex items-center justify-center border border-brand-gold shadow">
+                {(user?.firstName?.[0] || 'A').toUpperCase()}
+              </div>
+              <div className="text-left">
+                <div className="text-xs font-bold text-white flex items-center gap-2">
+                  <span>{user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Executive Admin'}</span>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-amber-400 text-stone-950 tracking-wider">
+                    {user?.role || 'ADMIN'}
+                  </span>
+                </div>
+                <div className="text-[11px] text-brand-cream/70 font-mono">
+                  {user?.email || 'admin@shringar.com'}
+                </div>
+              </div>
+            </div>
 
-            <button
-              onClick={handleRefresh}
-              disabled={loading || isRefreshing}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-serif font-bold transition flex items-center gap-2 border border-white/20 disabled:opacity-60"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
+            <div className="flex items-center gap-2.5">
+              {/* Standalone Admin Portal Launcher */}
+              <a
+                href="http://localhost:5501/dashboard.html"
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2.5 bg-brand-gold hover:bg-yellow-400 text-stone-950 rounded-full text-xs font-serif font-bold transition shadow-lg flex items-center gap-2"
+                title="Open the dedicated standalone admin portal running on port 5501"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Standalone Portal (Port 5501)</span>
+                <span className="sm:hidden">Portal :5501</span>
+              </a>
+
+              <button
+                onClick={handleRefresh}
+                disabled={loading || isRefreshing}
+                className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-serif font-bold transition flex items-center gap-2 border border-white/20 disabled:opacity-60"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
+                <span>{isRefreshing ? 'Refreshing…' : 'Refresh'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -881,42 +985,44 @@ export default function AdminDashboard() {
 
         {/* ── TAB 10: SETTINGS ── */}
         {activeTab === 'settings' && (
-          <div className="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6 max-w-2xl">
-            <div>
-              <h2 className="font-serif text-2xl font-bold text-stone-900">Platform Operational Settings</h2>
-              <p className="text-xs text-stone-500">Configure business policies, commission splits, and default contact channels.</p>
-            </div>
-
-            <div className="space-y-4 text-xs">
+          <div className="space-y-8 max-w-5xl">
+            <div className="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6">
               <div>
-                <label className="block font-bold uppercase text-stone-600 mb-1">Platform Commission Rate (%)</label>
-                <input
-                  type="number"
-                  value={settings.commissionRate}
-                  onChange={(e) => setSettings({ ...settings, commissionRate: Number(e.target.value) })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
-                />
-                <span className="text-[10px] text-stone-400">Default 20% (Artisan receives 80%)</span>
+                <h2 className="font-serif text-2xl font-bold text-stone-900">Platform Operational Settings</h2>
+                <p className="text-xs text-stone-500">Configure business policies, commission splits, and default contact channels.</p>
               </div>
 
-              <div>
-                <label className="block font-bold uppercase text-stone-600 mb-1">Mandatory Advance Booking Deposit (%)</label>
-                <input
-                  type="number"
-                  value={settings.advanceDepositPercent}
-                  onChange={(e) => setSettings({ ...settings, advanceDepositPercent: Number(e.target.value) })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Platform Commission Rate (%)</label>
+                  <input
+                    type="number"
+                    value={settings.commissionRate}
+                    onChange={(e) => setSettings({ ...settings, commissionRate: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
+                  />
+                  <span className="text-[10px] text-stone-400">Default 20% (Artisan receives 80%)</span>
+                </div>
 
-              <div>
-                <label className="block font-bold uppercase text-stone-600 mb-1">Customer Concierge Helpline</label>
-                <input
-                  type="text"
-                  value={settings.supportPhone}
-                  onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
-                />
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Mandatory Advance Booking Deposit (%)</label>
+                  <input
+                    type="number"
+                    value={settings.advanceDepositPercent}
+                    onChange={(e) => setSettings({ ...settings, advanceDepositPercent: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Customer Concierge Helpline</label>
+                  <input
+                    type="text"
+                    value={settings.supportPhone}
+                    onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-300"
+                  />
+                </div>
               </div>
 
               <div className="pt-2">
@@ -927,6 +1033,76 @@ export default function AdminDashboard() {
                 >
                   Save Platform Settings
                 </button>
+              </div>
+            </div>
+
+            {/* Administrator Accounts & Executive Approvals */}
+            <div className="bg-white rounded-3xl p-8 border border-stone-200 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-brand-gold" />
+                    <h2 className="font-serif text-xl font-bold text-stone-900">Administrator Accounts & Executive Approvals</h2>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Internal security control panel. Public user registration cannot create administrators — only existing approved administrators can authorize new credentials.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddAdminModal(true)}
+                  className="px-5 py-2.5 bg-brand-maroon text-brand-gold rounded-full font-serif font-bold text-xs hover:bg-brand-maroon-dark transition shadow flex items-center gap-2 shrink-0 self-start sm:self-auto"
+                >
+                  <Plus className="w-4 h-4" /> Authorize New Admin
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-stone-200 text-stone-500 uppercase tracking-wider font-bold">
+                      <th className="py-3 px-4">Administrator</th>
+                      <th className="py-3 px-4">Official Email</th>
+                      <th className="py-3 px-4">Role Level</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Authorization</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {adminsList.map((adm, idx) => {
+                      const initials = `${adm.firstName?.[0] || 'A'}${adm.lastName?.[0] || ''}`.toUpperCase();
+                      return (
+                        <tr key={adm.id || idx} className="hover:bg-stone-50 transition">
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 text-brand-maroon font-bold text-xs flex items-center justify-center border border-amber-300 shrink-0 shadow-sm">
+                                {initials}
+                              </div>
+                              <div>
+                                <div className="font-bold text-stone-900">{adm.firstName} {adm.lastName || ''}</div>
+                                <div className="text-[11px] text-stone-400">{adm.phone || 'Primary Contact'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 font-mono font-medium text-stone-800">{adm.email}</td>
+                          <td className="py-3.5 px-4">
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                              {idx === 0 ? 'Executive Owner' : 'Administrator'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 w-max">
+                              <CheckCircle2 className="w-3 h-3" /> Active & Approved
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-stone-500 font-medium">
+                            Executive Clearance
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -1166,6 +1342,111 @@ export default function AdminDashboard() {
                     className="px-6 py-2 rounded-full bg-brand-maroon text-brand-gold font-bold shadow"
                   >
                     Create Coupon
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL: AUTHORIZE NEW ADMIN ── */}
+        {showAddAdminModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center border-b pb-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-brand-gold" />
+                  <h3 className="font-serif font-bold text-lg text-brand-maroon">Authorize New Administrator</h3>
+                </div>
+                <button onClick={() => setShowAddAdminModal(false)} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleCreateAdmin} className="space-y-3.5 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold uppercase text-stone-600 mb-1">First Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Priya"
+                      value={newAdmin.firstName}
+                      onChange={(e) => setNewAdmin({ ...newAdmin, firstName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold uppercase text-stone-600 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sharma"
+                      value={newAdmin.lastName}
+                      onChange={(e) => setNewAdmin({ ...newAdmin, lastName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Official Admin Email *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="priya.admin@shringar.com"
+                    value={newAdmin.email}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  />
+                  <span className="text-[10px] text-stone-400 block mt-1">Must be a valid email for platform administration notifications.</span>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Mobile Number</label>
+                  <input
+                    type="text"
+                    placeholder="+91 98765 43210"
+                    value={newAdmin.phone}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, phone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-stone-600 mb-1">Initial Password *</label>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showAdminPassword ? "text" : "password"}
+                      required
+                      placeholder="••••••••"
+                      value={newAdmin.password}
+                      onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                      className="w-full px-3 py-2 pr-10 rounded-xl border border-stone-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminPassword(!showAdminPassword)}
+                      className="absolute right-3 text-stone-400 hover:text-stone-600 transition"
+                      title={showAdminPassword ? "Hide password" : "Show password"}
+                    >
+                      {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-stone-400 block mt-1">At least 8 characters. The administrator can change this anytime.</span>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAdminModal(false)}
+                    className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreatingAdmin}
+                    className="px-6 py-2 rounded-full bg-brand-maroon text-brand-gold font-bold shadow disabled:opacity-60"
+                  >
+                    {isCreatingAdmin ? 'Provisioning…' : 'Approve & Provision Admin'}
                   </button>
                 </div>
               </form>

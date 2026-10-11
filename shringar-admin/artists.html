@@ -8,7 +8,7 @@
 <title>Artists — Shringar Admin</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="alternate icon" type="image/png" href="images/shringar-logo.png"/>
-<link rel="stylesheet" href="css/admin.css"/>
+<link rel="stylesheet" href="css/admin.css?v=2.1"/>
 </head>
 <body>
 <div class="admin-shell">
@@ -280,14 +280,15 @@ function renderTable() {
   if (filter === 'inactive') filtered = allArtists.filter(a => !a.isActive);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="icon">👩‍🎨</div>No artists found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="icon"><svg class="icon-svg" style="width:26px;height:26px;margin:0 auto 6px;display:block;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></div>No artists found.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map(a => {
+    const initials = (a.name || 'Artist').split(' ').map(w => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase();
     const imgCell = a.profileImageUrl
       ? `<img class="cell-img" src="${ShringarAdmin.resolveUploadUrl(a.profileImageUrl)}" alt="${a.name}"/>`
-      : `<div class="cell-emoji">${a.avatarEmoji || '👩‍🎨'}</div>`;
+      : `<div class="client-avatar-badge" style="width:36px;height:36px;font-size:12px;">${initials}</div>`;
     return `
       <tr>
         <td>
