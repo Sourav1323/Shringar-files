@@ -1,11 +1,16 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Clock, Sparkles, Plus, Check } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Clock, Sparkles, Plus, Check, Heart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useFavorites } from '../../context/FavoritesContext';
 
 export default function DesignCard({ design }) {
   const { cartItems, addToCart } = useCart();
-  const isInCart = cartItems.some((item) => item.id === design.id);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const navigate = useNavigate();
+
+  const isInCart = cartItems.some((item) => String(item.id) === String(design.id));
+  const favorited = isFavorite(design.id);
 
   const formatPrice = (val) => {
     return new Intl.NumberFormat('en-IN', {
@@ -21,25 +26,32 @@ export default function DesignCard({ design }) {
     return url.startsWith('/') ? url : `/${url}`;
   };
 
+  const handleCardClick = (e) => {
+    if (!e.target.closest('button, a')) {
+      navigate(`/designs/${design.id}`);
+    }
+  };
+
   return (
-    <div className="group bg-white rounded-2xl overflow-hidden border border-brand-cream-dark/80 shadow-md hover:shadow-2xl hover:border-brand-gold/60 transition-all duration-300 flex flex-col justify-between">
+    <div
+      onClick={handleCardClick}
+      className="group bg-white rounded-2xl overflow-hidden border border-brand-cream-dark/80 shadow-md hover:shadow-2xl hover:border-brand-gold/60 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+    >
       
       {/* Image & Badges */}
       <div className="relative aspect-[4/5] overflow-hidden bg-stone-100">
-        <Link to={`/designs/${design.id}`}>
-          <img
-            src={getImageUrl(design.imageUrl)}
-            alt={design.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
-            onError={(e) => {
-              e.target.src = '/images/rajasthani-bridal.jpg';
-            }}
-          />
-        </Link>
+        <img
+          src={getImageUrl(design.imageUrl)}
+          alt={design.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+          onError={(e) => {
+            e.target.src = '/images/rajasthani-bridal.jpg';
+          }}
+        />
 
         {/* Top Badges */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
           {design.badge && (
             <span
               className="text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider text-white shadow-md"
@@ -55,9 +67,27 @@ export default function DesignCard({ design }) {
           )}
         </div>
 
+        {/* Favorites Heart Toggle Top-Right */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite(design);
+          }}
+          className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm z-10 ${
+            favorited
+              ? 'bg-white text-rose-600 scale-105'
+              : 'bg-black/40 hover:bg-black/60 text-white hover:scale-105'
+          }`}
+          title={favorited ? 'Remove from saved favorites' : 'Save to favorites'}
+          aria-label={favorited ? 'Remove from favorites' : 'Save to favorites'}
+        >
+          <Heart className={`w-4 h-4 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
+        </button>
+
         {/* Coverage Chip Bottom Right */}
         {design.coverage && (
-          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-stone-800 shadow-sm border border-stone-200">
+          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-stone-800 shadow-sm border border-stone-200 z-10">
             {design.coverage}
           </div>
         )}

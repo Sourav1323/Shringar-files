@@ -61,11 +61,11 @@ export default function Footer() {
                   ✦ Commission Custom Design
                 </Link>
               </li>
-              <li>
+                {/* AI Try-On link temporarily commented out
                 <Link to="/ai-tryon" className="hover:text-brand-gold transition flex items-center gap-1">
                   <span>3D AI Hand Try-On Studio</span>
                 </Link>
-              </li>
+                */}
               <li>
                 <Link to="/become-artist" className="hover:text-brand-gold transition text-brand-gold-light/90">
                   Join as Henna Artist

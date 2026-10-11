@@ -53,7 +53,10 @@
         <div class="topbar-title">Artists</div>
         <div class="topbar-sub">Add, edit, or remove mehendi artists available for booking</div>
       </div>
-      <button class="btn btn-primary" onclick="openCreateModal()">+ Add New Artist</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" id="refresh-btn" onclick="loadArtists(this)">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Add New Artist</button>
+      </div>
     </div>
 
     <div class="content">
@@ -245,13 +248,26 @@ async function loadAreaSuggestions() {
   }
 }
 
-async function loadArtists() {
+async function loadArtists(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   const tbody = document.getElementById('artists-table-body');
   try {
     allArtists = await ShringarAdmin.Artists.all();
     renderTable();
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="icon">⚠️</div>${err.message}</td></tr>`;
+    if (b) {
+      b.innerHTML = '⚠️ Failed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1500);
+    }
   }
 }
 

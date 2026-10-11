@@ -35,10 +35,12 @@
       <button class="logout-btn" onclick="ShringarAdmin.logout()"><span>🚪</span> Log Out</button>
     </div>
   </aside>
-  <div class="main">
     <div class="topbar">
       <div><div class="topbar-title">Coupons</div><div class="topbar-sub">Generate discount codes shown on the website and usable at checkout</div></div>
-      <button class="btn btn-primary" onclick="openCreateModal()">+ Generate Coupon</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" id="refresh-btn" onclick="loadCoupons(this)">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Generate Coupon</button>
+      </div>
     </div>
     <div class="content">
 
@@ -155,10 +157,19 @@ function updatePreview() {
   document.getElementById('preview-min').textContent = min && min > 0 ? `Min order ₹${min}` : 'No minimum order';
 }
 
-async function loadCoupons() {
+async function loadCoupons(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   const tbody = document.getElementById('coupons-tbody');
   try {
     const coupons = await ShringarAdmin.Coupons.all();
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
     if (!coupons.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><div class="icon">🏷️</div>No coupons yet. Generate your first one!</td></tr>`; return; }
     tbody.innerHTML = coupons.map(c => {
       const validUntil = c.validUntil ? new Date(c.validUntil).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
@@ -179,7 +190,13 @@ async function loadCoupons() {
         </td>
       </tr>`;
     }).join('');
-  } catch(err) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">⚠️ ${err.message}</td></tr>`; }
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-state">⚠️ ${err.message}</td></tr>`;
+    if (b) {
+      b.innerHTML = '⚠️ Failed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1500);
+    }
+  }
 }
 
 function openCreateModal() {

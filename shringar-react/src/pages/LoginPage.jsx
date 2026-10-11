@@ -8,6 +8,7 @@ import { AuthAPI } from '../services/api';
 export default function LoginPage() {
   const [tab, setTab] = useState('login'); // 'login' | 'signup' | 'forgot'
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Login form state
@@ -480,14 +481,24 @@ export default function LoginPage() {
                     <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">
                       New Password
                     </label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="At least 6 characters"
-                      value={resetNewPassword}
-                      onChange={(e) => setResetNewPassword(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs text-stone-800"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showResetPassword ? 'text' : 'password'}
+                        required
+                        placeholder="At least 6 characters"
+                        value={resetNewPassword}
+                        onChange={(e) => setResetNewPassword(e.target.value)}
+                        className="w-full px-3 py-2 pr-10 rounded-xl border border-stone-200 text-xs text-stone-800 focus:outline-none focus:border-brand-gold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowResetPassword(!showResetPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                        title={showResetPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <button
                     type="submit"

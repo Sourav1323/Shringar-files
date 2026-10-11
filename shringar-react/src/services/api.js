@@ -14,6 +14,10 @@ async function request(endpoint, options = {}) {
   if (!isFormData) {
     headers['Content-Type'] = 'application/json';
   }
+  if (method === 'GET') {
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    headers['Pragma'] = 'no-cache';
+  }
 
   const authToken = token || localStorage.getItem('shringar_token');
   if (authToken) {
@@ -25,12 +29,19 @@ async function request(endpoint, options = {}) {
     headers,
   };
 
+  if (method === 'GET') {
+    config.cache = 'no-store';
+  }
+
   if (body) {
     config.body = isFormData ? body : JSON.stringify(body);
   }
 
   try {
-    const res = await fetch(`${API_BASE}${endpoint}`, config);
+    const url = method === 'GET'
+      ? `${API_BASE}${endpoint}${endpoint.includes('?') ? '&' : '?'}_t=${Date.now()}`
+      : `${API_BASE}${endpoint}`;
+    const res = await fetch(url, config);
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {

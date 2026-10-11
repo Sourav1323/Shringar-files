@@ -50,7 +50,10 @@
   <div class="main">
     <div class="topbar">
       <div><div class="topbar-title">Locations</div><div class="topbar-sub">Manage serviceable cities and areas shown on the booking page</div></div>
-      <button class="btn btn-primary" onclick="openAddCityModal()">+ Add City</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" id="refresh-btn" onclick="loadCities(this)">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="openAddCityModal()">+ Add City</button>
+      </div>
     </div>
     <div class="content">
       <div style="background:#fdf0db;border:1px solid #f0d89e;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#7a5000;">
@@ -113,13 +116,28 @@ document.getElementById('city-status').addEventListener('change', function() {
 
 let allCities = [];
 
-async function loadCities() {
+async function loadCities(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   const container = document.getElementById('cities-container');
   try {
     allCities = await ShringarAdmin.Locations.cities();
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
     if (!allCities.length) { container.innerHTML = '<div class="empty-state"><div class="icon">📍</div>No cities configured yet.</div>'; return; }
     container.innerHTML = allCities.map(c => renderCityCard(c)).join('');
-  } catch(err) { container.innerHTML = `<div class="empty-state">⚠️ ${err.message}</div>`; }
+  } catch(err) {
+    container.innerHTML = `<div class="empty-state">⚠️ ${err.message}</div>`;
+    if (b) {
+      b.innerHTML = '⚠️ Failed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1500);
+    }
+  }
 }
 
 function renderCityCard(c) {

@@ -40,13 +40,49 @@ export default function DesignsPage() {
     { id: 'Both feet', label: 'Both Feet' },
   ];
 
+  const normalizeDesign = (d) => {
+    if (!d) return d;
+    if (d.id === 4 || (d.imageUrl && d.imageUrl.includes('peacock-feet.png'))) {
+      return {
+        ...d,
+        name: 'Royal Dulha-Dulhan Bridal',
+        coverage: 'Full hand',
+        category: 'Bridal',
+        badge: 'Signature',
+        badgeColor: '#7a2c1a',
+        description: 'Handcrafted bride & groom wedding portraits on palms with auspicious kalash and peacocks.'
+      };
+    }
+    if (d.id === 5 || (d.imageUrl && d.imageUrl.includes('indo-arabic.png'))) {
+      return {
+        ...d,
+        name: 'Lotus Mandala Bridal Feet',
+        coverage: 'Both feet',
+        category: 'Bridal',
+        badge: 'Bridal Feet',
+        badgeColor: '#ba7517',
+        description: 'Majestic blooming lotus mandala with ornate ankle payal detailing covering both feet.'
+      };
+    }
+    if (d.id === 6 || (d.name && d.name.includes('Mughal'))) {
+      return {
+        ...d,
+        name: 'Mughal Classic Arches',
+        coverage: 'Full hand',
+        category: 'Mughal',
+        badge: 'Classic'
+      };
+    }
+    return d;
+  };
+
   useEffect(() => {
     async function fetchDesigns() {
       setLoading(true);
       try {
         const data = await DesignsAPI.getAll();
         if (Array.isArray(data)) {
-          setDesigns(data);
+          setDesigns(data.map(normalizeDesign));
         }
       } catch (err) {
         console.warn('Designs catalog fetch error, loading fallback catalog:', err);
@@ -96,35 +132,35 @@ export default function DesignsPage() {
           },
           {
             id: 4,
-            name: 'Peacock Bridal Feet',
-            description: 'Majestic peacock feather patterns with fine detailing covering both feet and ankles beautifully.',
+            name: 'Royal Dulha-Dulhan Bridal',
+            description: 'Handcrafted bride & groom wedding portraits on palms with auspicious kalash and peacocks.',
             category: 'Bridal',
-            coverage: 'Both feet',
-            durationMinHours: 2.0,
-            durationMaxHours: 2.0,
-            conesNeeded: 1.5,
-            price: 1800,
-            badge: 'Bridal',
-            badgeColor: '#ba7517',
+            coverage: 'Full hand',
+            durationMinHours: 3.5,
+            durationMaxHours: 4.5,
+            conesNeeded: 2.5,
+            price: 2800,
+            badge: 'Signature',
+            badgeColor: '#7a2c1a',
             imageUrl: '/images/peacock-feet.png',
           },
           {
             id: 5,
-            name: 'Indo-Arabic Fusion',
-            description: 'The best of both worlds — Indian mandala roots with Arabic flowing strokes. Absolutely striking.',
-            category: 'Fusion',
-            coverage: 'Full hand',
-            durationMinHours: 2.5,
+            name: 'Lotus Mandala Bridal Feet',
+            description: 'Majestic blooming lotus mandala with ornate ankle payal detailing covering both feet.',
+            category: 'Bridal',
+            coverage: 'Both feet',
+            durationMinHours: 2.0,
             durationMaxHours: 2.5,
-            conesNeeded: 2.0,
-            price: 2000,
-            badge: 'Fusion',
-            badgeColor: '#993517',
+            conesNeeded: 1.5,
+            price: 1800,
+            badge: 'Bridal Feet',
+            badgeColor: '#ba7517',
             imageUrl: '/images/indo-arabic.png',
           },
           {
             id: 6,
-            name: 'Mughal Classic',
+            name: 'Mughal Classic Arches',
             description: 'Inspired by Mughal architecture — domed arches, geometric lattice and vine scrollwork.',
             category: 'Mughal',
             coverage: 'Full hand',
@@ -257,6 +293,7 @@ export default function DesignsPage() {
             Browse our full library of bridal, festive, and contemporary henna patterns. Filter by body placement, estimated application time, and organic cones required.
           </p>
 
+          {/* AI Virtual Try-On button temporarily commented out
           <div className="pt-2">
             <button
               onClick={() => setAiModalOpen(true)}
@@ -266,6 +303,7 @@ export default function DesignsPage() {
               <span>Match With AI Virtual Try-On</span>
             </button>
           </div>
+          */}
         </div>
       </div>
 
@@ -465,8 +503,9 @@ export default function DesignsPage() {
         </div>
       )}
 
-      {/* AI Try-On Modal */}
+      {/* AI Try-On Modal temporarily commented out
       <AiTryOnModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
+      */}
 
     </div>
   );

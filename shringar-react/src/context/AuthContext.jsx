@@ -41,7 +41,7 @@ export function AuthProvider({ children }) {
     try {
       const data = await AuthAPI.login(identifier, password);
       setAuthSession(data);
-      toast.success(`Welcome back, ${data.firstName}! 🌸`);
+      toast.success(`Welcome back, ${data.firstName}! ✨`);
       return data;
     } catch (err) {
       toast.error(err.message || 'Login failed. Please check credentials.');

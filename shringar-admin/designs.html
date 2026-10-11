@@ -53,7 +53,10 @@
         <div class="topbar-title">Designs</div>
         <div class="topbar-sub">Add, edit, or remove mehendi designs shown on the website</div>
       </div>
-      <button class="btn btn-primary" onclick="openCreateModal()">+ Add New Design</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-outline" id="refresh-btn" onclick="loadDesigns(this)">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ Add New Design</button>
+      </div>
     </div>
 
     <div class="content">
@@ -225,13 +228,26 @@ let tagsList = [];
 let coverImageUrl = null;
 let galleryImageUrls = [];
 
-async function loadDesigns() {
+async function loadDesigns(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   const tbody = document.getElementById('designs-table-body');
   try {
     allDesigns = await ShringarAdmin.Designs.all();
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
     renderTable();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">⚠️</div>${err.message}</td></tr>`;
+    if (b) {
+      b.innerHTML = '↻ Refresh';
+      b.disabled = false;
+    }
   }
 }
 

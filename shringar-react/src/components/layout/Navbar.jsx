@@ -3,10 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, Sparkles, User, Menu, X, Shield, 
   Calendar, Compass, Search, Palette, HeartHandshake,
-  LogOut, ChevronDown, CheckCircle2
+  LogOut, ChevronDown, CheckCircle2, Heart
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { useFavorites } from '../../context/FavoritesContext';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -16,6 +17,7 @@ export default function Navbar() {
 
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { itemCount } = useCart();
+  const { favoriteCount, openFavorites } = useFavorites();
   const location = useLocation();
   const navigate = useNavigate();
   const profileDropdownRef = useRef(null);
@@ -102,6 +104,7 @@ export default function Navbar() {
             <span>Custom Design</span>
           </Link>
 
+          {/* AI Try-On link temporarily commented out for end-user testing
           <Link
             to="/ai-tryon"
             className={`transition flex items-center gap-1.5 hover:text-brand-gold ${
@@ -111,6 +114,7 @@ export default function Navbar() {
             <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
             <span>AI Try-On</span>
           </Link>
+          */}
 
           <Link
             to="/booking"
@@ -156,7 +160,22 @@ export default function Navbar() {
             <Search className="w-5 h-5" />
           </button>
 
-          {/* Cart Icon */}
+          {/* Saved Favorites Icon with Live Badge */}
+          <button
+            onClick={openFavorites}
+            className="relative p-2 rounded-full hover:bg-black/20 text-brand-cream transition group"
+            title="Saved Favorites"
+            aria-label="Saved Designs"
+          >
+            <Heart className={`w-5 h-5 sm:w-6 sm:h-6 transition ${favoriteCount > 0 ? 'text-rose-400 fill-rose-400' : 'text-brand-cream group-hover:text-brand-gold'}`} />
+            {favoriteCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-rose-600 text-white rounded-full text-[11px] font-black flex items-center justify-center shadow-lg border-2 border-brand-maroon">
+                {favoriteCount}
+              </span>
+            )}
+          </button>
+
+          {/* Cart Icon with Live Item Counter Badge */}
           <Link
             to="/cart"
             className="relative p-2 rounded-full hover:bg-black/20 text-brand-cream transition group"
@@ -164,7 +183,7 @@ export default function Navbar() {
           >
             <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-brand-cream group-hover:text-brand-gold transition" />
             {itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-gold text-brand-dark rounded-full text-xs font-bold flex items-center justify-center shadow-md animate-bounce">
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-gradient-to-r from-amber-400 to-amber-500 text-stone-950 rounded-full text-[11px] font-black flex items-center justify-center shadow-lg border-2 border-brand-maroon">
                 {itemCount}
               </span>
             )}
@@ -328,6 +347,8 @@ export default function Navbar() {
             <Palette className="w-4 h-4 text-amber-300" />
             <span>Commission Custom Design</span>
           </Link>
+
+          {/* AI Try-On temporarily commented out
           <Link
             to="/ai-tryon"
             onClick={() => setMobileMenuOpen(false)}
@@ -336,6 +357,42 @@ export default function Navbar() {
             <Sparkles className="w-4 h-4 text-amber-300" />
             <span>3D Virtual Hand Try-On</span>
           </Link>
+          */}
+
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              openFavorites();
+            }}
+            className="w-full text-left text-base font-medium text-brand-cream hover:text-brand-gold flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Heart className={`w-4 h-4 ${favoriteCount > 0 ? 'text-rose-400 fill-rose-400' : 'text-brand-cream'}`} />
+              <span>Saved Favorites</span>
+            </div>
+            {favoriteCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-bold text-xs">
+                {favoriteCount} saved
+              </span>
+            )}
+          </button>
+
+          <Link
+            to="/cart"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-base font-medium text-brand-cream hover:text-brand-gold flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-amber-300" />
+              <span>Booking Cart</span>
+            </div>
+            {itemCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-400 text-stone-950 font-bold text-xs">
+                {itemCount} items
+              </span>
+            )}
+          </Link>
+
           <Link
             to="/booking"
             onClick={() => setMobileMenuOpen(false)}

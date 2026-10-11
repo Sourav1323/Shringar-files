@@ -49,7 +49,7 @@
         <div class="topbar-sub">Customer ratings and reviews submitted at the end of appointment fulfillment</div>
       </div>
       <div style="display:flex;gap:10px;">
-        <button class="btn btn-outline" onclick="loadFeedback()">🔄 Refresh</button>
+        <button class="btn btn-outline" id="refresh-btn" onclick="loadFeedback(this)">↻ Refresh</button>
       </div>
     </div>
 
@@ -129,15 +129,28 @@ document.getElementById('admin-avatar').textContent = (ShringarAdmin.getAdmin()?
 let allFeedback = [];
 let currentRatingFilter = null;
 
-async function loadFeedback() {
+async function loadFeedback(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   const tbody = document.getElementById('feedback-tbody');
   tbody.innerHTML = '<tr><td colspan="7" class="loading-state">Loading feedback inbox…</td></tr>';
   try {
     allFeedback = await ShringarAdmin.Feedback.all();
     computeStats();
     renderFeedback();
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
   } catch(err) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red);padding:24px;">Failed to load feedback: ${err.message}</td></tr>`;
+    if (b) {
+      b.innerHTML = '⚠️ Failed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1500);
+    }
   }
 }
 

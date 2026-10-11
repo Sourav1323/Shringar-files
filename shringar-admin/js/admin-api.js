@@ -82,17 +82,25 @@ const ShringarAdmin = (() => {
   async function request(path, opts = {}) {
     const { method = 'GET', body = null, auth = true } = opts;
 
-    const headers = { 'Content-Type': 'application/json' };
+    const headers = { 
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache'
+    };
     if (auth) {
       const token = getToken();
       if (token) headers['Authorization'] = `Bearer ${token}`;
     }
 
+    const separator = path.includes('?') ? '&' : '?';
+    const finalPath = method === 'GET' ? `${path}${separator}_t=${Date.now()}` : path;
+
     let response;
     try {
-      response = await fetch(`${API_BASE}${path}`, {
+      response = await fetch(`${API_BASE}${finalPath}`, {
         method,
         headers,
+        cache: 'no-store',
         body: body ? JSON.stringify(body) : undefined
       });
     } catch (networkErr) {

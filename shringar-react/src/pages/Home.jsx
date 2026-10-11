@@ -14,12 +14,83 @@ export default function Home() {
   const navigate = useNavigate();
 
   const categories = [
-    { name: 'Bridal', icon: '🤲', subtitle: 'Royal Full Hand & Marwari Jaal' },
-    { name: 'Arabic', icon: '🌿', subtitle: 'Flowing Trails & Floral Shading' },
-    { name: 'Minimal', icon: '🌸', subtitle: 'Delicate Vines & Cuffs' },
-    { name: 'Fusion', icon: '🌺', subtitle: 'Indo-Western Geometry' },
-    { name: 'Mughal', icon: '🕌', subtitle: 'Classic Arches & Domed Minarets' },
+    {
+      name: 'Bridal',
+      tag: 'Royal Heritage',
+      subtitle: 'Full Hand & Marwari Jaal',
+      description: 'Intricate peacocks, paisleys, and dense ceremonial bridal jaal patterns.',
+      imageUrl: '/images/rajasthani-bridal.jpg',
+      badgeColor: '#7a2c1a',
+    },
+    {
+      name: 'Arabic',
+      tag: 'Flowing Trails',
+      subtitle: 'Flowing Trails & Floral Shading',
+      description: 'Bold diagonal strokes, open negative space, and elegant floral shading.',
+      imageUrl: '/images/arabic-sawan.jpg',
+      badgeColor: '#926118',
+    },
+    {
+      name: 'Minimal',
+      tag: 'Modern Grace',
+      subtitle: 'Delicate Vines & Cuffs',
+      description: 'Dainty botanical cuffs, ring bands, and subtle minimalist finger accents.',
+      imageUrl: '/images/floral-minimal.jpg',
+      badgeColor: '#493313',
+    },
+    {
+      name: 'Fusion',
+      tag: 'Indo-Western',
+      subtitle: 'Indo-Western Geometry',
+      description: 'Artistic fusion of classic Indian mandalas with breezy contemporary trails.',
+      imageUrl: '/images/indo-arabic.png',
+      badgeColor: '#6d2816',
+    },
+    {
+      name: 'Mughal',
+      tag: 'Imperial Arches',
+      subtitle: 'Classic Arches & Domed Minarets',
+      description: 'Architectural arches, jharokha symmetry, and royal palace jaali artwork.',
+      imageUrl: '/images/mughal-classic.jpg',
+      badgeColor: '#1e3a47',
+    },
   ];
+
+  const normalizeDesign = (d) => {
+    if (!d) return d;
+    if (d.id === 4 || (d.imageUrl && d.imageUrl.includes('peacock-feet.png'))) {
+      return {
+        ...d,
+        name: 'Royal Dulha-Dulhan Bridal',
+        coverage: 'Full hand',
+        category: 'Bridal',
+        badge: 'Signature',
+        badgeColor: '#7a2c1a',
+        description: 'Handcrafted bride & groom wedding portraits on palms with auspicious kalash and peacocks.'
+      };
+    }
+    if (d.id === 5 || (d.imageUrl && d.imageUrl.includes('indo-arabic.png'))) {
+      return {
+        ...d,
+        name: 'Lotus Mandala Bridal Feet',
+        coverage: 'Both feet',
+        category: 'Bridal',
+        badge: 'Bridal Feet',
+        badgeColor: '#ba7517',
+        description: 'Majestic blooming lotus mandala with ornate ankle payal detailing covering both feet.'
+      };
+    }
+    if (d.id === 6 || (d.name && d.name.includes('Mughal'))) {
+      return {
+        ...d,
+        name: 'Mughal Classic Arches',
+        coverage: 'Full hand',
+        category: 'Mughal',
+        badge: 'Classic'
+      };
+    }
+    return d;
+  };
 
   useEffect(() => {
     async function loadHomeData() {
@@ -32,7 +103,7 @@ export default function Home() {
 
         if (designsData.status === 'fulfilled' && Array.isArray(designsData.value)) {
           // On Home, only show curated top 6 designs!
-          setFeaturedDesigns(designsData.value.slice(0, 6));
+          setFeaturedDesigns(designsData.value.map(normalizeDesign).slice(0, 6));
         } else {
           // Fallback static top designs
           setFeaturedDesigns([
@@ -77,33 +148,33 @@ export default function Home() {
             },
             {
               id: 4,
-              name: 'Peacock Bridal Feet',
-              description: 'Majestic peacock feather patterns with fine detailing covering both feet and ankles beautifully.',
+              name: 'Royal Dulha-Dulhan Bridal',
+              description: 'Handcrafted bride & groom wedding portraits on palms with auspicious kalash and peacocks.',
               category: 'Bridal',
-              coverage: 'Both feet',
-              durationMinHours: 2,
-              durationMaxHours: 2,
-              conesNeeded: 1.5,
-              price: 1800,
-              badge: 'Bridal',
+              coverage: 'Full hand',
+              durationMinHours: 3.5,
+              durationMaxHours: 4.5,
+              conesNeeded: 2.5,
+              price: 2800,
+              badge: 'Signature',
               imageUrl: '/images/peacock-feet.png',
             },
             {
               id: 5,
-              name: 'Indo-Arabic Fusion',
-              description: 'The best of both worlds — Indian mandala roots with Arabic flowing strokes.',
-              category: 'Fusion',
-              coverage: 'Full hand',
-              durationMinHours: 2.5,
+              name: 'Lotus Mandala Bridal Feet',
+              description: 'Majestic blooming lotus mandala with ornate ankle payal detailing covering both feet.',
+              category: 'Bridal',
+              coverage: 'Both feet',
+              durationMinHours: 2,
               durationMaxHours: 2.5,
               conesNeeded: 2,
               price: 2000,
-              badge: 'Fusion',
+              badge: 'Bridal Feet',
               imageUrl: '/images/indo-arabic.png',
             },
             {
               id: 6,
-              name: 'Mughal Classic',
+              name: 'Mughal Classic Arches',
               description: 'Inspired by Mughal architecture — domed arches, geometric lattice and vine scrollwork.',
               category: 'Mughal',
               coverage: 'Full hand',
@@ -127,12 +198,24 @@ export default function Home() {
           ]);
         }
 
-        if (testimonialsData.status === 'fulfilled' && Array.isArray(testimonialsData.value)) {
-          setTestimonials(testimonialsData.value);
+        if (testimonialsData.status === 'fulfilled' && Array.isArray(testimonialsData.value) && testimonialsData.value.length > 0) {
+          const mapped = testimonialsData.value.map(t => ({
+            id: t.id,
+            clientName: t.customerName || t.clientName || 'Bridal Patron',
+            customerName: t.customerName || t.clientName || 'Bridal Patron',
+            rating: t.rating || 5,
+            occasion: t.occasion || 'Bridal Mehendi',
+            location: t.location || 'Mumbai',
+            review: t.review || t.reviewText || 'The bridal mehendi was breathtaking! The artist arrived right on time with natural Sojat cones, and the stain lasted over two weeks.',
+            reviewText: t.review || t.reviewText || 'The bridal mehendi was breathtaking! The artist arrived right on time with natural Sojat cones, and the stain lasted over two weeks.',
+          }));
+          setTestimonials(mapped);
         } else {
           setTestimonials([
-            { id: 1, clientName: 'Aarushi Mehta', rating: 5, occasion: 'Wedding Ceremony', reviewText: 'The Rajasthani Bridal design stayed dark for nearly 3 weeks! Pooja arrived right on time with natural cones that had the most calming eucalyptus aroma.' },
-            { id: 2, clientName: 'Simran Kaur', rating: 5, occasion: 'Engagement Party', reviewText: 'Used the AI Try-On tool to match my hand shape and the suggested Arabic pattern looked so breathtaking. 10/10 recommend Shringar!' },
+            { id: 1, clientName: 'Priya Sharma', customerName: 'Priya Sharma', location: 'Bandra, Mumbai', rating: 5, occasion: 'Bridal Mehendi 2025', review: 'Sunita didi did my bridal mehendi and it was absolutely stunning. The stain lasted over two weeks and every single wedding guest kept asking who crafted it. 10/10 royal experience!', reviewText: 'Sunita didi did my bridal mehendi and it was absolutely stunning. The stain lasted over two weeks and every single wedding guest kept asking who crafted it. 10/10 royal experience!' },
+            { id: 2, clientName: 'Ananya Iyer', customerName: 'Ananya Iyer', location: 'Koregaon Park, Pune', rating: 5, occasion: 'Navratri Festive', review: 'Booked through Shringar for Navratri and was completely blown away. The artist arrived right on time with natural eucalyptus cones that had zero chemical odor. Intricate Arabic lines!', reviewText: 'Booked through Shringar for Navratri and was completely blown away. The artist arrived right on time with natural eucalyptus cones that had zero chemical odor. Intricate Arabic lines!' },
+            { id: 3, clientName: 'Meera Kulkarni', customerName: 'Meera Kulkarni', location: 'Andheri, Mumbai', rating: 5, occasion: "Sister's Wedding Sangeet", review: 'Got the Peacock Bridal pattern for my sister\'s wedding. Fatima Khan was incredibly skilled, gentle, and patient with our entire family. Breathtaking craftsmanship!', reviewText: 'Got the Peacock Bridal pattern for my sister\'s wedding. Fatima Khan was incredibly skilled, gentle, and patient with our entire family. Breathtaking craftsmanship!' },
+            { id: 4, clientName: 'Ritu Patel', customerName: 'Ritu Patel', location: 'Worli, Mumbai', rating: 5, occasion: 'Engagement Ceremony', review: 'The Indo-Arabic Fusion design was pure perfection. The online booking and live confirmation made it so hassle-free. Already booked my wedding dates with Shringar!', reviewText: 'The Indo-Arabic Fusion design was pure perfection. The online booking and live confirmation made it so hassle-free. Already booked my wedding dates with Shringar!' },
           ]);
         }
       } catch (e) {
@@ -156,8 +239,8 @@ export default function Home() {
           
           <div className="flex-1 text-center lg:text-left space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 border border-brand-gold/50 text-xs font-semibold text-brand-gold tracking-wide">
-              <Sparkles className="w-3.5 h-3.5 text-brand-gold animate-spin" />
-              <span>Royal Couture & AI-Powered Mehendi Art</span>
+              <Sparkles className="w-3.5 h-3.5 text-brand-gold" />
+              <span>Royal Couture & Master Mehendi Artistry</span>
             </div>
 
             <h1 className="font-serif-luxury text-3xl sm:text-5xl lg:text-6xl font-black tracking-wide leading-tight">
@@ -178,6 +261,7 @@ export default function Home() {
                 <span>Explore Full Catalog</span>
               </Link>
 
+              {/* Virtual AI Hand Try-On temporarily commented out
               <button
                 onClick={() => setAiModalOpen(true)}
                 className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-brand-gold/40 text-brand-gold font-semibold text-sm transition flex items-center justify-center gap-2"
@@ -185,6 +269,15 @@ export default function Home() {
                 <Sparkles className="w-4 h-4 text-amber-300" />
                 <span>Virtual AI Hand Try-On</span>
               </button>
+              */}
+
+              <Link
+                to="/custom-design"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-brand-gold/40 text-brand-gold font-semibold text-sm transition flex items-center justify-center gap-2"
+              >
+                <span>Commission Custom Design</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
 
             <div className="flex items-center justify-center lg:justify-start gap-6 pt-4 text-xs text-brand-cream/70 font-medium">
@@ -236,21 +329,62 @@ export default function Home() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
           {categories.map((cat) => (
-            <button
+            <div
               key={cat.name}
               onClick={() => navigate(`/designs?category=${encodeURIComponent(cat.name)}`)}
-              className="group p-5 rounded-2xl bg-white border border-stone-200 hover:border-brand-gold hover:shadow-xl transition-all duration-300 text-center flex flex-col items-center justify-center gap-2"
+              className="group cursor-pointer rounded-2xl bg-white border border-stone-200/90 shadow-md hover:shadow-2xl hover:border-brand-gold/80 transition-all duration-300 flex flex-col overflow-hidden text-left"
             >
-              <span className="text-3xl group-hover:scale-110 transition-transform duration-300">
-                {cat.icon}
-              </span>
-              <h3 className="font-cinzel font-bold text-sm text-brand-dark group-hover:text-brand-maroon transition">
-                {cat.name}
-              </h3>
-              <p className="text-[11px] text-stone-500 line-clamp-1">{cat.subtitle}</p>
-            </button>
+              {/* Luxury Catalog Image Container */}
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-100">
+                <img
+                  src={cat.imageUrl}
+                  alt={cat.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                  onError={(e) => { e.target.src = '/images/rajasthani-bridal.jpg'; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+                
+                {/* Category Pill Badge */}
+                <span
+                  className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-md"
+                  style={{ backgroundColor: cat.badgeColor }}
+                >
+                  {cat.tag}
+                </span>
+
+                <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between text-white">
+                  <h3 className="font-cinzel font-bold text-base tracking-wider text-amber-200 drop-shadow-md">
+                    {cat.name.toUpperCase()}
+                  </h3>
+                  <span className="text-[10px] text-brand-gold opacity-0 group-hover:opacity-100 transition-opacity font-semibold flex items-center gap-0.5">
+                    View <ArrowRight className="w-3 h-3" />
+                  </span>
+                </div>
+              </div>
+
+              {/* Card Details */}
+              <div className="p-4 flex flex-col flex-1 justify-between space-y-2">
+                <div>
+                  <h4 className="font-serif font-bold text-xs text-stone-900 group-hover:text-brand-maroon transition line-clamp-1">
+                    {cat.subtitle}
+                  </h4>
+                  <p className="text-[11px] text-stone-500 mt-1 line-clamp-2 leading-relaxed">
+                    {cat.description}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-brand-maroon group-hover:text-brand-gold-dark transition">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-stone-400 group-hover:text-brand-gold-dark">
+                    Catalog Collection
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px]">
+                    Browse →
+                  </span>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>
@@ -307,7 +441,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 4. Virtual AI Try-On Showcase Card ── */}
+      {/* ── 4. Virtual AI Try-On Showcase Card (temporarily commented out for testing) ──
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-maroon via-brand-dark to-slate-900 text-white p-8 sm:p-12 border-2 border-brand-gold/50 shadow-2xl">
           <div className="max-w-xl space-y-4 relative z-10">
@@ -339,6 +473,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      */}
 
       {/* ── 5. Mehendi Artists Section ── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -396,35 +531,57 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {testimonials.map((t) => (
-              <div
-                key={t.id}
-                className="p-6 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex text-amber-400">
-                    {[...Array(t.rating || 5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400" />
-                    ))}
+            {testimonials.map((t) => {
+              const review = t.review || t.reviewText || "Sunita didi did my bridal mehendi and it was absolutely stunning. The design lasted over two weeks and everyone kept asking who did it!";
+              const author = t.customerName || t.clientName || "Bridal Patron";
+              const occasion = t.occasion || "Bridal Mehendi";
+              const location = t.location || "";
+
+              return (
+                <div
+                  key={t.id}
+                  className="p-6 rounded-2xl bg-white border border-stone-200/90 shadow-sm space-y-4 hover:shadow-md transition group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-amber-400">
+                      {[...Array(t.rating || 5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-amber-400" />
+                      ))}
+                      <span className="text-xs font-bold text-stone-700 ml-1.5">5.0</span>
+                    </div>
+                    <span className="text-[11px] font-bold text-brand-maroon uppercase tracking-wider bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-brand-gold/30">
+                      {occasion}
+                    </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-brand-gold-dark uppercase tracking-wider">
-                    {t.occasion}
-                  </span>
+
+                  <p className="text-xs sm:text-[13px] text-stone-700 italic leading-relaxed font-serif">
+                    "{review}"
+                  </p>
+
+                  <div className="text-xs font-bold text-brand-dark pt-3 border-t border-stone-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-brand-maroon text-brand-gold flex items-center justify-center font-bold text-xs shadow-inner">
+                        {author.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="font-bold text-stone-900">{author}</div>
+                        {location && <div className="text-[10px] text-stone-400 font-normal">📍 {location}</div>}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      ✓ Verified Bride
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs text-stone-600 italic leading-relaxed">
-                  "{t.reviewText}"
-                </p>
-                <div className="text-xs font-bold text-brand-dark pt-1 border-t border-stone-100">
-                  — {t.clientName}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* AI Try-On Modal */}
+      {/* AI Try-On Modal temporarily commented out
       <AiTryOnModal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} />
+      */}
 
     </div>
   );

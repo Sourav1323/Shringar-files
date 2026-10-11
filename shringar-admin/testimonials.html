@@ -38,7 +38,10 @@
   <div class="main">
     <div class="topbar">
       <div><div class="topbar-title">Testimonials</div><div class="topbar-sub">Manage customer reviews shown on the homepage</div></div>
-      <button class="btn btn-primary" onclick="openModal()">+ Add Review</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-outline" id="refresh-btn" onclick="loadTestimonials(this)">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="openModal()">+ Add Review</button>
+      </div>
     </div>
     <div class="content">
       <div class="panel">
@@ -126,10 +129,19 @@ function selectRating(n) {
   document.getElementById('rating-display').textContent = ['','Poor','Fair','Good','Great','Excellent!'][n];
 }
 
-async function loadTestimonials() {
+async function loadTestimonials(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   const tbody = document.getElementById('testimonials-tbody');
   try {
     const list = await ShringarAdmin.Testimonials.all();
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
     if (!list.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">⭐</div>No reviews yet. Add your first customer review!</td></tr>`; return; }
     tbody.innerHTML = list.map(t => `<tr>
       <td style="color:var(--tl);font-size:12px;">${t.sortOrder ?? 0}</td>

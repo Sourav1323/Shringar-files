@@ -37,6 +37,7 @@ export default function AdminDashboard() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -156,6 +157,18 @@ export default function AdminDashboard() {
       console.error('Error fetching admin data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchData();
+      showSuccess('Live admin data refreshed successfully! ↻');
+    } catch (err) {
+      showError('Failed to refresh data: ' + err.message);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -306,12 +319,12 @@ export default function AdminDashboard() {
             </a>
 
             <button
-              onClick={fetchData}
-              disabled={loading}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-serif font-bold transition flex items-center gap-2 border border-white/20"
+              onClick={handleRefresh}
+              disabled={loading || isRefreshing}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-serif font-bold transition flex items-center gap-2 border border-white/20 disabled:opacity-60"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
         </div>
@@ -828,11 +841,11 @@ export default function AdminDashboard() {
               {testimonials.map((t) => (
                 <div key={t.id} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-2">
                   <div className="flex justify-between items-center">
-                    <h4 className="font-serif font-bold text-base text-stone-900">{t.clientName}</h4>
+                    <h4 className="font-serif font-bold text-base text-stone-900">{t.customerName || t.clientName || 'Bridal Patron'}</h4>
                     <span className="text-amber-500 font-bold text-xs">{'★'.repeat(t.rating || 5)}</span>
                   </div>
-                  <span className="text-[11px] font-semibold text-brand-gold-dark">{t.occasion}</span>
-                  <p className="text-xs text-stone-600 italic">"{t.reviewText}"</p>
+                  <div className="text-[11px] font-semibold text-brand-gold-dark">{t.occasion} {t.location ? `· 📍 ${t.location}` : ''}</div>
+                  <p className="text-xs text-stone-600 italic leading-relaxed">"{t.review || t.reviewText}"</p>
                 </div>
               ))}
             </div>

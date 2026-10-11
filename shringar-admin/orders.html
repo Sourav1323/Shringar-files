@@ -53,7 +53,7 @@
         <div class="topbar-title">Orders</div>
         <div class="topbar-sub">Every booking placed on the website, newest first</div>
       </div>
-      <button class="btn btn-outline" onclick="loadOrders()">↻ Refresh</button>
+      <button class="btn btn-outline" id="refresh-btn" onclick="loadOrders(this)">↻ Refresh</button>
     </div>
 
     <div class="content">
@@ -125,14 +125,24 @@ async function confirmUpiPayment(id) {
   }
 }
 
-async function loadOrders() {
+async function loadOrders(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   const tbody = document.getElementById('orders-table-body');
   const status = document.getElementById('status-filter').value || null;
 
   try {
     const result = await ShringarAdmin.Dashboard.orders(currentPage, PAGE_SIZE, status);
 
-    if (result.content.length === 0) {
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
+
+    if (!result || !result.content || result.content.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">📦</div>No orders found${status ? ' with this status' : ''}.</td></tr>`;
       document.getElementById('pagination-wrap').style.display = 'none';
       return;

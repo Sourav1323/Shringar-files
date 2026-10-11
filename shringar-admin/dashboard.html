@@ -53,7 +53,7 @@
         <div class="topbar-title">Dashboard</div>
         <div class="topbar-sub">Live overview of orders, payments and engagement</div>
       </div>
-      <button class="btn btn-outline" onclick="loadAll()">↻ Refresh</button>
+      <button class="btn btn-outline" id="refresh-btn" onclick="loadAll(this)">↻ Refresh</button>
     </div>
 
     <div class="content">
@@ -215,12 +215,31 @@ async function loadPopularDesigns() {
   }
 }
 
-function loadAll() {
-  loadStats();
-  loadPopularDesigns();
+async function loadAll(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
+  try {
+    await Promise.allSettled([loadStats(), loadPopularDesigns()]);
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => {
+        b.innerHTML = '↻ Refresh';
+        b.disabled = false;
+      }, 1200);
+    }
+  } catch (err) {
+    console.error('Refresh error:', err);
+    if (b) {
+      b.innerHTML = '↻ Refresh';
+      b.disabled = false;
+    }
+  }
 }
 
-document.addEventListener('DOMContentLoaded', loadAll);
+document.addEventListener('DOMContentLoaded', () => loadAll());
 </script>
 </body>
 </html>

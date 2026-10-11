@@ -40,49 +40,28 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
 
     <div id="login-error" class="login-error"></div>
 
-    <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--cd);padding-bottom:10px;">
-      <button id="tab-login" onclick="switchTab('login')" style="flex:1;padding:8px;border:none;background:var(--gold);color:var(--td);font-weight:700;border-radius:8px;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;">Sign In</button>
-      <button id="tab-signup" onclick="switchTab('signup')" style="flex:1;padding:8px;border:1px solid var(--cd);background:#fff;color:var(--tm);font-weight:600;border-radius:8px;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;">Create Admin</button>
-    </div>
-
     <!-- SIGN IN FORM -->
     <div id="form-login-box">
       <div class="form-field">
         <label class="form-label">Admin Email or Phone</label>
-        <input class="form-input" type="text" id="login-identifier" placeholder="admin@shringar.com or 9876543210"/>
+        <input class="form-input" type="text" id="login-identifier" placeholder="admin@shringar.com or 9876543210" autocomplete="username"/>
       </div>
       <div class="form-field">
         <label class="form-label">Password</label>
-        <input class="form-input" type="password" id="login-password" placeholder="••••••••"/>
+        <div style="position:relative;display:flex;align-items:center;">
+          <input class="form-input" type="password" id="login-password" placeholder="••••••••" style="padding-right:44px;" autocomplete="current-password"/>
+          <button type="button" id="toggle-pw-btn" onclick="togglePasswordVisibility('login-password', this)" style="position:absolute;right:8px;background:none;border:none;cursor:pointer;font-size:16px;color:var(--tl);padding:6px;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;" title="Show or hide password">
+            👁️
+          </button>
+        </div>
       </div>
       <button class="login-btn" id="login-btn" onclick="handleLogin()">Sign In to Admin Portal</button>
     </div>
 
-    <!-- CREATE ADMIN FORM -->
-    <div id="form-signup-box" style="display:none;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="form-field">
-          <label class="form-label">First Name</label>
-          <input class="form-input" type="text" id="reg-fname" placeholder="First Name"/>
-        </div>
-        <div class="form-field">
-          <label class="form-label">Last Name</label>
-          <input class="form-input" type="text" id="reg-lname" placeholder="Last Name"/>
-        </div>
+    <div style="margin-top:16px;padding:12px;background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.25);border-radius:10px;text-align:center;">
+      <div style="font-size:11.5px;color:var(--tm);font-weight:500;line-height:1.5;">
+        🔒 <strong>Restricted Access:</strong> Admin accounts are created and authorized strictly through executive approval on the Admin Control Panel.
       </div>
-      <div class="form-field">
-        <label class="form-label">Email Address</label>
-        <input class="form-input" type="email" id="reg-email" placeholder="admin@yourdomain.com"/>
-      </div>
-      <div class="form-field">
-        <label class="form-label">Mobile Number</label>
-        <input class="form-input" type="tel" id="reg-phone" placeholder="10-digit mobile number"/>
-      </div>
-      <div class="form-field">
-        <label class="form-label">Password</label>
-        <input class="form-input" type="password" id="reg-password" placeholder="Min 6 characters"/>
-      </div>
-      <button class="login-btn" id="signup-btn" onclick="handleCreateAdmin()">Create Admin Account & Enter</button>
     </div>
 
     <div class="login-footer-note">
@@ -98,20 +77,17 @@ if (ShringarAdmin.isLoggedIn() && ShringarAdmin.getAdmin()?.role === 'ADMIN') {
   window.location.href = 'dashboard.html';
 }
 
-function switchTab(mode) {
-  hideError();
-  const isLogin = mode === 'login';
-  document.getElementById('form-login-box').style.display = isLogin ? 'block' : 'none';
-  document.getElementById('form-signup-box').style.display = isLogin ? 'none' : 'block';
-  
-  const tabL = document.getElementById('tab-login');
-  const tabS = document.getElementById('tab-signup');
-  if (isLogin) {
-    tabL.style.background = 'var(--gold)'; tabL.style.color = 'var(--td)'; tabL.style.border = 'none'; tabL.style.fontWeight = '700';
-    tabS.style.background = '#fff'; tabS.style.color = 'var(--tm)'; tabS.style.border = '1px solid var(--cd)'; tabS.style.fontWeight = '600';
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+    btn.title = 'Hide password';
   } else {
-    tabS.style.background = 'var(--gold)'; tabS.style.color = 'var(--td)'; tabS.style.border = 'none'; tabS.style.fontWeight = '700';
-    tabL.style.background = '#fff'; tabL.style.color = 'var(--tm)'; tabL.style.border = '1px solid var(--cd)'; tabL.style.fontWeight = '600';
+    input.type = 'password';
+    btn.textContent = '👁️';
+    btn.title = 'Show password';
   }
 }
 
@@ -156,43 +132,6 @@ async function handleLogin() {
     showError(err.message);
     btn.disabled = false;
     btn.textContent = 'Sign In to Admin Portal';
-  }
-}
-
-async function handleCreateAdmin() {
-  hideError();
-  const firstName = document.getElementById('reg-fname').value.trim();
-  const lastName = document.getElementById('reg-lname').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const phone = document.getElementById('reg-phone').value.trim();
-  const password = document.getElementById('reg-password').value;
-
-  if (!firstName || !email || !password) {
-    showError('First name, email, and password are required.');
-    return;
-  }
-
-  const btn = document.getElementById('signup-btn');
-  btn.disabled = true;
-  btn.textContent = 'Creating Admin Account…';
-
-  try {
-    const auth = await ShringarAdmin.Auth.signupAdmin({
-      firstName,
-      lastName: lastName || 'Admin',
-      email,
-      phone: phone || '+910000000000',
-      password
-    });
-    ShringarAdmin.setSession(auth);
-    ShringarAdmin.toast(`Admin account created! Welcome ${auth.firstName}!`, 'success');
-    setTimeout(() => {
-      window.location.replace('dashboard.html');
-    }, 600);
-  } catch (err) {
-    showError(err.message);
-    btn.disabled = false;
-    btn.textContent = 'Create Admin Account & Enter';
   }
 }
 

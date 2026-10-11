@@ -49,7 +49,7 @@
         <div class="topbar-sub">Review tickets, dispute inquiries, and post official responses</div>
       </div>
       <div style="display:flex;gap:10px;">
-        <button class="btn btn-outline" onclick="loadConcerns()">🔄 Refresh</button>
+        <button class="btn btn-outline" id="refresh-btn" onclick="loadConcerns(this)">↻ Refresh</button>
       </div>
     </div>
 
@@ -146,14 +146,27 @@ let allConcerns = [];
 let currentFilter = 'ALL';
 let activeConcernId = null;
 
-async function loadConcerns() {
+async function loadConcerns(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   const tbody = document.getElementById('concerns-tbody');
   tbody.innerHTML = '<tr><td colspan="8" class="loading-state">Loading concerns…</td></tr>';
   try {
     allConcerns = await ShringarAdmin.Concerns.all();
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
     renderConcerns();
   } catch(err) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--red);padding:24px;">Failed to load concerns: ${err.message}</td></tr>`;
+    if (b) {
+      b.innerHTML = '↻ Refresh';
+      b.disabled = false;
+    }
   }
 }
 

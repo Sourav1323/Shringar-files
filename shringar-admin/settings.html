@@ -38,7 +38,10 @@
   <div class="main">
     <div class="topbar">
       <div><div class="topbar-title">Site Settings</div><div class="topbar-sub">Control all website content and business rules without touching code</div></div>
-      <button class="btn btn-primary" id="save-all-btn" onclick="saveAll()">💾 Save All Changes</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" id="refresh-btn" onclick="loadSettings(this)">↻ Refresh</button>
+        <button class="btn btn-primary" id="save-all-btn" onclick="saveAll()">💾 Save All Changes</button>
+      </div>
     </div>
     <div class="content">
 
@@ -199,7 +202,12 @@ let currentLogoUrl = null;
 let currentBannerUrl = null;
 let currentQrUrl = null;
 
-async function loadSettings() {
+async function loadSettings(btn) {
+  const b = btn || document.getElementById('refresh-btn');
+  if (b) {
+    b.disabled = true;
+    b.innerHTML = '<span class="spin">↻</span> Refreshing…';
+  }
   try {
     const s = await ShringarAdmin.Settings.get();
     currentLogoUrl = s.logoUrl || null;
@@ -230,7 +238,17 @@ async function loadSettings() {
     document.getElementById('s-time-slots').value = s.availableTimeSlots||'';
     document.getElementById('s-blackout-days').value = s.blackoutDays||'';
     renderSlotPreview();
-  } catch(err) { ShringarAdmin.toast(err.message,'error'); }
+    if (b) {
+      b.innerHTML = '✓ Refreshed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
+    }
+  } catch(err) {
+    ShringarAdmin.toast(err.message,'error');
+    if (b) {
+      b.innerHTML = '⚠️ Failed';
+      setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1500);
+    }
+  }
 }
 
 function renderLogoPreview() {

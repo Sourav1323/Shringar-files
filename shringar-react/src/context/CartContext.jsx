@@ -37,16 +37,31 @@ export function CartProvider({ children }) {
     }
   }, [coupon]);
 
-  const addToCart = (design) => {
+  const addToCart = (design, quantityToAdd = 1) => {
     setCartItems((prev) => {
       const exists = prev.find((item) => item.id === design.id);
       if (exists) {
-        toast.info(`"${design.name}" is already in your booking cart.`);
-        return prev;
+        const newQty = (exists.quantity || 1) + quantityToAdd;
+        toast.success(`Increased "${design.name}" quantity to ${newQty}!`);
+        return prev.map((item) =>
+          item.id === design.id ? { ...item, quantity: newQty } : item
+        );
       }
-      toast.success(`Added "${design.name}" to cart! 🛍️`);
-      return [...prev, { ...design, quantity: 1 }];
+      toast.success(`Added "${design.name}" to your booking package.`);
+      return [...prev, { ...design, quantity: Math.max(1, quantityToAdd) }];
     });
+  };
+
+  const updateQuantity = (id, newQuantity) => {
+    if (newQuantity <= 0) {
+      removeFromCart(id);
+      return;
+    }
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, quantity: Math.min(99, Math.max(1, Math.round(newQuantity))) } : item
+      )
+    );
   };
 
   const removeFromCart = (id) => {
@@ -59,14 +74,25 @@ export function CartProvider({ children }) {
     setCoupon(null);
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-
-  const totalCones = cartItems.reduce((sum, item) => sum + (Number(item.conesNeeded) || 1), 0);
-
-  const totalDurationHours = cartItems.reduce(
-    (sum, item) => sum + ((Number(item.durationMinHours) || 1) + (Number(item.durationMaxHours) || 2)) / 2,
+  const subtotal = cartItems.reduce(
+    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
     0
   );
+
+  const totalCones = cartItems.reduce(
+    (sum, item) => sum + (Number(item.conesNeeded) || 1) * (Number(item.quantity) || 1),
+    0
+  );
+
+  const totalDurationHours = Math.round(
+    cartItems.reduce(
+      (sum, item) =>
+        sum +
+        (((Number(item.durationMinHours) || 1) + (Number(item.durationMaxHours) || 2)) / 2) *
+          (Number(item.quantity) || 1),
+      0
+    ) * 10
+  ) / 10;
 
   let discountAmount = 0;
   if (coupon && subtotal > 0) {
@@ -113,11 +139,14 @@ export function CartProvider({ children }) {
     toast.info('Coupon removed.');
   };
 
+  const itemCount = cartItems.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+
   return (
     <CartContext.Provider
       value={{
         cartItems,
         addToCart,
+        updateQuantity,
         removeFromCart,
         clearCart,
         coupon,
@@ -128,7 +157,7 @@ export function CartProvider({ children }) {
         finalTotal,
         totalCones,
         totalDurationHours,
-        itemCount: cartItems.length,
+        itemCount,
       }}
     >
       {children}
