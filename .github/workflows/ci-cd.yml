@@ -2,9 +2,10 @@ name: Shringar CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, dev, staging ]
+    branches: [ main, dev, staging, 'release/**' ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, 'release/**' ]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -59,7 +60,7 @@ jobs:
   build-and-push-docker:
     name: 🐳 Build & Push Docker Images
     needs: test-and-verify
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/dev')
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
@@ -83,6 +84,9 @@ jobs:
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "ENV_TAG=latest" >> $GITHUB_OUTPUT
             echo "DEPLOY_TARGET=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == *"release/"* ]]; then
+            echo "ENV_TAG=release" >> $GITHUB_OUTPUT
+            echo "DEPLOY_TARGET=staging" >> $GITHUB_OUTPUT
           else
             echo "ENV_TAG=staging" >> $GITHUB_OUTPUT
             echo "DEPLOY_TARGET=staging" >> $GITHUB_OUTPUT
