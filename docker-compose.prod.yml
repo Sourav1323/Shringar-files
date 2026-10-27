@@ -5,7 +5,7 @@ services:
     image: mysql:8.0
     container_name: shringar-prod-mysql
     restart: always
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=512M
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=128M --max_connections=40
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME:-shringar_db}
@@ -13,6 +13,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
       - ./backups:/backups
     # No exposed ports to public internet for security — only reachable internally
     healthcheck:
@@ -24,7 +25,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1024M
+          memory: 384M
     logging:
       driver: "json-file"
       options:
@@ -58,7 +59,7 @@ services:
       SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD}
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
-      JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
+      JAVA_OPTS: "-Xms128m -Xmx384m -XX:+UseSerialGC -Djava.security.egd=file:/dev/./urandom"
     volumes:
       - uploads_data:/app/uploads
     healthcheck:
@@ -70,7 +71,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1200M
+          memory: 512M
     logging:
       driver: "json-file"
       options:

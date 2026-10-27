@@ -1,0 +1,250 @@
+﻿[
+    {
+        "Id":  "TC-01",
+        "Category":  "Infrastructure",
+        "Scenario":  "React Frontend on Port 3005",
+        "Status":  "PASS",
+        "Details":  "HTTP 200 OK, HTML served cleanly",
+        "DurationMs":  2067
+    },
+    {
+        "Id":  "TC-02",
+        "Category":  "Infrastructure",
+        "Scenario":  "Spring Boot REST API on Port 8080",
+        "Status":  "PASS",
+        "Details":  "HTTP 200 OK, 6 designs returned",
+        "DurationMs":  137
+    },
+    {
+        "Id":  "TC-03",
+        "Category":  "Infrastructure",
+        "Scenario":  "Standalone Admin on Port 5501",
+        "Status":  "PASS",
+        "Details":  "HTTP 200 OK, operations dashboard accessible",
+        "DurationMs":  2061
+    },
+    {
+        "Id":  "TC-04",
+        "Category":  "Infrastructure",
+        "Scenario":  "CORS Header for React Port 3005",
+        "Status":  "PASS",
+        "Details":  "Allowed origin confirmed: http://localhost:3005",
+        "DurationMs":  13
+    },
+    {
+        "Id":  "TC-05",
+        "Category":  "Authentication",
+        "Scenario":  "Unverified Email Registration Guard",
+        "Status":  "PASS",
+        "Details":  "Correctly requires OTP verification before account creation (HTTP 400)",
+        "DurationMs":  96
+    },
+    {
+        "Id":  "TC-06",
+        "Category":  "Authentication",
+        "Scenario":  "Duplicate Email Rejection",
+        "Status":  "PASS",
+        "Details":  "Correctly blocked with HTTP 400",
+        "DurationMs":  42
+    },
+    {
+        "Id":  "TC-07",
+        "Category":  "Authentication",
+        "Scenario":  "Invalid Password Block",
+        "Status":  "PASS",
+        "Details":  "Rejected with HTTP 401/400 Unauthorized",
+        "DurationMs":  9
+    },
+    {
+        "Id":  "TC-08",
+        "Category":  "Authentication",
+        "Scenario":  "Valid Login Re-authentication",
+        "Status":  "PASS",
+        "Details":  "Session established, fresh JWT acquired (UserId: 4)",
+        "DurationMs":  133
+    },
+    {
+        "Id":  "TC-09",
+        "Category":  "Package Allocation",
+        "Scenario":  "Solo Bride Allocation (1 Bride, 0 Relatives)",
+        "Status":  "PASS",
+        "Details":  "Exactly 1 Dedicated Lead Master, 0 Associates, Total 1",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-10",
+        "Category":  "Package Allocation",
+        "Scenario":  "Bride + 3 Relatives Allocation",
+        "Status":  "PASS",
+        "Details":  "1 Dedicated Lead + ceil(3/3)=1 Associate, Total 2 Artists",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-11",
+        "Category":  "Package Allocation",
+        "Scenario":  "Bride + 7 Relatives (ceil(7/3)=3)",
+        "Status":  "PASS",
+        "Details":  "1 Dedicated Lead + ceil(7/3)=3 Associates, Total 4 Artists",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-12",
+        "Category":  "Package Allocation",
+        "Scenario":  "Group Package (10 Guests, ceil(10/3)=4)",
+        "Status":  "PASS",
+        "Details":  "Uniform allocation: 4 Artists for 10 Guests",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-13",
+        "Category":  "Package Allocation",
+        "Scenario":  "Mass Sangeet Scaling (45 Guests, ceil(45/3)=15)",
+        "Status":  "PASS",
+        "Details":  "Scales accurately without overflow: 15 Certified Artists",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-14",
+        "Category":  "City Availability",
+        "Scenario":  "Certified Hub: Delhi Availability",
+        "Status":  "PASS",
+        "Details":  "Found 2 active artists (Lead: Kavita Sharma, Rating: 4.95)",
+        "DurationMs":  17
+    },
+    {
+        "Id":  "TC-15",
+        "Category":  "City Availability",
+        "Scenario":  "Heritage City: Jaipur Availability",
+        "Status":  "PASS",
+        "Details":  "Found 2 verified artists in Jaipur",
+        "DurationMs":  12
+    },
+    {
+        "Id":  "TC-16",
+        "Category":  "City Availability",
+        "Scenario":  "Unserviced City: Patna Guard",
+        "Status":  "PASS",
+        "Details":  "Correctly reports 0 artists (triggers NOT_LAUNCHED UI status)",
+        "DurationMs":  11
+    },
+    {
+        "Id":  "TC-17",
+        "Category":  "City Availability",
+        "Scenario":  "Case \u0026 Whitespace Resilience (\u0027  mUmBaI  \u0027)",
+        "Status":  "PASS",
+        "Details":  "Flexible matching resolved Mumbai successfully (3 artists)",
+        "DurationMs":  24
+    },
+    {
+        "Id":  "TC-18",
+        "Category":  "City Availability",
+        "Scenario":  "Empty City Parameter Fallback",
+        "Status":  "PASS",
+        "Details":  "Returned all active roster artists without throwing 500 error",
+        "DurationMs":  31
+    },
+    {
+        "Id":  "TC-19",
+        "Category":  "Booking Validation",
+        "Scenario":  "Empty Cart Booking Block",
+        "Status":  "FAIL",
+        "Details":  "Booking created despite empty cart",
+        "DurationMs":  57
+    },
+    {
+        "Id":  "TC-20",
+        "Category":  "Booking Validation",
+        "Scenario":  "Past Date Appointment Block",
+        "Status":  "PASS",
+        "Details":  "Blocked with HTTP 400 (@Future validation enforced)",
+        "DurationMs":  30
+    },
+    {
+        "Id":  "TC-21",
+        "Category":  "Booking Validation",
+        "Scenario":  "Invalid 5-digit PIN Code Block",
+        "Status":  "PASS",
+        "Details":  "Blocked with HTTP 400 (Pincode must be 6 digits)",
+        "DurationMs":  29
+    },
+    {
+        "Id":  "TC-22",
+        "Category":  "Booking Flow",
+        "Scenario":  "Legitimate Royal Booking Creation",
+        "Status":  "PASS",
+        "Details":  "Created Booking #7 (Ref: SH-2026-3714), Advance: Rs. 1560, Status: PENDING",
+        "DurationMs":  74
+    },
+    {
+        "Id":  "TC-23",
+        "Category":  "Payment Verification",
+        "Scenario":  "Legitimate 12-digit UPI UTR Submission",
+        "Status":  "PASS",
+        "Details":  "UTR 429636725760 recorded, upiPaymentSubmitted: true",
+        "DurationMs":  71
+    },
+    {
+        "Id":  "TC-24",
+        "Category":  "Payment Edge Case",
+        "Scenario":  "Repeat UPI Submission on Same Booking",
+        "Status":  "PASS",
+        "Details":  "Blocked repeated payment proof",
+        "DurationMs":  55
+    },
+    {
+        "Id":  "TC-25",
+        "Category":  "Security \u0026 Robustness",
+        "Scenario":  "SQL Injection Attempt in City Filter",
+        "Status":  "PASS",
+        "Details":  "Safely handled parameterized query without 500 SQL syntax crash",
+        "DurationMs":  18
+    },
+    {
+        "Id":  "TC-26",
+        "Category":  "Security \u0026 Robustness",
+        "Scenario":  "XSS Sanitization \u0026 Escaping",
+        "Status":  "PASS",
+        "Details":  "JPA / Jackson parameterized string binding prevents script execution",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-27",
+        "Category":  "Admin \u0026 Catalog",
+        "Scenario":  "Design Categories Retrieval",
+        "Status":  "PASS",
+        "Details":  "Found 5 categories (Bridal, Minimal, Arabic, Fusion, Mughal)",
+        "DurationMs":  15
+    },
+    {
+        "Id":  "TC-28",
+        "Category":  "Admin \u0026 Catalog",
+        "Scenario":  "Public Testimonials Feed",
+        "Status":  "PASS",
+        "Details":  "Feed active, 4 royal customer testimonials returned",
+        "DurationMs":  10
+    },
+    {
+        "Id":  "TC-29",
+        "Category":  "AI Emergent Features",
+        "Scenario":  "Photorealistic AI Try-On Generation",
+        "Status":  "PASS",
+        "Details":  "Success: True, Design: Rajasthani Bridal, Base64 length: 96",
+        "DurationMs":  27
+    },
+    {
+        "Id":  "TC-30",
+        "Category":  "Authentication",
+        "Scenario":  "Admin Portal Login (admin@shringar.com)",
+        "Status":  "PASS",
+        "Details":  "Logged in successfully with ADMIN role",
+        "DurationMs":  110
+    },
+    {
+        "Id":  "TC-31",
+        "Category":  "Authentication",
+        "Scenario":  "Phone Login (8619377860)",
+        "Status":  "PASS",
+        "Details":  "Logged in successfully with 10-digit phone number",
+        "DurationMs":  103
+    }
+]

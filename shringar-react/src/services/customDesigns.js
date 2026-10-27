@@ -28,7 +28,7 @@ const DEFAULT_REQUESTS = [
     advanceRequired: 1500,
     advancePaid: false,
     artistAssigned: 'Pooja Verma (Master Artisan)',
-    adminNotes: 'Portrait stencils and aged Sojat organic eucalyptus henna reserved. Advance payment of ₹1,500 required to lock the calendar slot.',
+    adminNotes: 'Portrait stencils and preferred store-available henna cones reserved. Advance payment of ₹1,500 required to lock the calendar slot.',
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
   },
   {

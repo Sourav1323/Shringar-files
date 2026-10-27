@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { CartProvider } from './context/CartContext';
 import { FavoritesProvider } from './context/FavoritesContext';
+import { CityProvider } from './context/CityContext';
 import { SettingsAPI } from './services/api';
 
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import FavoritesModal from './components/favorites/FavoritesModal';
+import CityModal from './components/common/CityModal';
 
 import Home from './pages/Home';
 import DesignsPage from './pages/DesignsPage';
@@ -17,6 +19,7 @@ import BookingPage from './pages/BookingPage';
 import CartPage from './pages/CartPage';
 import LoginPage from './pages/LoginPage';
 import AiTryOnPage from './pages/AiTryOnPage';
+import GalleryPage from './pages/GalleryPage';
 import OrdersPage from './pages/OrdersPage';
 import ProfilePage from './pages/ProfilePage';
 import HelpPage from './pages/HelpPage';
@@ -95,12 +98,14 @@ export default function App() {
       <Router>
         <ToastProvider>
           <AuthProvider>
-            <CartProvider>
-              <FavoritesProvider>
-                <ScrollToTop />
-                <SiteSettingsSync />
-                <FavoritesModal />
-                <div className="flex flex-col min-h-screen bg-brand-cream text-stone-800 font-sans selection:bg-brand-gold/30 selection:text-brand-maroon">
+            <CityProvider>
+              <CartProvider>
+                <FavoritesProvider>
+                  <ScrollToTop />
+                  <SiteSettingsSync />
+                  <FavoritesModal />
+                  <CityModal />
+                  <div className="flex flex-col min-h-screen bg-brand-cream text-stone-800 font-sans selection:bg-brand-gold/30 selection:text-brand-maroon">
                   {/* Luxury Navigation Header */}
                   <Navbar />
 
@@ -120,9 +125,10 @@ export default function App() {
                   <Route path="/custom-design" element={<CustomDesignPage />} />
                   <Route path="/become-artist" element={<BecomeArtistPage />} />
 
-                  {/* AI Palm Try-On (temporarily commented out for end-user testing)
-                  <Route path="/ai-tryon" element={<AiTryOnPage />} />
-                  */}
+                  {/* AI Palm Try-On Studio (commented out until next release) */}
+                  <Route path="/ai-tryon" element={<Navigate to="/designs" replace />} />
+                  <Route path="/try-on" element={<Navigate to="/designs" replace />} />
+                  <Route path="/gallery" element={<GalleryPage />} />
 
                   {/* Authentication */}
                   <Route path="/login" element={<LoginPage />} />
@@ -146,6 +152,7 @@ export default function App() {
             </div>
             </FavoritesProvider>
           </CartProvider>
+          </CityProvider>
         </AuthProvider>
       </ToastProvider>
     </Router>

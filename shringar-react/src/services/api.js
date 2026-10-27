@@ -125,8 +125,8 @@ export const DesignsAPI = {
 };
 
 export const ArtistsAPI = {
-  getAll: (city = 'Bangalore') => request(`/artists?city=${encodeURIComponent(city)}`),
-  getByCity: (city = 'Bangalore') => request(`/artists?city=${encodeURIComponent(city)}`),
+  getAll: (city = '') => request(`/artists${city ? '?city=' + encodeURIComponent(city) : ''}`),
+  getByCity: (city = '') => request(`/artists${city ? '?city=' + encodeURIComponent(city) : ''}`),
   search: (city, area) => request(`/artists/search?city=${encodeURIComponent(city)}&area=${encodeURIComponent(area)}`),
   getById: (id) => request(`/artists/${id}`),
 };
@@ -208,8 +208,10 @@ export const ConcernsAPI = {
 };
 
 export const AiAPI = {
-  analyzeHand: (formData) => 
-    request('/ai/hand-analysis', { method: 'POST', body: formData, isFormData: true }),
+  analyzeHand: (body) => 
+    request('/ai/analyze-hand', { method: 'POST', body }),
+  tryOn: (handImageB64, designId) =>
+    request('/ai/tryon', { method: 'POST', body: { hand_image_b64: handImageB64, design_id: designId } }),
 };
 
 export const AdminAPI = {

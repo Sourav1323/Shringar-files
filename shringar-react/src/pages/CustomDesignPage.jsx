@@ -16,6 +16,8 @@ export default function CustomDesignPage() {
   const [activeTab, setActiveTab] = useState('request'); // 'request' | 'my-requests'
   const [requests, setRequests] = useState([]);
 
+  const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'drive' | 'url'
+
   // Form State
   const [formData, setFormData] = useState({
     title: '',
@@ -23,9 +25,10 @@ export default function CustomDesignPage() {
     coverage: 'Full Hand (Elbow)',
     description: '',
     referenceImageUrl: '/images/rajasthani-bridal.jpg',
+    driveLink: '',
     eventDate: '',
     preferredTime: 'Morning (10:00 AM)',
-    city: 'Bangalore',
+    city: 'Delhi NCR',
     venueAddress: '',
     userName: user?.fullName || '',
     userEmail: user?.email || '',
@@ -41,17 +44,28 @@ export default function CustomDesignPage() {
 
   const loadRequests = () => {
     const list = CustomDesignsService.getAll();
-    setRequests(list);
+    if (user?.id || user?.email) {
+      const userList = list.filter(
+        (r) =>
+          (user.id && String(r.userId) === String(user.id)) ||
+          (user.email && r.userEmail?.toLowerCase() === user.email.toLowerCase())
+      );
+      setRequests(userList);
+    } else {
+      setRequests([]);
+    }
   };
 
   useEffect(() => {
     loadRequests();
+  }, [user?.id, user?.email]);
 
+  useEffect(() => {
     // Listen for custom designs updates across tabs/components
     const handleUpdate = () => loadRequests();
     window.addEventListener('shringar_custom_designs_updated', handleUpdate);
     return () => window.removeEventListener('shringar_custom_designs_updated', handleUpdate);
-  }, []);
+  }, [user?.id, user?.email]);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -151,7 +165,7 @@ export default function CustomDesignPage() {
             <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-serif font-bold flex items-center justify-center shrink-0">4</span>
             <div>
               <h4 className="font-serif font-bold text-xs uppercase tracking-wide text-brand-maroon">Ceremony Arrival</h4>
-              <p className="text-[11px] text-stone-500 mt-0.5">Artist arrives with custom stencils & organic henna.</p>
+              <p className="text-[11px] text-stone-500 mt-0.5">Artist arrives with custom stencils & mehendi cones as per your preference.</p>
             </div>
           </div>
         </div>
@@ -210,44 +224,129 @@ export default function CustomDesignPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold uppercase text-stone-700 mb-1.5">
-                      Reference Image URL or Local Path *
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        required
-                        value={formData.referenceImageUrl}
-                        onChange={(e) => setFormData({ ...formData, referenceImageUrl: e.target.value })}
-                        placeholder="https://example.com/mehendi-pin.jpg or /images/..."
-                        className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-2 focus:ring-brand-gold outline-none"
-                      />
+                  {/* Reference Image / File / Google Drive Upload */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold uppercase text-stone-700">
+                        Reference Motif / Inspiration *
+                      </label>
+                      <div className="flex rounded-lg border border-stone-300 p-0.5 bg-stone-100 text-[11px] font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => setUploadMode('file')}
+                          className={`px-2.5 py-1 rounded-md transition ${uploadMode === 'file' ? 'bg-white shadow text-[#4A2511]' : 'text-stone-600'}`}
+                        >
+                          Upload File
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUploadMode('drive')}
+                          className={`px-2.5 py-1 rounded-md transition ${uploadMode === 'drive' ? 'bg-white shadow text-[#4A2511]' : 'text-stone-600'}`}
+                        >
+                          Google Drive
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUploadMode('url')}
+                          className={`px-2.5 py-1 rounded-md transition ${uploadMode === 'url' ? 'bg-white shadow text-[#4A2511]' : 'text-stone-600'}`}
+                        >
+                          URL / Presets
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="text-[11px] text-stone-400 self-center">Sample presets:</span>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, referenceImageUrl: '/images/rajasthani-bridal.jpg' })}
-                        className="text-[11px] px-2 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 text-stone-700"
-                      >
-                        Rajasthani Bridal
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, referenceImageUrl: '/images/peacock-feet.png' })}
-                        className="text-[11px] px-2 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 text-stone-700"
-                      >
-                        Peacock Feet
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, referenceImageUrl: '/images/floral-minimal.jpg' })}
-                        className="text-[11px] px-2 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 text-stone-700"
-                      >
-                        Floral Minimal
-                      </button>
-                    </div>
+
+                    {uploadMode === 'file' && (
+                      <div className="border-2 border-dashed border-stone-300 hover:border-brand-gold rounded-xl p-4 text-center bg-stone-50/70 hover:bg-amber-50/20 transition cursor-pointer relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                setFormData({ ...formData, referenceImageUrl: ev.target.result });
+                                showSuccess?.('Reference photo attached!');
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        />
+                        <div className="flex flex-col items-center gap-1.5 py-2">
+                          <Upload className="w-5 h-5 text-brand-maroon" />
+                          <span className="text-xs font-bold text-stone-800">
+                            Click to upload your sketch or photo (No photo size limit)
+                          </span>
+                          <span className="text-[11px] text-stone-500">
+                            Supports high-res PNG, JPG, WEBP, Pinterest pins
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {uploadMode === 'drive' && (
+                      <div className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-3.5 space-y-1.5">
+                        <span className="text-xs font-bold text-[#4A2511] block">
+                          Paste Google Drive / Cloud Link
+                        </span>
+                        <input
+                          type="url"
+                          value={formData.driveLink || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData({ 
+                              ...formData, 
+                              driveLink: val,
+                              // If valid URL or drive link, keep referenceImageUrl populated for review
+                              referenceImageUrl: formData.referenceImageUrl || '/images/rajasthani-bridal.jpg'
+                            });
+                          }}
+                          placeholder="https://drive.google.com/drive/folders/... or shared file link"
+                          className="w-full px-3.5 py-2 rounded-lg border border-stone-300 text-sm focus:ring-2 focus:ring-brand-gold outline-none bg-white"
+                        />
+                        <p className="text-[11px] text-stone-500 italic">
+                          Ensure link is set to "Anyone with the link can view". Our master artist will review the full folder!
+                        </p>
+                      </div>
+                    )}
+
+                    {uploadMode === 'url' && (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          required
+                          value={formData.referenceImageUrl}
+                          onChange={(e) => setFormData({ ...formData, referenceImageUrl: e.target.value })}
+                          placeholder="https://example.com/mehendi-pin.jpg or /images/..."
+                          className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-2 focus:ring-brand-gold outline-none"
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <span className="text-[11px] text-stone-400 self-center">Presets:</span>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, referenceImageUrl: '/images/rajasthani-bridal.jpg' })}
+                            className="text-[11px] px-2 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 text-stone-700"
+                          >
+                            Rajasthani Bridal
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, referenceImageUrl: '/images/peacock-feet.png' })}
+                            className="text-[11px] px-2 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 text-stone-700"
+                          >
+                            Peacock Feet
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, referenceImageUrl: '/images/floral-minimal.jpg' })}
+                            className="text-[11px] px-2 py-1 bg-stone-100 hover:bg-stone-200 rounded border border-stone-300 text-stone-700"
+                          >
+                            Floral Minimal
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -1,15 +1,26 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useToast } from './ToastContext';
+import { useAuth } from './AuthContext';
 
 const FavoritesContext = createContext();
 
-const STORAGE_KEY = 'shringar_favorites_v2';
-
 export function FavoritesProvider({ children }) {
+  const { user } = useAuth();
+  const currentUserId = user?.id ? String(user.id) : 'guest';
+  const loadedUserRef = useRef(currentUserId);
+
+  const getFavKey = (uid) => (uid ? `shringar_favorites_user_${uid}` : 'shringar_favorites_guest');
+
   const [favorites, setFavorites] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('shringar_favorites');
-      return saved ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem(getFavKey(user?.id));
+      if (saved) return JSON.parse(saved);
+      // Legacy migration check only for guest
+      if (!user?.id) {
+        const legacy = localStorage.getItem('shringar_favorites_v2') || localStorage.getItem('shringar_favorites');
+        return legacy ? JSON.parse(legacy) : [];
+      }
+      return [];
     } catch {
       return [];
     }
@@ -18,13 +29,29 @@ export function FavoritesProvider({ children }) {
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const toast = useToast();
 
+  // Reload favorites specifically when active user changes (login / logout / switch account)
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
-    } catch (e) {
-      console.warn('Could not persist favorites to localStorage:', e);
+    if (loadedUserRef.current !== currentUserId) {
+      loadedUserRef.current = currentUserId;
+      try {
+        const saved = localStorage.getItem(getFavKey(user?.id));
+        setFavorites(saved ? JSON.parse(saved) : []);
+      } catch {
+        setFavorites([]);
+      }
     }
-  }, [favorites]);
+  }, [currentUserId, user?.id]);
+
+  // Persist favorites ONLY if current state matches the current user
+  useEffect(() => {
+    if (loadedUserRef.current === currentUserId) {
+      try {
+        localStorage.setItem(getFavKey(user?.id), JSON.stringify(favorites));
+      } catch (e) {
+        console.warn('Could not persist favorites to localStorage:', e);
+      }
+    }
+  }, [favorites, currentUserId, user?.id]);
 
   const isFavorite = (id) => {
     if (!id) return false;
@@ -61,8 +88,9 @@ export function FavoritesProvider({ children }) {
 
   const clearFavorites = () => {
     setFavorites([]);
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem('shringar_favorites');
+    try {
+      localStorage.removeItem(getFavKey(user?.id));
+    } catch {}
     toast.showInfo?.('Favorites list cleared');
   };
 

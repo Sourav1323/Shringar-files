@@ -59,6 +59,10 @@ public class BookingService {
         Artist artist = artistRepository.findById(request.getArtistId())
                 .orElseThrow(() -> new ResourceNotFoundException("Selected artist not found"));
 
+        if (Boolean.FALSE.equals(artist.getIsActive())) {
+            throw new BadRequestException("Selected artist is currently unavailable or inactive.");
+        }
+
         // ── Confirm artist is free that day (basic same-day-slot guard) ──
         List<Booking> conflicting = bookingRepository.findByArtistIdAndAppointmentDateAndStatusIn(
                 artist.getId(), request.getAppointmentDate(),
@@ -272,6 +276,13 @@ public class BookingService {
             throw new BadRequestException("This booking has been cancelled.");
         }
 
+        if (transactionRef != null && !transactionRef.isBlank()) {
+            String cleanRef = transactionRef.trim();
+            if (bookingRepository.existsByUpiTransactionRefAndIdNot(cleanRef, bookingId)) {
+                throw new BadRequestException("This UPI reference / UTR has already been submitted for another booking. Please check your transaction details.");
+            }
+        }
+
         booking.setUpiPaymentSubmitted(true);
         booking.setUpiTransactionRef(transactionRef != null && !transactionRef.isBlank() ? transactionRef.trim() : null);
         booking.setUpiSubmittedAt(LocalDateTime.now());
@@ -345,6 +356,7 @@ public class BookingService {
                 .status(b.getStatus())
                 .isAdvancePaid(b.getIsAdvancePaid())
                 .upiPaymentSubmitted(b.getUpiPaymentSubmitted())
+                .upiTransactionRef(b.getUpiTransactionRef())
                 .canCancelFree(b.canCancelFree())
                 .cancellationDeadline(deadline)
                 .cancellationRemainingSeconds(remainingSeconds)

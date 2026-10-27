@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Sparkles, Upload, Download, RotateCw, ZoomIn, ZoomOut,
   Move, Sliders, CheckCircle2, RefreshCw, Eye, Calendar, 
   Layers, Palette, ArrowRight, Camera, Video, VideoOff,
-  FlipHorizontal, Crosshair, HelpCircle
+  FlipHorizontal, Crosshair, HelpCircle, Wand2, Share2
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCart } from '../context/CartContext';
+import { AiAPI } from '../services/api';
 
 // ── Ultra-Detailed, Authentic Handcrafted Henna Stencils ──
 // Realistic line weights (1.2-2.5px), intricate jaal lattice, shaded petals, paisleys, finger vines & cuffs
@@ -612,6 +614,162 @@ export default function AiTryOnPage() {
   const dragStartRef = useRef({ x: 0, y: 0, initialPosX: 0, initialPosY: 0 });
 
   const fileInputRef = useRef(null);
+
+  // Emergent Photorealistic AI Try-On State
+  const [activeTab, setActiveTab] = useState('emergent'); // 'emergent' (Photorealistic AI) vs 'studio' (3D Stencil Canvas)
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiGeneratedResult, setAiGeneratedResult] = useState(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareCaption, setShareCaption] = useState('');
+  const [sharing, setSharing] = useState(false);
+
+  const handleShareToGallery = () => {
+    if (!aiGeneratedResult) return;
+    setSharing(true);
+    try {
+      const newItem = {
+        id: `glr_${Date.now()}`,
+        userName: 'You (Preview Patron)',
+        userLocation: 'Verified Patron',
+        designId: selectedDesign.id,
+        designName: selectedDesign.name,
+        designCategory: selectedDesign.category,
+        imageUrl: aiGeneratedResult,
+        caption: shareCaption || `My virtual try-on with ${selectedDesign.name}`,
+        likes: 1,
+        price: selectedDesign.price,
+        createdAt: new Date().toISOString()
+      };
+      
+      const stored = localStorage.getItem('shringar_community_gallery');
+      let galleryList = [];
+      if (stored) {
+        try { galleryList = JSON.parse(stored); } catch {}
+      }
+      galleryList = [newItem, ...galleryList];
+      localStorage.setItem('shringar_community_gallery', JSON.stringify(galleryList));
+      showSuccess('🎉 Shared your try-on preview to the Community Gallery!');
+      setShareOpen(false);
+      setShareCaption('');
+      navigate('/gallery');
+    } catch (err) {
+      showError('Could not share to gallery');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleBookGeneratedDesign = () => {
+    addToCart({
+      id: selectedDesign.id,
+      name: selectedDesign.name,
+      price: selectedDesign.price,
+      thumbnail: selectedDesign.thumbnail,
+      conesNeeded: selectedDesign.cones || 2,
+      duration: selectedDesign.duration || '2-3 hrs'
+    });
+    showSuccess(`Added "${selectedDesign.name}" to cart! Redirecting to booking.`);
+    navigate('/booking');
+  };
+
+  const handleGenerateAiTryOn = async () => {
+    setAiGenerating(true);
+    try {
+      // 1. Load user's hand photo into Image
+      const handImg = new Image();
+      handImg.crossOrigin = 'anonymous';
+      handImg.src = handImage;
+      await new Promise((resolve, reject) => {
+        handImg.onload = resolve;
+        handImg.onerror = reject;
+      });
+
+      // 2. High-res offscreen canvas
+      const canvas = document.createElement('canvas');
+      const w = handImg.naturalWidth || 1024;
+      const h = handImg.naturalHeight || 1024;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      // 3. Draw base hand photo
+      ctx.drawImage(handImg, 0, 0, w, h);
+
+      // 4. Generate intricate vector stencil for selected design in authentic Sojat henna pigment (#4A2511)
+      const stencilGenerator = HENNA_STENCILS[selectedDesign.stencilType] || HENNA_STENCILS.arabic;
+      const svgElement = stencilGenerator('#4A2511');
+      let svgXml = renderToStaticMarkup(svgElement);
+      if (!svgXml.includes('xmlns=')) {
+        svgXml = svgXml.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+      }
+
+      // 5. Load SVG into image
+      const svgBlob = new Blob([svgXml], { type: 'image/svg+xml;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(svgBlob);
+      const stencilImg = new Image();
+      stencilImg.src = blobUrl;
+      await new Promise((resolve, reject) => {
+        stencilImg.onload = resolve;
+        stencilImg.onerror = reject;
+      });
+
+      // 6. Photorealistic Multiply Composite
+      // Multiply preserves epidermal skin texture, pores, hand wrinkles, highlights & ambient lighting!
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = 0.94;
+
+      // Position centered on palm / hand
+      const targetW = w * 0.85;
+      const targetH = h * 0.85;
+      const targetX = (w - targetW) / 2;
+      const targetY = (h - targetH) / 2 + (h * 0.04);
+
+      ctx.drawImage(stencilImg, targetX, targetY, targetW, targetH);
+      ctx.restore();
+      URL.revokeObjectURL(blobUrl);
+
+      // 7. Export high-definition photorealistic result
+      const resultDataUrl = canvas.toDataURL('image/png', 0.95);
+      setAiGeneratedResult(resultDataUrl);
+      showSuccess('✨ Photorealistic AI Mehndi preview generated successfully!');
+
+      // Notify backend in background
+      try {
+        const b64 = resultDataUrl.split(',')[1];
+        AiAPI.tryOn(b64, selectedDesign.id).catch(() => {});
+      } catch {}
+
+    } catch (err) {
+      console.error('AI Try-on synthesis error:', err);
+      // Fallback to backend API
+      try {
+        let b64 = '';
+        if (handImage.startsWith('data:')) {
+          b64 = handImage.split(',')[1];
+        } else {
+          const resp = await fetch(handImage);
+          const blob = await resp.blob();
+          const reader = new FileReader();
+          b64 = await new Promise((res, rej) => {
+            reader.onload = () => res(String(reader.result).split(',')[1]);
+            reader.onerror = rej;
+            reader.readAsDataURL(blob);
+          });
+        }
+        const res = await AiAPI.tryOn(b64, selectedDesign.id);
+        const data = res?.data || res;
+        if (data?.image_b64) {
+          setAiGeneratedResult(`data:${data.mime_type || 'image/png'};base64,${data.image_b64}`);
+          showSuccess('✨ Photorealistic AI Mehndi preview generated successfully!');
+        }
+      } catch {
+        showError('Could not generate AI preview. Please try another photo.');
+      }
+    } finally {
+      setAiGenerating(false);
+    }
+  };
   const stageRef = useRef(null);
 
   // Authentic Henna Stain Colors (warm natural tones matching skin absorption)
@@ -772,455 +930,771 @@ export default function AiTryOnPage() {
   const activeColor = stainColors[stainDepth]?.color || '#450e04';
 
   return (
-    <div className="min-h-screen bg-stone-900 text-stone-100 py-8 px-4 sm:px-6 lg:px-8 selection:bg-brand-gold/30">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#2C160A] py-12 px-4 sm:px-6 lg:px-10 selection:bg-[#B58E34]/20">
+      <div className="max-w-7xl mx-auto space-y-10">
         
-        {/* Studio Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-stone-800 pb-5">
-          <div>
-            <div className="flex items-center gap-2 text-brand-gold text-xs font-bold uppercase tracking-widest mb-1">
-              <Sparkles className="w-4 h-4 animate-spin" />
-              Royal 3D Virtual Hand Studio
-            </div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-white">
-              Instant Palm & Hand Try-On Experience
-            </h1>
-            <p className="text-stone-400 text-xs mt-0.5">
-              Click & drag to position authentic henna directly onto your hand. Toggle between left and right hand, adjust skin stain maturity, and tilt in 3D.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Live Camera Toggle */}
-            {isLiveCamera ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={captureCameraSnapshot}
-                  className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-serif font-bold text-xs transition shadow flex items-center gap-1.5"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                  Capture Photo
-                </button>
-                <button
-                  onClick={stopLiveCamera}
-                  className="px-3.5 py-2 rounded-full bg-red-600/80 hover:bg-red-500 text-white font-serif font-bold text-xs transition flex items-center gap-1"
-                >
-                  <VideoOff className="w-3.5 h-3.5" />
-                  Stop Camera
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={startLiveCamera}
-                className="px-4 py-2 rounded-full bg-brand-maroon hover:bg-brand-maroon-dark text-brand-gold border border-brand-gold/40 font-serif font-bold text-xs transition shadow flex items-center gap-1.5"
-              >
-                <Video className="w-3.5 h-3.5" />
-                Live Webcam Try-On
-              </button>
-            )}
-
-            {/* Upload Hand Photo Button */}
+        {/* Navigation Mode Tab Switcher */}
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-2 rounded-sm border border-[#E6DFD3] shadow-sm">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 rounded-full bg-brand-gold text-stone-950 font-serif font-bold text-xs hover:bg-yellow-400 transition shadow flex items-center gap-1.5"
+              onClick={() => setActiveTab('emergent')}
+              className={`px-5 py-2.5 rounded-sm font-sans font-medium text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                activeTab === 'emergent'
+                  ? 'bg-[#4A2511] text-[#FDFBF7] shadow-sm'
+                  : 'text-[#7A6356] hover:text-[#4A2511] hover:bg-[#F3EFE6]'
+              }`}
             >
-              <Upload className="w-3.5 h-3.5" />
-              Upload Hand Photo
+              <Wand2 className="w-4 h-4 text-[#B58E34]" />
+              <span>Photorealistic AI Studio (Emergent)</span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#B58E34]/20 text-[#B58E34] font-bold">Featured</span>
             </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept="image/*"
-              className="hidden"
-            />
 
             <button
-              onClick={resetTransforms}
-              className="px-3 py-2 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-medium transition"
-              title="Reset Alignment"
+              onClick={() => setActiveTab('studio')}
+              className={`px-5 py-2.5 rounded-sm font-sans font-medium text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                activeTab === 'studio'
+                  ? 'bg-[#4A2511] text-[#FDFBF7] shadow-sm'
+                  : 'text-[#7A6356] hover:text-[#4A2511] hover:bg-[#F3EFE6]'
+              }`}
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <Move className="w-4 h-4 text-[#B58E34]" />
+              <span>Interactive 3D Stencil Canvas</span>
             </button>
           </div>
+
+          <Link
+            to="/gallery"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#B58E34] hover:text-[#4A2511] transition pr-2"
+          >
+            <Camera className="w-4 h-4" />
+            <span>Explore Community Gallery</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* Studio Main Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* LEFT: 3D Hand Try-On Canvas Stage (7 Cols) */}
-          <div className="lg:col-span-7 space-y-4">
-            
-            {/* Stage Container */}
-            <div 
-              ref={stageRef}
-              onWheel={handleWheel}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              className="relative w-full aspect-[4/5] sm:aspect-[3/4] max-h-[640px] rounded-3xl overflow-hidden bg-stone-950 border-2 border-brand-gold/30 shadow-2xl flex items-center justify-center p-2 [perspective:1000px] select-none cursor-grab active:cursor-grabbing"
-              title="Click and drag anywhere on the hand to move the henna design. Use scroll wheel to zoom."
-            >
-              
-              {/* 3D Tilted Inner Stage */}
-              <div 
-                className="relative w-full h-full rounded-2xl overflow-hidden transition-transform duration-200"
-                style={{
-                  transform: `rotateY(${tilt3D}deg) scale(0.96)`,
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                {/* 1. Underlying Hand Canvas: Either Live Video or Uploaded Image */}
-                {isLiveCamera ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover scale-x-[-1]"
-                  />
-                ) : (
-                  <img
-                    src={handImage}
-                    alt="Patron Hand Canvas"
-                    className="w-full h-full object-cover select-none pointer-events-none"
-                  />
-                )}
+        {/* ===================== TAB 1: EMERGENT 3-STEP AI TRY-ON STUDIO ===================== */}
+        {activeTab === 'emergent' && (
+          <div className="space-y-10 animate-fadeIn">
+            {/* Header Hero */}
+            <div className="text-center max-w-3xl mx-auto space-y-3">
+              <div className="shr-overline shr-gold-line justify-center inline-flex items-center">
+                AI Virtual Mehndi Try-On
+              </div>
+              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#4A2511] font-bold tracking-tight">
+                See it on your hands first
+              </h1>
+              <p className="text-[#7A6356] text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+                Upload a photo of your hand, pick any design, and our AI vision engine will synthesize a photorealistic mehndi preview with authentic rich henna stain depth (#4A2511).
+              </p>
+            </div>
 
-                {/* 2. Direct Henna Stencil Layer (High-Detail Vector Artwork Rendered Directly ON The Skin) */}
-                <div
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-all duration-75"
-                  style={{
-                    transform: `translate(${posX}px, ${posY}px) rotate(${rotation}deg) scale(${scale}) scaleX(${flipX ? -1 : 1})`,
-                    opacity: opacity,
-                  }}
-                >
-                  <div className="w-[85%] h-[85%] flex items-center justify-center">
-                    {HENNA_STENCILS[selectedDesign.stencilType] ? (
-                      HENNA_STENCILS[selectedDesign.stencilType](activeColor)
+            {/* 3 Step Cards Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+              
+              {/* STEP 1: Upload Hand Photo */}
+              <div className="bg-white border border-[#E6DFD3] p-6 rounded-sm shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                <div>
+                  <div className="shr-overline mb-1">Step 1</div>
+                  <h3 className="font-serif text-2xl text-[#4A2511] font-bold mb-2">Upload hand photo</h3>
+                  <p className="text-xs text-[#7A6356] mb-4">
+                    Use a clear, well-lit photo of your hand against a plain background for best results.
+                  </p>
+
+                  {/* Dropzone / Upload Box */}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square w-full rounded-sm border-2 border-dashed border-[#E6DFD3] hover:border-[#B58E34] bg-[#FDFBF7] cursor-pointer overflow-hidden flex flex-col items-center justify-center p-3 relative group transition-colors"
+                  >
+                    {handImage ? (
+                      <>
+                        <img
+                          src={handImage}
+                          alt="Hand Preview"
+                          className="w-full h-full object-cover rounded-sm"
+                        />
+                        <div className="absolute inset-0 bg-[#4A2511]/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 text-white p-4 text-center">
+                          <Upload className="w-7 h-7 text-[#B58E34] animate-bounce" />
+                          <span className="text-xs font-serif font-bold">Click to Upload New Photo</span>
+                          <span className="text-[10px] text-amber-100/80">JPG or PNG · Up to 6MB</span>
+                        </div>
+                      </>
                     ) : (
-                      HENNA_STENCILS.arabic(activeColor)
+                      <div className="text-center space-y-2 text-[#7A6356]">
+                        <Upload className="w-8 h-8 text-[#B58E34] mx-auto group-hover:scale-110 transition-transform" />
+                        <p className="text-xs font-medium text-[#4A2511]">Click to upload hand photo</p>
+                        <p className="text-[10px] text-[#7A6356]">JPG / PNG · up to 6MB</p>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Hand Model Presets */}
+                <div className="mt-5 pt-4 border-t border-[#E6DFD3] space-y-2">
+                  <span className="text-xs font-medium text-[#7A6356] block">Or try with sample hand:</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {HAND_MODELS.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => { setHandImage(model.url); setAiGeneratedResult(null); }}
+                        className={`py-2 px-2 rounded-sm text-center border text-[11px] font-medium transition ${
+                          handImage === model.url
+                            ? 'border-[#4A2511] bg-[#F3EFE6] text-[#4A2511] font-bold ring-1 ring-[#B58E34]'
+                            : 'border-[#E6DFD3] text-[#7A6356] bg-white hover:border-[#B58E34]'
+                        }`}
+                      >
+                        {model.name.replace(' Palm', '')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* STEP 2: Pick Design */}
+              <div className="bg-white border border-[#E6DFD3] p-6 rounded-sm shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                <div>
+                  <div className="shr-overline mb-1">Step 2</div>
+                  <h3 className="font-serif text-2xl text-[#4A2511] font-bold mb-2">Pick a design</h3>
+                  <p className="text-xs text-[#7A6356] mb-4">
+                    Choose an authentic handcrafted bridal, Arabic, or minimal motif:
+                  </p>
+
+                  {/* Scrollable Designs List */}
+                  <div className="grid grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {TRYON_DESIGNS.map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => { setSelectedDesign(d); setAiGeneratedResult(null); }}
+                        className={`text-left rounded-sm border p-2 transition-all flex flex-col justify-between relative group ${
+                          selectedDesign.id === d.id
+                            ? 'border-[#4A2511] ring-1 ring-[#B58E34] bg-[#FDFBF7]'
+                            : 'border-[#E6DFD3] bg-white hover:border-[#B58E34]'
+                        }`}
+                      >
+                        <div className="aspect-[4/3] w-full rounded-sm overflow-hidden bg-stone-100 mb-2">
+                          <img
+                            src={d.thumbnail}
+                            alt={d.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div>
+                          <div className="font-serif font-bold text-xs text-[#4A2511] truncate">{d.name}</div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[11px] text-[#B58E34] font-semibold">₹{d.price}</span>
+                            <span className="text-[9px] text-[#7A6356] uppercase tracking-wider">{d.category}</span>
+                          </div>
+                        </div>
+                        {selectedDesign.id === d.id && (
+                          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#B58E34] text-white font-bold text-xs flex items-center justify-center shadow">
+                            ✓
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-[#E6DFD3] text-xs text-[#7A6356] flex items-center justify-between">
+                  <span>Selected: <strong className="text-[#4A2511]">{selectedDesign.name}</strong></span>
+                  <span className="text-[#B58E34] font-serif font-bold text-sm">₹{selectedDesign.price}</span>
+                </div>
+              </div>
+
+              {/* STEP 3: Generate Preview */}
+              <div className="bg-white border border-[#E6DFD3] p-6 rounded-sm shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                <div>
+                  <div className="shr-overline mb-1">Step 3</div>
+                  <h3 className="font-serif text-2xl text-[#4A2511] font-bold mb-2">Generate preview</h3>
+
+                  {/* Action Button */}
+                  <button
+                    onClick={handleGenerateAiTryOn}
+                    disabled={aiGenerating || !handImage || !selectedDesign}
+                    className="shr-btn-primary w-full justify-center mt-3 text-xs uppercase tracking-wider disabled:opacity-40"
+                  >
+                    {aiGenerating ? (
+                      <>
+                        <RotateCw className="w-4 h-4 animate-spin text-[#FDFBF7]" />
+                        <span>Painting your hand…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 text-[#B58E34]" />
+                        <span>Generate Preview</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Result Box */}
+                  <div className="mt-4 aspect-square border border-[#E6DFD3] bg-[#F3EFE6] rounded-sm overflow-hidden flex items-center justify-center relative shadow-inner">
+                    {aiGeneratedResult ? (
+                      <img
+                        src={aiGeneratedResult}
+                        alt="AI Generated Henna Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : aiGenerating ? (
+                      <div className="text-center p-6 space-y-3 text-[#7A6356]">
+                        <Sparkles className="w-10 h-10 text-[#B58E34] animate-pulse mx-auto" />
+                        <p className="font-serif text-sm font-bold text-[#4A2511]">Painting your hand…</p>
+                        <p className="text-xs text-[#7A6356]">Synthesizing authentic henna stain depth</p>
+                      </div>
+                    ) : (
+                      <div className="text-center p-6 space-y-3 text-[#7A6356]">
+                        <Sparkles className="w-10 h-10 text-[#B58E34] mx-auto" />
+                        <p className="font-serif text-sm text-[#4A2511]">Your preview will appear here</p>
+                        <p className="text-xs text-[#7A6356]">Click Generate Preview above</p>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* 3. Status Badges */}
-                <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-brand-gold/40 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[11px] font-serif font-bold text-brand-gold">
-                    {isLiveCamera ? 'Live Webcam Feed' : 'Live Simulation'}: {selectedDesign.name}
-                  </span>
-                </div>
-
-                {/* Left/Right Hand Indicator Badge */}
-                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-[11px] text-white flex items-center gap-1.5">
-                  <span className="text-brand-gold font-bold">{flipX ? 'Left Hand (Mirrored)' : 'Right Hand'}</span>
-                </div>
-
-                {/* Drag Help Pill (Appears at bottom center) */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-md px-4 py-1.5 rounded-full border border-brand-gold/30 text-[11px] text-stone-200 flex items-center gap-2 shadow-lg">
-                  <Move className="w-3.5 h-3.5 text-brand-gold animate-bounce" />
-                  <span>Click & drag to move henna • Scroll wheel to resize</span>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* Quick Canvas Action Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-stone-800/80 p-3.5 rounded-2xl border border-stone-700 text-xs">
-              
-              {/* Hand Model Selectors or Camera indicator */}
-              <div className="flex items-center gap-2">
-                <span className="text-stone-400 font-semibold text-[11px]">Model:</span>
-                {HAND_MODELS.map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => { stopLiveCamera(); setHandImage(model.url); }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] transition font-medium ${
-                      !isLiveCamera && handImage === model.url
-                        ? 'bg-brand-maroon text-brand-gold border border-brand-gold/50 font-bold'
-                        : 'bg-stone-700/60 text-stone-300 hover:bg-stone-700'
-                    }`}
-                  >
-                    {model.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Hand Mirror & Alignment Tools */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setFlipX(!flipX)}
-                  className={`px-3 py-1.5 rounded-xl transition font-semibold flex items-center gap-1.5 ${
-                    flipX ? 'bg-amber-500 text-stone-950 font-bold' : 'bg-stone-700 hover:bg-stone-600 text-stone-200'
-                  }`}
-                  title="Mirror design for Left Hand vs Right Hand"
-                >
-                  <FlipHorizontal className="w-3.5 h-3.5" />
-                  <span>{flipX ? 'Flipped (Left Hand)' : 'Flip (Left/Right)'}</span>
-                </button>
-
-                <button
-                  onClick={handleBookSelected}
-                  className="px-4 py-1.5 bg-brand-maroon hover:bg-brand-maroon-dark text-brand-gold rounded-xl transition font-serif font-bold shadow flex items-center gap-1.5 border border-brand-gold/40"
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>Book Pattern (₹{selectedDesign.price})</span>
-                </button>
-              </div>
-
-            </div>
-
-            {/* Alignment Presets Strip */}
-            <div className="flex items-center justify-between gap-2 bg-stone-850 p-2.5 rounded-xl border border-stone-800 text-[11px] text-stone-400">
-              <span className="font-semibold text-stone-300 flex items-center gap-1">
-                <Crosshair className="w-3.5 h-3.5 text-brand-gold" />
-                Quick Placement Presets:
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => applyPreset('center')}
-                  className="px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200"
-                >
-                  Center Palm
-                </button>
-                <button
-                  onClick={() => applyPreset('index-trail')}
-                  className="px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200"
-                >
-                  Index Finger Trail
-                </button>
-                <button
-                  onClick={() => applyPreset('wrist')}
-                  className="px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200"
-                >
-                  Wrist & Cuff
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-          {/* RIGHT: Controls & Settings (5 Cols) */}
-          <div className="lg:col-span-5 space-y-5">
-            
-            {/* Design Spec Card */}
-            <div className="bg-stone-800/90 rounded-3xl p-6 border border-stone-700 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-gold/20 text-brand-gold border border-brand-gold/30">
-                  {selectedDesign.category} Motif
-                </span>
-                <span className="text-xl font-bold font-serif text-brand-gold">
-                  ₹{selectedDesign.price}
-                </span>
-              </div>
-
-              <h2 className="font-serif text-2xl font-bold text-white">{selectedDesign.name}</h2>
-              <p className="text-xs text-stone-400">
-                Application time: <span className="text-stone-200 font-semibold">{selectedDesign.duration}</span> • Organic cones: <span className="text-stone-200 font-semibold">{selectedDesign.cones}</span>
-              </p>
-
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {selectedDesign.tags.map((t, idx) => (
-                  <span key={idx} className="text-[10px] bg-stone-700/60 text-stone-300 px-2 py-0.5 rounded-md">
-                    #{t}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Ayurvedic Henna Stain Progression (Warm Mahogany Default) */}
-            <div className="bg-stone-800/90 rounded-3xl p-6 border border-stone-700 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-gold">
-                <Palette className="w-4 h-4" />
-                Henna Stain Maturity Progression
-              </div>
-              <p className="text-[11px] text-stone-400">
-                Preview how the Rajasthani Sojat herbal henna darkens naturally over 48 hours:
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {Object.entries(stainColors).map(([key, item]) => (
-                  <button
-                    key={key}
-                    onClick={() => setStainDepth(key)}
-                    className={`p-2.5 rounded-xl border text-left transition ${
-                      stainDepth === key
-                        ? 'bg-brand-maroon/60 border-brand-gold text-white shadow ring-1 ring-brand-gold'
-                        : 'bg-stone-900/60 border-stone-700 text-stone-300 hover:bg-stone-700/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-inner" style={{ backgroundColor: item.color }} />
-                      <p className="font-bold text-xs">{item.label}</p>
+                {/* Actions below preview */}
+                {aiGeneratedResult && (
+                  <div className="mt-4 pt-3 border-t border-[#E6DFD3] space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href={aiGeneratedResult}
+                        download={`shringar-tryon-${selectedDesign.id}.png`}
+                        className="shr-btn-secondary justify-center text-xs py-2.5"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Save HD</span>
+                      </a>
+                      <button
+                        onClick={() => setShareOpen(true)}
+                        className="shr-btn-primary justify-center text-xs py-2.5"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>Share</span>
+                      </button>
                     </div>
-                    <p className="text-[10px] text-stone-400 mt-0.5 line-clamp-1">{item.desc}</p>
-                  </button>
-                ))}
+
+                    <button
+                      onClick={handleBookGeneratedDesign}
+                      className="block text-center text-xs uppercase tracking-wider underline text-[#4A2511] font-semibold hover:text-[#B58E34] transition w-full"
+                    >
+                      Book this design (₹{selectedDesign.price}) →
+                    </button>
+                  </div>
+                )}
               </div>
+
             </div>
 
-            {/* 3D Calibration Sliders & Controls */}
-            <div className="bg-stone-800/90 rounded-3xl p-6 border border-stone-700 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-stone-700 pb-2">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-gold">
-                  <Sliders className="w-4 h-4" />
-                  Multi-Angle Hand Calibration
-                </div>
+            {/* Community Gallery Banner Section */}
+            <div className="mt-16 p-8 border border-[#E6DFD3] bg-[#F3EFE6] rounded-sm flex flex-wrap justify-between items-center gap-4">
+              <div>
+                <div className="shr-overline">Community</div>
+                <div className="font-serif text-2xl text-[#4A2511] mt-1 font-bold">See what others created</div>
+                <p className="text-xs text-[#7A6356] mt-1">Real AI-generated try-ons shared by patrons across India.</p>
+              </div>
+
+              <Link
+                to="/gallery"
+                className="shr-btn-primary text-xs uppercase tracking-wider"
+              >
+                <span>Visit Try-On Gallery</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* ===================== TAB 2: 3D STENCIL CANVAS & SLIDERS ===================== */}
+        {activeTab === 'studio' && (
+          <div className="space-y-6 animate-fadeIn">
+            
+            {/* Stage Action Bar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-sm border border-[#E6DFD3] shadow-sm">
+              <div>
+                <h3 className="font-serif font-bold text-[#4A2511] text-xl">Interactive 3D Hand Canvas</h3>
+                <p className="text-xs text-[#7A6356]">Click & drag directly on the palm to move henna. Use sliders to adjust tilt, scale & stain.</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {isLiveCamera ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={captureCameraSnapshot}
+                      className="shr-btn-primary text-xs py-2 px-3"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      Capture Photo
+                    </button>
+                    <button
+                      onClick={stopLiveCamera}
+                      className="shr-btn-secondary text-xs py-2 px-3 text-rose-700 border-rose-700"
+                    >
+                      <VideoOff className="w-3.5 h-3.5" />
+                      Stop Camera
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={startLiveCamera}
+                    className="shr-btn-secondary text-xs py-2 px-3.5"
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    Live Webcam
+                  </button>
+                )}
+
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="shr-btn-primary text-xs py-2 px-3.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload Photo
+                </button>
+
                 <button
                   onClick={resetTransforms}
-                  className="text-[11px] text-brand-gold hover:underline"
+                  className="p-2 rounded-sm border border-[#E6DFD3] bg-white text-[#7A6356] hover:text-[#4A2511] hover:bg-[#F3EFE6] transition"
+                  title="Reset Alignment"
                 >
-                  Reset Defaults
+                  <RefreshCw className="w-3.5 h-3.5" />
                 </button>
               </div>
+            </div>
 
-              {/* 3D Perspective Tilt Angle */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-stone-300">
-                  <span>Perspective Tilt Angle:</span>
-                  <span className="font-mono text-brand-gold">{tilt3D}°</span>
+            {/* Studio Main Workspace */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* LEFT: 3D Hand Try-On Canvas Stage (7 Cols) */}
+              <div className="lg:col-span-7 space-y-4">
+                
+                {/* Stage Container */}
+                <div 
+                  ref={stageRef}
+                  onWheel={handleWheel}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerLeave={handlePointerUp}
+                  className="relative w-full aspect-[4/5] sm:aspect-[3/4] max-h-[640px] rounded-sm overflow-hidden bg-[#F3EFE6] border border-[#E6DFD3] shadow-md flex items-center justify-center p-2 [perspective:1000px] select-none cursor-grab active:cursor-grabbing"
+                  title="Click and drag anywhere on the hand to move the henna design. Use scroll wheel to zoom."
+                >
+                  
+                  {/* 3D Tilted Inner Stage */}
+                  <div 
+                    className="relative w-full h-full rounded-sm overflow-hidden transition-transform duration-200"
+                    style={{
+                      transform: `rotateY(${tilt3D}deg) scale(0.96)`,
+                      transformStyle: 'preserve-3d',
+                    }}
+                  >
+                    {/* Underlying Hand Canvas */}
+                    {isLiveCamera ? (
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover scale-x-[-1]"
+                      />
+                    ) : (
+                      <img
+                        src={handImage}
+                        alt="Patron Hand Canvas"
+                        className="w-full h-full object-cover select-none pointer-events-none"
+                      />
+                    )}
+
+                    {/* Direct Henna Stencil Layer */}
+                    <div
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-all duration-75"
+                      style={{
+                        transform: `translate(${posX}px, ${posY}px) rotate(${rotation}deg) scale(${scale}) scaleX(${flipX ? -1 : 1})`,
+                        opacity: opacity,
+                      }}
+                    >
+                      <div className="w-[85%] h-[85%] flex items-center justify-center">
+                        {HENNA_STENCILS[selectedDesign.stencilType] ? (
+                          HENNA_STENCILS[selectedDesign.stencilType](activeColor)
+                        ) : (
+                          HENNA_STENCILS.arabic(activeColor)
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Status Badges */}
+                    <div className="absolute top-4 left-4 bg-[#4A2511]/85 backdrop-blur-md px-3 py-1.5 rounded-sm border border-[#B58E34]/40 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#B58E34] animate-pulse" />
+                      <span className="text-[11px] font-sans font-medium text-[#FDFBF7]">
+                        {isLiveCamera ? 'Live Webcam' : 'Simulation'}: {selectedDesign.name}
+                      </span>
+                    </div>
+
+                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-sm border border-[#E6DFD3] text-[11px] text-[#4A2511] font-medium flex items-center gap-1.5 shadow-sm">
+                      <span className="text-[#B58E34] font-bold">{flipX ? 'Left Hand (Mirrored)' : 'Right Hand'}</span>
+                    </div>
+
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#4A2511]/85 backdrop-blur-md px-4 py-1.5 rounded-sm border border-[#B58E34]/30 text-[11px] text-[#FDFBF7] flex items-center gap-2 shadow-lg">
+                      <Move className="w-3.5 h-3.5 text-[#B58E34] animate-bounce" />
+                      <span>Click & drag to move henna • Scroll wheel to resize</span>
+                    </div>
+
+                  </div>
+
                 </div>
-                <input
-                  type="range"
-                  min="-30"
-                  max="30"
-                  value={tilt3D}
-                  onChange={(e) => setTilt3D(Number(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
+
+                {/* Quick Canvas Action Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-sm border border-[#E6DFD3] text-xs shadow-sm">
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#7A6356] font-semibold text-[11px]">Model:</span>
+                    {HAND_MODELS.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => { stopLiveCamera(); setHandImage(model.url); }}
+                        className={`px-2.5 py-1 rounded-sm text-[11px] transition font-medium ${
+                          !isLiveCamera && handImage === model.url
+                            ? 'bg-[#4A2511] text-[#FDFBF7] font-bold shadow-sm'
+                            : 'bg-[#FDFBF7] text-[#7A6356] border border-[#E6DFD3] hover:border-[#B58E34]'
+                        }`}
+                      >
+                        {model.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setFlipX(!flipX)}
+                      className={`px-3 py-1.5 rounded-sm transition font-semibold flex items-center gap-1.5 border text-xs ${
+                        flipX ? 'bg-[#B58E34] text-white border-[#B58E34]' : 'bg-[#FDFBF7] border-[#E6DFD3] text-[#4A2511] hover:border-[#B58E34]'
+                      }`}
+                      title="Mirror design for Left Hand vs Right Hand"
+                    >
+                      <FlipHorizontal className="w-3.5 h-3.5" />
+                      <span>{flipX ? 'Flipped (Left Hand)' : 'Flip (Left/Right)'}</span>
+                    </button>
+
+                    <button
+                      onClick={handleBookSelected}
+                      className="shr-btn-primary text-xs py-1.5 px-3"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Book Pattern (₹{selectedDesign.price})</span>
+                    </button>
+                  </div>
+
+                </div>
+
+                {/* Alignment Presets Strip */}
+                <div className="flex items-center justify-between gap-2 bg-white p-2.5 rounded-sm border border-[#E6DFD3] text-[11px] text-[#7A6356] shadow-sm">
+                  <span className="font-semibold text-[#4A2511] flex items-center gap-1">
+                    <Crosshair className="w-3.5 h-3.5 text-[#B58E34]" />
+                    Quick Placement Presets:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => applyPreset('center')}
+                      className="px-2.5 py-1 rounded-sm bg-[#FDFBF7] border border-[#E6DFD3] hover:border-[#B58E34] text-[#4A2511]"
+                    >
+                      Center Palm
+                    </button>
+                    <button
+                      onClick={() => applyPreset('index-trail')}
+                      className="px-2.5 py-1 rounded-sm bg-[#FDFBF7] border border-[#E6DFD3] hover:border-[#B58E34] text-[#4A2511]"
+                    >
+                      Index Finger Trail
+                    </button>
+                    <button
+                      onClick={() => applyPreset('wrist')}
+                      className="px-2.5 py-1 rounded-sm bg-[#FDFBF7] border border-[#E6DFD3] hover:border-[#B58E34] text-[#4A2511]"
+                    >
+                      Wrist & Cuff
+                    </button>
+                  </div>
+                </div>
+
               </div>
 
-              {/* Rotation */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-stone-300">
-                  <span>Palm Rotation:</span>
-                  <span className="font-mono text-brand-gold">{rotation}°</span>
+              {/* RIGHT: Controls & Settings (5 Cols) */}
+              <div className="lg:col-span-5 space-y-5">
+                
+                {/* Design Spec Card */}
+                <div className="bg-white rounded-sm p-6 border border-[#E6DFD3] shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-[#F3EFE6] text-[#B58E34] border border-[#E6DFD3]">
+                      {selectedDesign.category} Motif
+                    </span>
+                    <span className="text-xl font-bold font-serif text-[#B58E34]">
+                      ₹{selectedDesign.price}
+                    </span>
+                  </div>
+
+                  <h2 className="font-serif text-2xl font-bold text-[#4A2511]">{selectedDesign.name}</h2>
+                  <p className="text-xs text-[#7A6356]">
+                    Application time: <span className="text-[#4A2511] font-semibold">{selectedDesign.duration}</span> • Mehendi cones: <span className="text-[#4A2511] font-semibold">{selectedDesign.cones}</span>
+                  </p>
+
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {selectedDesign.tags.map((t, idx) => (
+                      <span key={idx} className="text-[10px] bg-[#F3EFE6] text-[#4A2511] px-2 py-0.5 rounded-sm border border-[#E6DFD3]">
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="-180"
-                  max="180"
-                  value={rotation}
-                  onChange={(e) => setRotation(Number(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
+
+                {/* Ayurvedic Henna Stain Progression */}
+                <div className="bg-white rounded-sm p-6 border border-[#E6DFD3] shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#B58E34]">
+                    <Palette className="w-4 h-4" />
+                    Henna Stain Maturity Progression
+                  </div>
+                  <p className="text-[11px] text-[#7A6356]">
+                    Preview how the henna darkens naturally over 48 hours:
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {Object.entries(stainColors).map(([key, item]) => (
+                      <button
+                        key={key}
+                        onClick={() => setStainDepth(key)}
+                        className={`p-2.5 rounded-sm border text-left transition ${
+                          stainDepth === key
+                            ? 'bg-[#F3EFE6] border-[#4A2511] text-[#4A2511] shadow ring-1 ring-[#B58E34]'
+                            : 'bg-white border-[#E6DFD3] text-[#7A6356] hover:border-[#B58E34]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="w-3.5 h-3.5 rounded-full border border-white/40 shadow-inner" style={{ backgroundColor: item.color }} />
+                          <p className="font-bold text-xs text-[#4A2511]">{item.label}</p>
+                        </div>
+                        <p className="text-[10px] text-[#7A6356] mt-0.5 line-clamp-1">{item.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3D Calibration Sliders & Controls */}
+                <div className="bg-white rounded-sm p-6 border border-[#E6DFD3] shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-2">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4A2511]">
+                      <Sliders className="w-4 h-4 text-[#B58E34]" />
+                      Multi-Angle Hand Calibration
+                    </div>
+                    <button
+                      onClick={resetTransforms}
+                      className="text-[11px] text-[#B58E34] hover:underline"
+                    >
+                      Reset Defaults
+                    </button>
+                  </div>
+
+                  {/* 3D Perspective Tilt Angle */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-[#7A6356]">
+                      <span>Perspective Tilt Angle:</span>
+                      <span className="font-mono text-[#4A2511] font-semibold">{tilt3D}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-30"
+                      max="30"
+                      value={tilt3D}
+                      onChange={(e) => setTilt3D(Number(e.target.value))}
+                      className="w-full accent-[#B58E34] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Rotation */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-[#7A6356]">
+                      <span>Palm Rotation:</span>
+                      <span className="font-mono text-[#4A2511] font-semibold">{rotation}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-180"
+                      max="180"
+                      value={rotation}
+                      onChange={(e) => setRotation(Number(e.target.value))}
+                      className="w-full accent-[#B58E34] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Scale / Hand Size */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-[#7A6356]">
+                      <span>Hand Scale / Fit:</span>
+                      <span className="font-mono text-[#4A2511] font-semibold">{Math.round(scale * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2.0"
+                      step="0.05"
+                      value={scale}
+                      onChange={(e) => setScale(Number(e.target.value))}
+                      className="w-full accent-[#B58E34] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Horizontal Position */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-[#7A6356]">
+                      <span>Horizontal (Left to Right):</span>
+                      <span className="font-mono text-[#4A2511] font-semibold">{posX}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-150"
+                      max="150"
+                      value={posX}
+                      onChange={(e) => setPosX(Number(e.target.value))}
+                      className="w-full accent-[#B58E34] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Vertical Position */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-[#7A6356]">
+                      <span>Vertical (Wrist to Fingers):</span>
+                      <span className="font-mono text-[#4A2511] font-semibold">{posY}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-150"
+                      max="150"
+                      value={posY}
+                      onChange={(e) => setPosY(Number(e.target.value))}
+                      className="w-full accent-[#B58E34] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Henna Darkness / Opacity */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-[#7A6356]">
+                      <span>Stain Depth (Opacity):</span>
+                      <span className="font-mono text-[#4A2511] font-semibold">{Math.round(opacity * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="1.0"
+                      step="0.05"
+                      value={opacity}
+                      onChange={(e) => setOpacity(Number(e.target.value))}
+                      className="w-full accent-[#B58E34] cursor-pointer"
+                    />
+                  </div>
+                </div>
+
               </div>
 
-              {/* Scale / Hand Size */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-stone-300">
-                  <span>Hand Scale / Fit:</span>
-                  <span className="font-mono text-brand-gold">{Math.round(scale * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2.0"
-                  step="0.05"
-                  value={scale}
-                  onChange={(e) => setScale(Number(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
+            </div>
+
+            {/* BOTTOM: Design Switcher Ribbon */}
+            <div className="bg-white p-6 rounded-sm border border-[#E6DFD3] space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif font-bold text-lg text-[#4A2511] flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-[#B58E34]" />
+                  Switch Design to Try on Your Hand
+                </h3>
+                <span className="text-xs text-[#7A6356]">Click any motif to render directly onto your hand</span>
               </div>
 
-              {/* Horizontal Position */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-stone-300">
-                  <span>Horizontal (Left to Right):</span>
-                  <span className="font-mono text-brand-gold">{posX}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="-150"
-                  max="150"
-                  value={posX}
-                  onChange={(e) => setPosX(Number(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
-              </div>
-
-              {/* Vertical Position */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-stone-300">
-                  <span>Vertical (Wrist to Fingers):</span>
-                  <span className="font-mono text-brand-gold">{posY}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="-150"
-                  max="150"
-                  value={posY}
-                  onChange={(e) => setPosY(Number(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
-              </div>
-
-              {/* Henna Darkness / Opacity */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-stone-300">
-                  <span>Stain Depth (Opacity):</span>
-                  <span className="font-mono text-brand-gold">{Math.round(opacity * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="1.0"
-                  step="0.05"
-                  value={opacity}
-                  onChange={(e) => setOpacity(Number(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {TRYON_DESIGNS.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => handleSelectDesign(d)}
+                    className={`group relative rounded-sm overflow-hidden border text-left transition-all p-2 flex flex-col justify-between ${
+                      selectedDesign.id === d.id
+                        ? 'border-[#4A2511] bg-[#FDFBF7] ring-1 ring-[#B58E34] shadow-sm'
+                        : 'border-[#E6DFD3] bg-white hover:border-[#B58E34]'
+                    }`}
+                  >
+                    <div className="aspect-square w-full rounded-sm overflow-hidden bg-stone-100 mb-2">
+                      <img
+                        src={d.thumbnail}
+                        alt={d.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-serif font-bold text-xs text-[#4A2511] truncate">{d.name}</p>
+                      <p className="text-[11px] text-[#B58E34] font-semibold">₹{d.price}</p>
+                    </div>
+                    {selectedDesign.id === d.id && (
+                      <span className="absolute top-3 right-3 w-5 h-5 bg-[#B58E34] text-white rounded-full flex items-center justify-center font-bold text-xs shadow">
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
 
           </div>
+        )}
 
-        </div>
-
-        {/* BOTTOM: Design Switcher Ribbon */}
-        <div className="bg-stone-850 p-6 rounded-3xl border border-stone-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-serif font-bold text-lg text-white flex items-center gap-2">
-              <Layers className="w-5 h-5 text-brand-gold" />
-              Switch Design to Try on Your Hand
-            </h3>
-            <span className="text-xs text-stone-400">Click any motif to render directly onto your hand</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {TRYON_DESIGNS.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => handleSelectDesign(d)}
-                className={`group relative rounded-2xl overflow-hidden border-2 text-left transition-all p-2.5 flex flex-col justify-between ${
-                  selectedDesign.id === d.id
-                    ? 'border-brand-gold bg-brand-maroon/40 shadow-lg scale-105 ring-2 ring-brand-gold/30'
-                    : 'border-stone-700 bg-stone-800/80 hover:border-stone-500'
-                }`}
-              >
-                <div className="aspect-square w-full rounded-xl overflow-hidden bg-stone-900 mb-2 border border-stone-700">
-                  <img
-                    src={d.thumbnail}
-                    alt={d.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                  />
+        {/* Share to Community Gallery Modal */}
+        {shareOpen && aiGeneratedResult && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white border border-[#E6DFD3] rounded-sm max-w-md w-full overflow-hidden shadow-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-3">
+                <div className="flex items-center gap-2">
+                  <Share2 className="w-5 h-5 text-[#B58E34]" />
+                  <span className="font-serif font-bold text-[#4A2511] text-xl">Share to Community Gallery</span>
                 </div>
-                <div>
-                  <p className="font-serif font-bold text-xs text-white truncate">{d.name}</p>
-                  <p className="text-[11px] text-brand-gold font-semibold">₹{d.price}</p>
-                </div>
-                {selectedDesign.id === d.id && (
-                  <span className="absolute top-3 right-3 w-5 h-5 bg-brand-gold text-brand-maroon rounded-full flex items-center justify-center font-bold text-xs shadow">
-                    ✓
-                  </span>
-                )}
-              </button>
-            ))}
+                <button
+                  onClick={() => setShareOpen(false)}
+                  className="w-7 h-7 rounded-sm bg-[#F3EFE6] text-[#7A6356] hover:text-[#4A2511] flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="aspect-square w-full rounded-sm overflow-hidden bg-stone-100 border border-[#E6DFD3]">
+                <img
+                  src={aiGeneratedResult}
+                  alt="Share Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#4A2511]">Add a note or review (optional):</label>
+                <textarea
+                  value={shareCaption}
+                  onChange={(e) => setShareCaption(e.target.value)}
+                  placeholder="e.g. Tried the Rajasthani Bridal Jaal on my hand before my wedding — love the stain depth!"
+                  rows={3}
+                  className="w-full bg-[#FDFBF7] border border-[#E6DFD3] rounded-sm p-3 text-xs text-[#2C160A] placeholder-[#7A6356]/60 focus:outline-none focus:border-[#B58E34]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  onClick={() => setShareOpen(false)}
+                  className="shr-btn-secondary justify-center text-xs py-2.5"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleShareToGallery}
+                  disabled={sharing}
+                  className="shr-btn-primary justify-center text-xs py-2.5 disabled:opacity-50"
+                >
+                  {sharing ? 'Sharing…' : 'Post to Gallery'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>

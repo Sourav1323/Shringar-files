@@ -56,6 +56,14 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
         </div>
       </div>
       <button class="login-btn" id="login-btn" onclick="handleLogin()">Sign In to Admin Portal</button>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button type="button" onclick="document.getElementById('login-identifier').value='admin@shringar.com';document.getElementById('login-password').value='Admin@123';" style="padding:6px 12px;background:#f3efe6;border:1px solid #c9a227;border-radius:6px;font-size:11px;font-weight:600;color:#4a2511;cursor:pointer;">
+          Auto-Fill: admin@shringar.com (Admin@123)
+        </button>
+        <button type="button" onclick="document.getElementById('login-identifier').value='8619377860';document.getElementById('login-password').value='Sourav@1323';" style="padding:6px 12px;background:#f3efe6;border:1px solid #c9a227;border-radius:6px;font-size:11px;font-weight:600;color:#4a2511;cursor:pointer;">
+          Auto-Fill: 8619377860 (Sourav@1323)
+        </button>
+      </div>
     </div>
 
     <div style="margin-top:16px;padding:12px;background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.25);border-radius:10px;text-align:center;">

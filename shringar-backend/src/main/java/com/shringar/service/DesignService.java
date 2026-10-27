@@ -53,6 +53,10 @@ public class DesignService {
                 .stream().map(this::toResponse).toList();
     }
 
+    public List<String> getCategories() {
+        return designRepository.findDistinctCategories();
+    }
+
     public DesignResponse getById(Long id) {
         Design design = designRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Design not found with id: " + id));

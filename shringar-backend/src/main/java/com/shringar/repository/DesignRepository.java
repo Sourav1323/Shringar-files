@@ -15,6 +15,9 @@ public interface DesignRepository extends JpaRepository<Design, Long> {
     List<Design> findAllByOrderByCreatedAtDesc();          // admin: see every design incl. inactive
     List<Design> findTop10ByIsActiveTrueOrderByClickCountDesc();  // admin dashboard "most clicked" widget
 
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT d.category FROM Design d WHERE d.isActive = true")
+    List<String> findDistinctCategories();
+
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query("UPDATE Design d SET d.clickCount = d.clickCount + 1 WHERE d.id = :id")
     int incrementClickCount(Long id);

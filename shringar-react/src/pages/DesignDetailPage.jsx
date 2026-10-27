@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Clock, Sparkles, Check, ArrowLeft, ShoppingBag, 
@@ -9,6 +9,8 @@ import { DesignsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useCity } from '../context/CityContext';
+import { getRecommendedDesignsForMinimalArtists } from '../utils/artistOptimizer';
 import DesignCard from '../components/designs/DesignCard';
 
 // Master Catalog Database with 4 Distinct Angles for Every Single Design
@@ -409,7 +411,14 @@ export default function DesignDetailPage() {
   const { cartItems, addToCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showSuccess } = useToast();
+  const { city } = useCity();
   const navigate = useNavigate();
+
+  const currentDesign = design || ALL_DESIGNS_MASTER.find((d) => String(d.id) === String(id)) || ALL_DESIGNS_MASTER[0];
+
+  const singleArtistPairings = useMemo(() => {
+    return getRecommendedDesignsForMinimalArtists([currentDesign], ALL_DESIGNS_MASTER, city, 4);
+  }, [currentDesign, city]);
 
   useEffect(() => {
     async function loadDesign() {
@@ -450,30 +459,41 @@ export default function DesignDetailPage() {
     );
   }
 
-  const currentDesign = design || ALL_DESIGNS_MASTER[0];
-  const angles = currentDesign.angles || ALL_DESIGNS_MASTER[0].angles;
-  const currentAngle = angles[activeAngleIndex] || angles[0];
-  const favorited = isFavorite(currentDesign.id);
-  const isInCart = cartItems.some((item) => String(item.id) === String(currentDesign.id));
+  const angles = currentDesign?.angles?.length ? currentDesign.angles : ALL_DESIGNS_MASTER[0].angles;
+  const currentAngle = angles[activeAngleIndex] || angles[0] || {
+    id: 'front',
+    title: currentDesign?.name || 'Front View',
+    badge: 'Front View',
+    subtitle: 'Ceremonial perspective',
+    notes: 'Handcrafted master motif with traditional detailing.',
+    imageUrl: currentDesign?.imageUrl || '/images/rajasthani-bridal.jpg'
+  };
 
-  // Dynamic coverage options & prices
-  const basePrice = currentDesign.price || 2000;
+  const favorited = isFavorite(currentDesign?.id);
+  const isInCart = cartItems.some((item) => String(item.id) === String(currentDesign?.id));
+
+  // Dynamic coverage options & prices with rock-solid numeric defaults
+  const basePrice = Number(currentDesign?.price) || 2000;
+  const cones = Number(currentDesign?.conesNeeded) || 1;
+  const durMin = Number(currentDesign?.durationMinHours) || 1;
+  const durMax = Number(currentDesign?.durationMaxHours) || Math.max(durMin + 1, 2);
+
   const coverageOptions = [
     {
       id: 'palm',
       title: 'Palm & Fingers Only',
       sub: 'Focused palm pattern with fingertip caps',
       price: Math.max(600, Math.round(basePrice * 0.75)),
-      cones: Math.max(1, Number((currentDesign.conesNeeded * 0.7).toFixed(1))),
-      duration: `${Math.max(1, currentDesign.durationMinHours - 1)}–${currentDesign.durationMaxHours - 1} hrs`,
+      cones: Math.max(1, Number((cones * 0.7).toFixed(1))),
+      duration: `${Math.max(1, durMin - 1)}–${Math.max(1, durMax - 1)} hrs`,
     },
     {
       id: 'standard',
-      title: `${currentDesign.coverage || 'Full Hand to Elbow'}`,
+      title: `${currentDesign?.coverage || 'Full Hand to Elbow'}`,
       sub: 'Standard bridal catalog density as shown in photos',
       price: basePrice,
-      cones: currentDesign.conesNeeded || 2,
-      duration: `${currentDesign.durationMinHours || 2}–${currentDesign.durationMaxHours || 3} hrs`,
+      cones: cones,
+      duration: `${durMin}–${durMax} hrs`,
       recommended: true,
     },
     {
@@ -481,8 +501,8 @@ export default function DesignDetailPage() {
       title: 'Complete Hands & Feet Grand Ensemble',
       sub: 'Matching full hand and foot motifs for the main wedding ceremony',
       price: Math.round(basePrice + 1600),
-      cones: Number((currentDesign.conesNeeded + 1.5).toFixed(1)),
-      duration: `${currentDesign.durationMinHours + 2}–${currentDesign.durationMaxHours + 2} hrs`,
+      cones: Number((cones + 1.5).toFixed(1)),
+      duration: `${durMin + 2}–${durMax + 2} hrs`,
     },
   ];
 
@@ -529,14 +549,9 @@ export default function DesignDetailPage() {
     navigate('/booking');
   };
 
-  // Amazon-Style: Similar Designs in Same Category
-  const similarDesigns = ALL_DESIGNS_MASTER
-    .filter((d) => String(d.id) !== String(currentDesign.id) && (d.category === currentDesign.category || Math.abs(d.price - currentDesign.price) < 800))
-    .slice(0, 4);
-
-  // Amazon-Style: Customers Also Explored
+  // Customers Also Explored
   const customersAlsoExplored = ALL_DESIGNS_MASTER
-    .filter((d) => String(d.id) !== String(currentDesign.id) && !similarDesigns.some(s => s.id === d.id))
+    .filter((d) => String(d.id) !== String(currentDesign.id) && !singleArtistPairings.some(s => s.id === d.id))
     .slice(0, 4);
 
   return (
@@ -697,7 +712,7 @@ export default function DesignDetailPage() {
                 {formatPrice(activePrice)}
               </span>
               <span className="text-xs text-stone-500">
-                All-inclusive of organic henna cones, artist home visit, and sugar-lemon glaze
+                All-inclusive of mehendi cones as per preference, artist home visit, and sugar-lemon glaze
               </span>
             </div>
 
@@ -771,9 +786,9 @@ export default function DesignDetailPage() {
               <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-brand-gold/30 flex items-center gap-3">
                 <Sparkles className="w-5 h-5 text-brand-maroon shrink-0" />
                 <div>
-                  <div className="text-[10px] text-stone-500 font-semibold uppercase">Organic Cones</div>
+                  <div className="text-[10px] text-stone-500 font-semibold uppercase">Mehendi Cones</div>
                   <div className="text-xs font-bold text-stone-900">
-                    {selectedTierData.cones} Sojat Henna Cones
+                    {selectedTierData.cones} Cones (by preference)
                   </div>
                 </div>
               </div>
@@ -783,11 +798,11 @@ export default function DesignDetailPage() {
             <div className="space-y-2 text-xs text-stone-600 bg-stone-50 p-3.5 rounded-2xl border border-stone-200">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>100% Rajasthani Sojat organic henna — 0% chemicals, 0% PPD dyes</span>
+                <span>Store-available quality mehendi cones used strictly according to your preference</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Pure eucalyptus essential oil infusion guarantees 14+ days dark rich stain</span>
+                <span>Carefully applied for long-lasting, deep rich ceremonial stain</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -913,22 +928,22 @@ export default function DesignDetailPage() {
           <div>
             <h2 className="font-cinzel text-2xl font-bold text-brand-maroon flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-brand-gold" />
-              Similar Handcrafted Designs You May Love
+              Frequently Paired With This Look
             </h2>
             <p className="text-stone-500 text-xs mt-0.5">
-              Curated based on your selection of {currentDesign.category} motifs and pricing range
+              Popular matching patterns and harmonizing motifs curated for your celebration
             </p>
           </div>
           <Link
             to={`/designs?category=${currentDesign.category}`}
             className="text-xs font-serif font-bold text-brand-maroon hover:text-brand-gold underline underline-offset-4 hidden sm:block"
           >
-            Explore All {currentDesign.category} ({similarDesigns.length + 1}) →
+            Explore All {currentDesign.category} →
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {similarDesigns.map((simDesign) => (
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          {singleArtistPairings.map((simDesign) => (
             <DesignCard key={simDesign.id} design={simDesign} />
           ))}
         </div>
@@ -954,7 +969,7 @@ export default function DesignDetailPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {customersAlsoExplored.map((expDesign) => (
             <DesignCard key={expDesign.id} design={expDesign} />
           ))}
@@ -981,6 +996,34 @@ export default function DesignDetailPage() {
           <span>Commission Custom Design</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
+      </div>
+
+      {/* ── Mobile Sticky Quick Action Bar ── */}
+      <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-lg border-t border-stone-200 sm:hidden z-30 shadow-2xl flex items-center justify-between gap-3 px-4">
+        <div>
+          <span className="text-[10px] text-stone-500 uppercase tracking-wider font-semibold block">Starts at</span>
+          <span className="text-base font-serif font-bold text-brand-maroon">{formatPrice(activePrice)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleAddToCart}
+            className={`px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1 border ${
+              isInCart
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                : 'bg-stone-100 text-stone-800 border-stone-300'
+            }`}
+            title={isInCart ? 'In Cart' : 'Add to Cart'}
+          >
+            {isInCart ? <Check className="w-4 h-4 text-emerald-600" /> : <ShoppingBag className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={handleBookNow}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-maroon to-brand-maroon-dark text-brand-gold font-serif font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition flex items-center gap-1.5"
+          >
+            <span>Book Now</span>
+            <Calendar className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
     </div>

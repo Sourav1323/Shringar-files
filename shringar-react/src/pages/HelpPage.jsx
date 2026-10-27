@@ -51,8 +51,8 @@ export default function HelpPage() {
       a: 'We recommend booking your bridal mehendi 2 to 3 days prior to your primary ceremony. Rajasthani henna reaches peak mahogany darkness between 48 to 72 hours post application.'
     },
     {
-      q: 'Are your henna cones 100% chemical-free and safe?',
-      a: 'Absolutely. Shringar crafts all cones in-house using organically harvested Sojat mehendi leaves, distilled Nilgiri eucalyptus oil, and tea decoction. Zero PPD, synthetic dyes, or chemical accelerators.'
+      q: 'What kind of mehendi cones do your artists use?',
+      a: 'Our artists use popular, trusted store-available mehendi cones according to your personal preference and skin suitability. If you have a specific preferred brand or sensitive skin requirements, our artists will gladly use your choice.'
     },
     {
       q: 'Can artists travel to out-of-station wedding destinations?',

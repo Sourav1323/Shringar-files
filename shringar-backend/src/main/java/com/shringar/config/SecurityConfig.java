@@ -79,7 +79,8 @@ public class SecurityConfig {
                 })
             )
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
+                // Pre-flight OPTIONS & public endpoints
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/ai/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/designs/**").permitAll()
@@ -92,6 +93,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/public/artist-applications").permitAll()
                 .requestMatchers(HttpMethod.GET, "/coupons/public").permitAll()
                 .requestMatchers(HttpMethod.GET, "/testimonials").permitAll()
+                .requestMatchers(HttpMethod.GET, "/bookings/reference/**").permitAll()
                 .requestMatchers("/support/**").permitAll()
                 .requestMatchers("/payments/webhook").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
@@ -109,7 +111,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+        java.util.List<String> origins = java.util.Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

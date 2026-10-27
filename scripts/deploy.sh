@@ -25,24 +25,36 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
-echo "📦 Pulling latest production container images..."
-docker compose -f docker-compose.prod.yml pull
+DOCKER_CMD="docker"
+if ! docker info &>/dev/null; then
+    if sudo docker info &>/dev/null; then
+        DOCKER_CMD="sudo docker"
+    fi
+fi
 
-echo "🚀 Starting / updating services with zero-downtime rolling restart..."
-docker compose -f docker-compose.prod.yml up -d --remove-orphans
+echo "📦 Building and launching production containers with zero-downtime rolling restart..."
+$DOCKER_CMD compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
 echo "🧹 Cleaning up old unused images..."
-docker image prune -f
+$DOCKER_CMD image prune -f
 
-echo "⏳ Waiting for health check verification (20s)..."
-sleep 20
+echo "⏳ Waiting for platform services to initialize and pass healthchecks (up to 60s)..."
+READY=0
+for i in $(seq 1 12); do
+    echo "  [Attempt $i/12] Probing http://localhost/api/settings..."
+    if curl -s -f http://localhost/api/settings > /dev/null 2>&1 || curl -s -f http://127.0.0.1/api/settings > /dev/null 2>&1; then
+        READY=1
+        break
+    fi
+    sleep 5
+done
 
-if curl -s -f http://localhost:8080/api/settings > /dev/null 2>&1 || curl -s -k -f https://localhost/api/settings > /dev/null 2>&1; then
+if [ "$READY" -eq 1 ]; then
     echo "✅ Platform health verified! All microservices online."
-    docker compose -f docker-compose.prod.yml ps
+    $DOCKER_CMD compose -f docker-compose.prod.yml ps
 else
     echo "⚠️ Warning: Healthcheck did not pass immediately. Checking container logs:"
-    docker compose -f docker-compose.prod.yml logs --tail=50 backend
+    $DOCKER_CMD compose -f docker-compose.prod.yml logs --tail=50 backend
     exit 1
 fi
 

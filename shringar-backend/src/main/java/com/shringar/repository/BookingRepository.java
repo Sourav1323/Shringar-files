@@ -19,6 +19,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByArtistIdAndAppointmentDateAndStatusIn(
             Long artistId, java.time.LocalDate date, List<BookingStatus> statuses);
     Optional<Booking> findByIdAndUserId(Long id, Long userId);
+    boolean existsByUpiTransactionRefAndIdNot(String upiTransactionRef, Long id);
 
     // ── Admin: paginated order listing, newest first ──
     Page<Booking> findAllByOrderByCreatedAtDesc(Pageable pageable);

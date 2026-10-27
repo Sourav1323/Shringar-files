@@ -12,16 +12,29 @@ export default function ProfilePage() {
   const { showSuccess } = useToast();
   const navigate = useNavigate();
 
-  const [address, setAddress] = useState(
-    localStorage.getItem('shringar_saved_address') || 'Flat 402, Royal Palms, MG Road, Bangalore'
-  );
-  const [city, setCity] = useState(
-    localStorage.getItem('shringar_saved_city') || 'Bangalore'
-  );
-  const [savedNotes, setSavedNotes] = useState(
-    localStorage.getItem('shringar_saved_notes') || 'Prefer natural dark organic henna cone.'
-  );
+  const getAddressKey = (uid) => `shringar_saved_address_${uid || 'guest'}`;
+  const getCityKey = (uid) => `shringar_saved_city_${uid || 'guest'}`;
+  const getNotesKey = (uid) => `shringar_saved_notes_${uid || 'guest'}`;
+
+  const [address, setAddress] = useState(() => {
+    return localStorage.getItem(getAddressKey(user?.id)) || '';
+  });
+  const [city, setCity] = useState(() => {
+    return localStorage.getItem(getCityKey(user?.id)) || 'Delhi NCR';
+  });
+  const [savedNotes, setSavedNotes] = useState(() => {
+    return localStorage.getItem(getNotesKey(user?.id)) || 'Prefer store-available standard henna cone.';
+  });
   const [isEditing, setIsEditing] = useState(false);
+
+  // Load account-specific profile info when user changes
+  React.useEffect(() => {
+    if (user?.id) {
+      setAddress(localStorage.getItem(getAddressKey(user.id)) || '');
+      setCity(localStorage.getItem(getCityKey(user.id)) || 'Delhi NCR');
+      setSavedNotes(localStorage.getItem(getNotesKey(user.id)) || 'Prefer store-available standard henna cone.');
+    }
+  }, [user?.id]);
 
   if (!isAuthenticated) {
     return (
@@ -45,9 +58,9 @@ export default function ProfilePage() {
 
   const handleSaveAddress = (e) => {
     e.preventDefault();
-    localStorage.setItem('shringar_saved_address', address);
-    localStorage.setItem('shringar_saved_city', city);
-    localStorage.setItem('shringar_saved_notes', savedNotes);
+    localStorage.setItem(getAddressKey(user?.id), address);
+    localStorage.setItem(getCityKey(user?.id), city);
+    localStorage.setItem(getNotesKey(user?.id), savedNotes);
     setIsEditing(false);
     showSuccess('Profile and preferences updated successfully!');
   };
@@ -214,7 +227,7 @@ export default function ProfilePage() {
                   value={savedNotes}
                   onChange={(e) => setSavedNotes(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-brand-gold"
-                  placeholder="Organic oil sensitivity, Eucalyptus preference, etc."
+                  placeholder="Store brand preference, skin sensitivity, etc."
                 />
               </div>
 

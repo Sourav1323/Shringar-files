@@ -26,7 +26,7 @@ export default function Footer() {
             </p>
             <div className="text-xs text-brand-gold/90 flex items-center gap-1.5 font-medium">
               <Sparkles className="w-3.5 h-3.5 text-brand-gold" />
-              <span>100% Organic Henna Cones Guaranteed</span>
+              <span>Quality Mehendi Cones by Preference</span>
             </div>
           </div>
 

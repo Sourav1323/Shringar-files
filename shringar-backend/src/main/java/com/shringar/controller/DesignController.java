@@ -41,6 +41,12 @@ public class DesignController {
         return ResponseEntity.ok(ApiResponse.success(designService.getFeaturedDesigns()));
     }
 
+    /** GET /api/designs/categories — distinct design categories list */
+    @GetMapping("/categories")
+    public ResponseEntity<ApiResponse<List<String>>> getCategories() {
+        return ResponseEntity.ok(ApiResponse.success(designService.getCategories()));
+    }
+
     /** GET /api/designs/category/{category} — filter pills (Bridal, Arabic, etc.) */
     @GetMapping("/category/{category}")
     public ResponseEntity<ApiResponse<List<DesignResponse>>> getByCategory(@PathVariable String category) {

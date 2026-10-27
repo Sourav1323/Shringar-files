@@ -16,7 +16,12 @@ public class ArtistService {
     private final ArtistRepository artistRepository;
 
     public List<ArtistResponse> getByCity(String city) {
-        return artistRepository.findByCityAndIsActiveTrue(city)
+        if (city == null || city.isBlank() || city.equalsIgnoreCase("all")) {
+            return artistRepository.findAll().stream()
+                    .filter(a -> Boolean.TRUE.equals(a.getIsActive()))
+                    .map(this::toResponse).toList();
+        }
+        return artistRepository.findByCityFlexible(city.trim())
                 .stream().map(this::toResponse).toList();
     }
 

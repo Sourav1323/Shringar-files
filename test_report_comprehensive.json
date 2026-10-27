@@ -1,0 +1,434 @@
+﻿[
+    {
+        "Id":  "TC-01",
+        "Category":  "Infrastructure",
+        "Scenario":  "React Customer Web App on Port 3005",
+        "Status":  "PASS",
+        "Details":  "HTTP 200 OK, HTML served cleanly",
+        "DurationMs":  2126
+    },
+    {
+        "Id":  "TC-02",
+        "Category":  "Infrastructure",
+        "Scenario":  "Spring Boot REST API on Port 8080",
+        "Status":  "PASS",
+        "Details":  "HTTP 200 OK, 6 designs returned",
+        "DurationMs":  258
+    },
+    {
+        "Id":  "TC-03",
+        "Category":  "Infrastructure",
+        "Scenario":  "Standalone Admin Portal on Port 5501",
+        "Status":  "PASS",
+        "Details":  "HTTP 200 OK, operations dashboard accessible",
+        "DurationMs":  2095
+    },
+    {
+        "Id":  "TC-04",
+        "Category":  "Infrastructure",
+        "Scenario":  "CORS Header for React Port 3005",
+        "Status":  "PASS",
+        "Details":  "Allowed origin confirmed: http://localhost:3005",
+        "DurationMs":  13
+    },
+    {
+        "Id":  "TC-05",
+        "Category":  "Authentication",
+        "Scenario":  "10-Digit Mobile Phone Login (8619377860)",
+        "Status":  "PASS",
+        "Details":  "Logged in successfully, UserId: 4, JWT issued",
+        "DurationMs":  144
+    },
+    {
+        "Id":  "TC-06",
+        "Category":  "Authentication",
+        "Scenario":  "Super Admin Direct Login (admin@shringar.com)",
+        "Status":  "PASS",
+        "Details":  "Admin authenticated, Role: ADMIN",
+        "DurationMs":  76
+    },
+    {
+        "Id":  "TC-07",
+        "Category":  "Authentication",
+        "Scenario":  "Unverified Email Registration Guard",
+        "Status":  "PASS",
+        "Details":  "Correctly requires OTP verification before account creation (HTTP 400)",
+        "DurationMs":  42
+    },
+    {
+        "Id":  "TC-08",
+        "Category":  "Authentication",
+        "Scenario":  "Duplicate Email Registration Block",
+        "Status":  "PASS",
+        "Details":  "Correctly blocked with HTTP 400",
+        "DurationMs":  7
+    },
+    {
+        "Id":  "TC-09",
+        "Category":  "Authentication",
+        "Scenario":  "Incorrect Password Brute Guard",
+        "Status":  "PASS",
+        "Details":  "Rejected with HTTP 401/400 Unauthorized",
+        "DurationMs":  86
+    },
+    {
+        "Id":  "TC-10",
+        "Category":  "Authentication",
+        "Scenario":  "Case-Insensitive Email Login",
+        "Status":  "PASS",
+        "Details":  "Successfully authenticated with mixed-case email",
+        "DurationMs":  91
+    },
+    {
+        "Id":  "TC-11",
+        "Category":  "Security",
+        "Scenario":  "Malformed JWT Token Rejection",
+        "Status":  "PASS",
+        "Details":  "Forged token rejected with HTTP 401/403",
+        "DurationMs":  13
+    },
+    {
+        "Id":  "TC-12",
+        "Category":  "Security",
+        "Scenario":  "RBAC: Customer Token Blocked from Admin API",
+        "Status":  "PASS",
+        "Details":  "Correctly blocked with HTTP 401 (Customer denied admin access)",
+        "DurationMs":  126
+    },
+    {
+        "Id":  "TC-13",
+        "Category":  "Security",
+        "Scenario":  "Unauthenticated Access Guard",
+        "Status":  "PASS",
+        "Details":  "Correctly blocked with HTTP 401/403",
+        "DurationMs":  2
+    },
+    {
+        "Id":  "TC-14",
+        "Category":  "Package Allocation",
+        "Scenario":  "Solo Bride Allocation (1 Bride, 0 Relatives)",
+        "Status":  "PASS",
+        "Details":  "Exactly 1 Dedicated Lead Master, 0 Associates, Total 1",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-15",
+        "Category":  "Package Allocation",
+        "Scenario":  "Bride + 3 Relatives Allocation",
+        "Status":  "PASS",
+        "Details":  "1 Dedicated Lead + ceil(3/3)=1 Associate, Total 2 Artists",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-16",
+        "Category":  "Package Allocation",
+        "Scenario":  "Bride + 7 Relatives (ceil(7/3)=3)",
+        "Status":  "PASS",
+        "Details":  "1 Dedicated Lead + ceil(7/3)=3 Associates, Total 4 Artists",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-17",
+        "Category":  "Package Allocation",
+        "Scenario":  "Group Package (10 Guests, ceil(10/3)=4)",
+        "Status":  "PASS",
+        "Details":  "Uniform allocation: 4 Artists for 10 Guests",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-18",
+        "Category":  "Package Allocation",
+        "Scenario":  "Mass Sangeet Scaling (45 Guests, ceil(45/3)=15)",
+        "Status":  "PASS",
+        "Details":  "Scales accurately without overflow: 15 Certified Artists",
+        "DurationMs":  0
+    },
+    {
+        "Id":  "TC-19",
+        "Category":  "Cart Validation",
+        "Scenario":  "Zero/Negative Quantity Guard",
+        "Status":  "PASS",
+        "Details":  "Blocked with HTTP 400 (@Min(1) enforced)",
+        "DurationMs":  14
+    },
+    {
+        "Id":  "TC-20",
+        "Category":  "Coupons",
+        "Scenario":  "Active Public Coupons Discovery",
+        "Status":  "PASS",
+        "Details":  "Discovered 5 public coupons (e.g. BRIDE10)",
+        "DurationMs":  10
+    },
+    {
+        "Id":  "TC-21",
+        "Category":  "Coupons",
+        "Scenario":  "Invalid Coupon Code Rejection",
+        "Status":  "PASS",
+        "Details":  "Correctly rejected with HTTP 400 Bad Request",
+        "DurationMs":  34
+    },
+    {
+        "Id":  "TC-22",
+        "Category":  "Coupons",
+        "Scenario":  "Legitimate Coupon Application (BRIDE10)",
+        "Status":  "PASS",
+        "Details":  "10% Discount Rs. 1020.00 deducted, Net: Rs. ",
+        "DurationMs":  146
+    },
+    {
+        "Id":  "TC-23",
+        "Category":  "Coupons",
+        "Scenario":  "Coupon Removal \u0026 Subtotal Restoration",
+        "Status":  "PASS",
+        "Details":  "Coupon cleared, original subtotal restored",
+        "DurationMs":  57
+    },
+    {
+        "Id":  "TC-24",
+        "Category":  "Cart Management",
+        "Scenario":  "Item Removal from Cart",
+        "Status":  "PASS",
+        "Details":  "Cart item removed, remaining count: 0",
+        "DurationMs":  101
+    },
+    {
+        "Id":  "TC-25",
+        "Category":  "Cart Management",
+        "Scenario":  "Complete Cart Reset via DELETE /api/cart",
+        "Status":  "PASS",
+        "Details":  "Cart emptied completely (itemCount: 0)",
+        "DurationMs":  31
+    },
+    {
+        "Id":  "TC-26",
+        "Category":  "Booking Validation",
+        "Scenario":  "Empty Cart Booking Block (0 Items)",
+        "Status":  "PASS",
+        "Details":  "Correctly blocked with HTTP 400 Bad Request (\u0027Cart is empty. Please add designs before booking.\u0027)",
+        "DurationMs":  92
+    },
+    {
+        "Id":  "TC-27",
+        "Category":  "Booking Validation",
+        "Scenario":  "Past Date Appointment Block",
+        "Status":  "PASS",
+        "Details":  "Blocked with HTTP 400 (@Future validation enforced)",
+        "DurationMs":  18
+    },
+    {
+        "Id":  "TC-28",
+        "Category":  "Booking Validation",
+        "Scenario":  "Invalid 5-digit PIN Code Block",
+        "Status":  "PASS",
+        "Details":  "Blocked with HTTP 400 (PIN must be 6 digits)",
+        "DurationMs":  27
+    },
+    {
+        "Id":  "TC-29",
+        "Category":  "Booking Validation",
+        "Scenario":  "Invalid Phone (\u003c10 Digits) Block",
+        "Status":  "PASS",
+        "Details":  "Blocked with HTTP 400 (Phone must be valid 10 digits)",
+        "DurationMs":  16
+    },
+    {
+        "Id":  "TC-30",
+        "Category":  "Booking Flow",
+        "Scenario":  "Legitimate Royal Booking Creation",
+        "Status":  "PASS",
+        "Details":  "Created Booking #21 (Ref: SH-2026-7507), Advance: Rs. 810, Status: PENDING",
+        "DurationMs":  65
+    },
+    {
+        "Id":  "TC-31",
+        "Category":  "Booking Flow",
+        "Scenario":  "Confirmation Page Lookup by Reference",
+        "Status":  "PASS",
+        "Details":  "Successfully loaded Booking Ref: SH-2026-7507 on confirmation page",
+        "DurationMs":  18
+    },
+    {
+        "Id":  "TC-32",
+        "Category":  "Booking Flow",
+        "Scenario":  "Customer Fetch Booking by ID",
+        "Status":  "PASS",
+        "Details":  "Retrieved booking record securely",
+        "DurationMs":  37
+    },
+    {
+        "Id":  "TC-33",
+        "Category":  "City Availability",
+        "Scenario":  "Certified Hub: Delhi Availability",
+        "Status":  "PASS",
+        "Details":  "Found 2 active artists in Delhi",
+        "DurationMs":  13
+    },
+    {
+        "Id":  "TC-34",
+        "Category":  "City Availability",
+        "Scenario":  "Heritage Hub: Jaipur Availability",
+        "Status":  "PASS",
+        "Details":  "Found 2 active artists in Jaipur",
+        "DurationMs":  17
+    },
+    {
+        "Id":  "TC-35",
+        "Category":  "City Availability",
+        "Scenario":  "Case \u0026 Whitespace Resilience (\u0027  mUmBaI  \u0027)",
+        "Status":  "PASS",
+        "Details":  "Resolved Mumbai artists (3) despite funky casing",
+        "DurationMs":  36
+    },
+    {
+        "Id":  "TC-36",
+        "Category":  "City Availability",
+        "Scenario":  "Unserviced City: Patna Guard",
+        "Status":  "PASS",
+        "Details":  "Correctly reports 0 artists (Triggers NOT_LAUNCHED city notice)",
+        "DurationMs":  10
+    },
+    {
+        "Id":  "TC-37",
+        "Category":  "City Availability",
+        "Scenario":  "Empty City Parameter Fallback",
+        "Status":  "PASS",
+        "Details":  "Returned entire roster (13 artists) without crashing",
+        "DurationMs":  24
+    },
+    {
+        "Id":  "TC-38",
+        "Category":  "Artist Lifecycle",
+        "Scenario":  "Deactivated Artist Booking Block \u0026 Restoration",
+        "Status":  "PASS",
+        "Details":  "Deactivated artist blocked from booking, then restored cleanly",
+        "DurationMs":  123
+    },
+    {
+        "Id":  "TC-39",
+        "Category":  "Payment Verification",
+        "Scenario":  "Legitimate 12-digit UPI UTR Submission",
+        "Status":  "PASS",
+        "Details":  "UTR 429673359501 recorded, flagged for admin review (upiPaymentSubmitted: true)",
+        "DurationMs":  36
+    },
+    {
+        "Id":  "TC-40",
+        "Category":  "Financial Anti-Fraud",
+        "Scenario":  "Duplicate UPI UTR Anti-Fraud Block",
+        "Status":  "PASS",
+        "Details":  "Fraud prevented: Duplicate UTR rejected with HTTP 400",
+        "DurationMs":  125
+    },
+    {
+        "Id":  "TC-41",
+        "Category":  "Payment Operations",
+        "Scenario":  "Admin Advance Payment Confirmation",
+        "Status":  "PASS",
+        "Details":  "Booking #21 confirmed, isAdvancePaid: true",
+        "DurationMs":  46
+    },
+    {
+        "Id":  "TC-42",
+        "Category":  "Booking Lifecycle",
+        "Scenario":  "Reschedule Booking to New Date",
+        "Status":  "PASS",
+        "Details":  "Rescheduled to 2026-11-21, advance carried over",
+        "DurationMs":  49
+    },
+    {
+        "Id":  "TC-43",
+        "Category":  "Security \u0026 IDOR",
+        "Scenario":  "IDOR: Cross-User Booking Access Guard",
+        "Status":  "PASS",
+        "Details":  "Correctly isolated with HTTP 404/403",
+        "DurationMs":  31
+    },
+    {
+        "Id":  "TC-44",
+        "Category":  "Booking Lifecycle",
+        "Scenario":  "Emergency Cancellation Flow",
+        "Status":  "PASS",
+        "Details":  "Booking #22 cancelled cleanly with customer reason recorded",
+        "DurationMs":  48
+    },
+    {
+        "Id":  "TC-45",
+        "Category":  "Fulfillment \u0026 Reviews",
+        "Scenario":  "Customer 5-Star Rating \u0026 Fulfillment",
+        "Status":  "PASS",
+        "Details":  "Booking completed, 5-star rating and royal review stored",
+        "DurationMs":  59
+    },
+    {
+        "Id":  "TC-46",
+        "Category":  "Admin Operations",
+        "Scenario":  "Admin Feedback Inbox (Rating \u003e= 4)",
+        "Status":  "PASS",
+        "Details":  "Verified 7 feedback entries in admin inbox",
+        "DurationMs":  89
+    },
+    {
+        "Id":  "TC-47",
+        "Category":  "Customer Support",
+        "Scenario":  "Customer Wedding Concern Submission",
+        "Status":  "PASS",
+        "Details":  "Concern #7 logged successfully (Status: OPEN)",
+        "DurationMs":  39
+    },
+    {
+        "Id":  "TC-48",
+        "Category":  "Customer Support",
+        "Scenario":  "Customer Retrieve My Concerns",
+        "Status":  "PASS",
+        "Details":  "Retrieved 7 concerns for customer",
+        "DurationMs":  42
+    },
+    {
+        "Id":  "TC-49",
+        "Category":  "Customer Support",
+        "Scenario":  "Admin Concern Resolution \u0026 Note",
+        "Status":  "PASS",
+        "Details":  "Concern #7 resolved by admin with response note",
+        "DurationMs":  37
+    },
+    {
+        "Id":  "TC-50",
+        "Category":  "AI Emergent Features",
+        "Scenario":  "Photorealistic AI Try-On Generation",
+        "Status":  "PASS",
+        "Details":  "Success: True, Design: Rajasthani Bridal, Base64 length: 96",
+        "DurationMs":  35
+    },
+    {
+        "Id":  "TC-51",
+        "Category":  "AI Emergent Features",
+        "Scenario":  "Empty Hand Image Guard",
+        "Status":  "PASS",
+        "Details":  "Rejected missing image gracefully",
+        "DurationMs":  5
+    },
+    {
+        "Id":  "TC-52",
+        "Category":  "Security \u0026 Robustness",
+        "Scenario":  "SQL Injection Attempt in City Filter",
+        "Status":  "PASS",
+        "Details":  "Safely handled parameterized query without 500 SQL crash",
+        "DurationMs":  19
+    },
+    {
+        "Id":  "TC-53",
+        "Category":  "Security \u0026 Robustness",
+        "Scenario":  "XSS Sanitization \u0026 Escaping",
+        "Status":  "PASS",
+        "Details":  "Jackson \u0026 JPA string binding escapes HTML/script execution safely",
+        "DurationMs":  2
+    },
+    {
+        "Id":  "TC-54",
+        "Category":  "Frontend UX Contract",
+        "Scenario":  "Step 1 Auth Redirect \u0026 Step 2 Resume Contract",
+        "Status":  "PASS",
+        "Details":  "Verified BookingPage emits targetStep: 2, LoginPage forwards step: 2, and BookingPage resumes at Step 2",
+        "DurationMs":  71
+    }
+]

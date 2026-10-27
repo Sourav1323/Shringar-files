@@ -84,7 +84,7 @@ public class OtpService {
                     log.info("══════════════════════════════════════════════════════════════");
                     log.info("📧 [OTP EMAIL DEV SIMULATION] To: {} | Code: {}", identifier, code);
                     log.info("══════════════════════════════════════════════════════════════");
-                    messageText = "Dev Mode: SMTP not configured. Code is " + code;
+                    messageText = "Verification code is " + code;
                 } else {
                     throw new BadRequestException(
                         "Real email delivery is enabled, but SMTP is not configured in application.properties. Please configure spring.mail.username and spring.mail.password.");
@@ -92,10 +92,17 @@ public class OtpService {
             } else {
                 boolean sent = emailService.sendOtpEmail(identifier, code);
                 if (!sent) {
-                    throw new BadRequestException(
-                        "Could not deliver verification email to " + identifier + ". Please verify your email address or SMTP configuration.");
+                    if (devSimulationFallback) {
+                        simulated = true;
+                        log.warn("⚠️ SMTP delivery failed for {}. Falling back to simulation OTP code: {}", identifier, code);
+                        messageText = "Verification code is " + code;
+                    } else {
+                        throw new BadRequestException(
+                            "Could not deliver verification email to " + identifier + ". Please verify your email address or SMTP configuration.");
+                    }
+                } else {
+                    messageText = "Verification code sent to " + identifier;
                 }
-                messageText = "Verification code sent to " + identifier;
             }
         } else {
             if (!smsService.isConfigured()) {
@@ -104,7 +111,7 @@ public class OtpService {
                     log.info("══════════════════════════════════════════════════════════════");
                     log.info("📱 [OTP SMS DEV SIMULATION] To: {} | Code: {}", identifier, code);
                     log.info("══════════════════════════════════════════════════════════════");
-                    messageText = "Dev Mode: SMS provider not configured. Code is " + code;
+                    messageText = "SMS code is " + code;
                 } else {
                     throw new BadRequestException(
                         "Real SMS delivery is enabled, but no SMS provider (Twilio or Fast2SMS) is configured in application.properties. Please add your credentials.");
@@ -112,10 +119,17 @@ public class OtpService {
             } else {
                 boolean sent = smsService.sendOtpSms(identifier, code);
                 if (!sent) {
-                    throw new BadRequestException(
-                        "Could not send SMS to " + identifier + ". Please check your phone number and SMS provider balance/configuration.");
+                    if (devSimulationFallback) {
+                        simulated = true;
+                        log.warn("⚠️ SMS delivery failed for {}. Falling back to simulation OTP code: {}", identifier, code);
+                        messageText = "SMS verification code is " + code;
+                    } else {
+                        throw new BadRequestException(
+                            "Could not send SMS to " + identifier + ". Please check your phone number and SMS provider balance/configuration.");
+                    }
+                } else {
+                    messageText = "Verification code sent via SMS to " + identifier;
                 }
-                messageText = "Verification code sent via SMS to " + identifier;
             }
         }
 

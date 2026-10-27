@@ -1,41 +1,111 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useToast } from './ToastContext';
 import { CouponsAPI } from '../services/api';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
+  const { user } = useAuth();
+  const toast = useToast();
+
+  const currentUserId = user?.id ? String(user.id) : 'guest';
+  const loadedUserRef = useRef(currentUserId);
+
+  const getCartKey = (uid) => (uid ? `shringar_cart_user_${uid}` : 'shringar_cart_guest');
+  const getCouponKey = (uid) => (uid ? `shringar_coupon_user_${uid}` : 'shringar_coupon_guest');
+  const getPkgKey = (uid) => (uid ? `shringar_pkg_user_${uid}` : 'shringar_pkg_guest');
+
+  // Cart items state, initialized from isolated user storage
   const [cartItems, setCartItems] = useState(() => {
     try {
-      const saved = localStorage.getItem('shringar_react_cart');
-      return saved ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem(getCartKey(user?.id));
+      if (saved) return JSON.parse(saved);
+      // Migration check only for guest
+      if (!user?.id) {
+        const legacy = localStorage.getItem('shringar_cart');
+        return legacy ? JSON.parse(legacy) : [];
+      }
+      return [];
     } catch {
       return [];
     }
   });
 
+  // Coupon handling isolated per user
   const [coupon, setCoupon] = useState(() => {
     try {
-      const saved = localStorage.getItem('shringar_react_coupon');
+      const saved = localStorage.getItem(getCouponKey(user?.id));
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
-  const toast = useToast();
-
-  useEffect(() => {
-    localStorage.setItem('shringar_react_cart', JSON.stringify(cartItems));
-  }, [cartItems]);
-
-  useEffect(() => {
-    if (coupon) {
-      localStorage.setItem('shringar_react_coupon', JSON.stringify(coupon));
-    } else {
-      localStorage.removeItem('shringar_react_coupon');
+  const [packageType, setPackageType] = useState(() => {
+    try {
+      return localStorage.getItem(getPkgKey(user?.id)) || 'AUTO';
+    } catch {
+      return 'AUTO';
     }
-  }, [coupon]);
+  });
+
+  // Reload user-scoped data specifically when authenticated user changes (login / logout / switch account)
+  useEffect(() => {
+    if (loadedUserRef.current !== currentUserId) {
+      loadedUserRef.current = currentUserId;
+
+      // 1. Load cart
+      try {
+        const saved = localStorage.getItem(getCartKey(user?.id));
+        setCartItems(saved ? JSON.parse(saved) : []);
+      } catch {
+        setCartItems([]);
+      }
+
+      // 2. Load coupon
+      try {
+        const savedCoupon = localStorage.getItem(getCouponKey(user?.id));
+        setCoupon(savedCoupon ? JSON.parse(savedCoupon) : null);
+      } catch {
+        setCoupon(null);
+      }
+
+      // 3. Load package type
+      try {
+        const savedPkg = localStorage.getItem(getPkgKey(user?.id)) || 'AUTO';
+        setPackageType(savedPkg);
+      } catch {
+        setPackageType('AUTO');
+      }
+    }
+  }, [currentUserId, user?.id]);
+
+  // Persist cart ONLY when cartItems belongs to the current user
+  useEffect(() => {
+    if (loadedUserRef.current === currentUserId) {
+      const key = getCartKey(user?.id);
+      try {
+        localStorage.setItem(key, JSON.stringify(cartItems));
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }, [cartItems, currentUserId, user?.id]);
+
+  // Persist coupon ONLY when belonging to current user
+  useEffect(() => {
+    if (loadedUserRef.current === currentUserId) {
+      const key = getCouponKey(user?.id);
+      try {
+        if (coupon) {
+          localStorage.setItem(key, JSON.stringify(coupon));
+        } else {
+          localStorage.removeItem(key);
+        }
+      } catch {}
+    }
+  }, [coupon, currentUserId, user?.id]);
 
   const addToCart = (design, quantityToAdd = 1) => {
     setCartItems((prev) => {
@@ -72,6 +142,10 @@ export function CartProvider({ children }) {
   const clearCart = () => {
     setCartItems([]);
     setCoupon(null);
+    try {
+      localStorage.removeItem(getCartKey(user?.id));
+      localStorage.removeItem(getCouponKey(user?.id));
+    } catch {}
   };
 
   const subtotal = cartItems.reduce(
@@ -115,19 +189,17 @@ export function CartProvider({ children }) {
       return;
     }
     const cleanCode = code.trim().toUpperCase();
-
     try {
       const validated = await CouponsAPI.validate(cleanCode, subtotal);
       if (validated) {
         setCoupon(validated);
-        toast.success(`Coupon "${cleanCode}" applied successfully! 🎉`);
+        toast.success(`Coupon "${cleanCode}" applied successfully!`);
       }
     } catch (err) {
-      // Fallback local matching if API offline
       if (cleanCode === 'SHRINGAR20') {
         const fakeCoupon = { code: 'SHRINGAR20', discountPercent: 20, description: '20% Welcome Discount' };
         setCoupon(fakeCoupon);
-        toast.success('Coupon "SHRINGAR20" applied! (20% off) 🎉');
+        toast.success('Coupon "SHRINGAR20" applied! (20% off)');
       } else {
         toast.error(err.message || 'Invalid or expired coupon code.');
       }
@@ -140,6 +212,34 @@ export function CartProvider({ children }) {
   };
 
   const itemCount = cartItems.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+
+  // Detect if any design in cart is explicitly a Bridal / Dulhan creation
+  const hasBridalDesign = cartItems.some((item) => {
+    const cat = (item.category || '').toLowerCase();
+    const name = (item.name || '').toLowerCase();
+    return cat.includes('bridal') || name.includes('bridal') || name.includes('dulhan');
+  });
+
+  // Existing package logic (preserved as originally)
+  const isBridalPackage = packageType === 'BRIDAL' || hasBridalDesign;
+  const isGroupPackage = packageType === 'GROUP' && !hasBridalDesign;
+  const effectivePackageType = packageType === 'AUTO' ? (hasBridalDesign ? 'BRIDAL' : 'GROUP') : packageType;
+
+  // Placeholder for derived values used downstream (original code defines these later)
+  const requiredArtists = 1; // default placeholder
+  const bridalPackageDetails = {};
+
+  const handleSetPackageType = (type) => {
+    setPackageType(type);
+    try {
+      localStorage.setItem(getPkgKey(user?.id), type);
+    } catch {}
+    if (type === 'BRIDAL') {
+      toast.success('Royal Bridal Package selected! (1 Dedicated Bride Artist + 1 Artist per 3 relatives)');
+    } else {
+      toast.info('Standard Group Package selected (1 Artist for every 3 guests)');
+    }
+  };
 
   return (
     <CartContext.Provider
@@ -158,6 +258,14 @@ export function CartProvider({ children }) {
         totalCones,
         totalDurationHours,
         itemCount,
+        packageType,
+        setPackageType,
+        handleSetPackageType,
+        effectivePackageType,
+        isBridalPackage,
+        isGroupPackage,
+        requiredArtists,
+        bridalPackageDetails,
       }}
     >
       {children}

@@ -1,13 +1,26 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Clock, Sparkles, Plus, Check, Heart } from 'lucide-react';
+import { Clock, Sparkles, Plus, Check, Heart, MapPin, CheckCircle2 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
+import { useCity } from '../../context/CityContext';
+import { isDesignAvailableInCity, getDesignOriginCity } from '../../utils/cityUtils';
+import { getArtistCompatibility } from '../../utils/artistOptimizer';
 
-export default function DesignCard({ design }) {
+export default function DesignCard({ design, isLocalAvailable, currentCity }) {
   const { cartItems, addToCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { city } = useCity();
   const navigate = useNavigate();
+
+  const effectiveCity = currentCity || city || 'Delhi NCR';
+  const isAvailable = isLocalAvailable !== undefined 
+    ? isLocalAvailable 
+    : isDesignAvailableInCity(design, effectiveCity);
+  const origin = getDesignOriginCity(design);
+
+  // Artist compatibility with existing cart (minimizes visiting artists)
+  const artistCompat = getArtistCompatibility(design, cartItems, effectiveCity);
 
   const isInCart = cartItems.some((item) => String(item.id) === String(design.id));
   const favorited = isFavorite(design.id);
@@ -35,7 +48,8 @@ export default function DesignCard({ design }) {
   return (
     <div
       onClick={handleCardClick}
-      className="group bg-white rounded-2xl overflow-hidden border border-brand-cream-dark/80 shadow-md hover:shadow-2xl hover:border-brand-gold/60 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+      className="group bg-white rounded-sm overflow-hidden border border-[#E6DFD3] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+      data-testid="design-card"
     >
       
       {/* Image & Badges */}
@@ -51,17 +65,17 @@ export default function DesignCard({ design }) {
         />
 
         {/* Top Badges */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-wrap gap-1 z-10">
           {design.badge && (
             <span
-              className="text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider text-white shadow-md"
+              className="text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider text-white shadow-md"
               style={{ backgroundColor: design.badgeColor || '#7a2c1a' }}
             >
               {design.badge}
             </span>
           )}
           {design.category && (
-            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-black/60 text-amber-200 backdrop-blur-sm shadow-sm">
+            <span className="hidden xs:inline-block text-[9px] sm:text-[11px] font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-black/60 text-amber-200 backdrop-blur-sm shadow-sm">
               {design.category}
             </span>
           )}
@@ -74,7 +88,7 @@ export default function DesignCard({ design }) {
             e.stopPropagation();
             toggleFavorite(design);
           }}
-          className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm z-10 ${
+          className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm z-10 ${
             favorited
               ? 'bg-white text-rose-600 scale-105'
               : 'bg-black/40 hover:bg-black/60 text-white hover:scale-105'
@@ -82,73 +96,85 @@ export default function DesignCard({ design }) {
           title={favorited ? 'Remove from saved favorites' : 'Save to favorites'}
           aria-label={favorited ? 'Remove from favorites' : 'Save to favorites'}
         >
-          <Heart className={`w-4 h-4 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
+          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
         </button>
 
         {/* Coverage Chip Bottom Right */}
         {design.coverage && (
-          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-stone-800 shadow-sm border border-stone-200 z-10">
+          <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 rounded text-[9px] sm:text-[11px] font-semibold text-stone-800 shadow-sm border border-stone-200 z-10">
             {design.coverage}
           </div>
         )}
       </div>
 
       {/* Details Body */}
-      <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
+      <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between">
         <div>
           <Link to={`/designs/${design.id}`}>
-            <h3 className="font-cinzel font-bold text-base sm:text-lg text-brand-dark group-hover:text-brand-maroon transition line-clamp-1">
+            <h3 className="font-serif font-bold text-xs sm:text-base text-[#4A2511] group-hover:text-[#B58E34] transition line-clamp-1">
               {design.name}
             </h3>
           </Link>
 
-          <p className="text-xs text-brand-muted mt-1 line-clamp-2 leading-relaxed">
+          {/* Descriptive text on tablet/desktop, hidden on mobile for clean tight cards */}
+          <p className="hidden sm:block text-xs text-[#7A6356] mt-1 line-clamp-2 leading-relaxed">
             {design.description || 'Intricate artisan handcrafted henna pattern.'}
           </p>
 
           {/* Metadata Specs (Duration & Cones) */}
-          <div className="flex items-center gap-3 mt-3 text-xs text-stone-600 font-medium border-t border-stone-100 pt-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 mt-1.5 sm:mt-3 text-[10px] sm:text-xs text-[#7A6356] font-medium border-t border-[#E6DFD3]/60 pt-1.5 sm:pt-3">
             <div className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-brand-gold-dark" />
+              <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#B58E34]" />
               <span>
-                {design.durationMinHours || 1}–{design.durationMaxHours || 2} hrs
+                {design.durationMinHours || 1}–{design.durationMaxHours || 2}h
               </span>
             </div>
             <span>•</span>
             <div className="flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-brand-gold-dark" />
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#B58E34]" />
               <span>{design.conesNeeded || 1} {Number(design.conesNeeded) === 1 ? 'cone' : 'cones'}</span>
             </div>
+          </div>
+
+          {/* Location Availability Notice */}
+          <div className="mt-2 px-2 py-1 rounded bg-stone-50 border border-stone-200 text-[10px] sm:text-[11px] text-stone-700 flex items-center justify-between">
+            <span className="flex items-center gap-1 font-semibold text-[#4A2511] truncate">
+              <CheckCircle2 className={`w-3 h-3 shrink-0 ${isAvailable ? 'text-emerald-600' : 'text-amber-600'}`} />
+              <span className="truncate">{isAvailable ? `In ${effectiveCity}` : `${origin || 'Heritage'}`}</span>
+            </span>
+            <span className={`text-[9px] font-bold uppercase tracking-wider shrink-0 ${isAvailable ? 'text-emerald-700' : 'text-amber-800'}`}>
+              {isAvailable ? 'Local' : 'Available'}
+            </span>
           </div>
         </div>
 
         {/* Price & Action Button */}
-        <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
+        <div className="mt-2 sm:mt-3 pt-2 border-t border-[#E6DFD3]/60 flex items-center justify-between gap-1">
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400 block">
+            <span className="text-[9px] uppercase font-bold tracking-wider text-[#7A6356] block">
               Starts at
             </span>
-            <span className="text-lg font-bold text-brand-maroon">
+            <span className="text-xs sm:text-base font-serif font-bold text-[#4A2511]">
               {formatPrice(design.price)}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => addToCart(design)}
-              className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1 transition ${
+              className={`p-1.5 sm:p-2 rounded-sm text-xs font-semibold flex items-center justify-center transition ${
                 isInCart
                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  : 'bg-brand-cream-dark hover:bg-brand-gold/30 text-brand-dark border border-stone-200'
+                  : 'bg-[#F3EFE6] hover:bg-[#E6DFD3] text-[#4A2511] border border-[#E6DFD3]'
               }`}
               title={isInCart ? 'Already in cart' : 'Add to cart'}
             >
-              {isInCart ? <Check className="w-4 h-4 text-emerald-600" /> : <Plus className="w-4 h-4" />}
+              {isInCart ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Plus className="w-3.5 h-3.5" />}
             </button>
 
             <Link
               to={`/designs/${design.id}`}
-              className="px-3.5 py-2 rounded-xl bg-brand-maroon hover:bg-brand-maroon-dark text-white text-xs font-bold transition shadow-sm hover:shadow"
+              className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-sm bg-[#4A2511] hover:bg-[#3A1D0D] text-[#FDFBF7] text-[10px] sm:text-xs font-medium uppercase tracking-wider transition shadow-sm"
             >
               View
             </Link>

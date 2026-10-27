@@ -17,7 +17,7 @@ public class ArtistController {
 
     /** GET /api/artists?city=Mumbai — used to populate the artist list on the booking page */
     @GetMapping
-    public ApiResponse<List<ArtistResponse>> getByCity(@RequestParam String city) {
+    public ApiResponse<List<ArtistResponse>> getByCity(@RequestParam(required = false) String city) {
         return ApiResponse.success(artistService.getByCity(city));
     }
 

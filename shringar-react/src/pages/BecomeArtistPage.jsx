@@ -21,9 +21,11 @@ export default function BecomeArtistPage() {
     yearsExperience: 3,
     specialization: 'Bridal & Traditional Marwari',
     portfolioLink: '',
+    driveLink: '',
     message: ''
   });
 
+  const [portfolioMethod, setPortfolioMethod] = useState('both'); // 'drive' | 'upload' | 'both'
   const [sampleImages, setSampleImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -32,11 +34,6 @@ export default function BecomeArtistPage() {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-
-    if (sampleImages.length + files.length > 5) {
-      showError('You can upload a maximum of 5 portfolio design photos.');
-      return;
-    }
 
     files.forEach((file) => {
       if (!file.type.startsWith('image/')) {
@@ -69,15 +66,32 @@ export default function BecomeArtistPage() {
       return;
     }
 
-    if (sampleImages.length === 0 && !formData.portfolioLink) {
-      showError('Please upload at least 1 sample design or provide an Instagram/portfolio link.');
+    if (sampleImages.length === 0 && !formData.portfolioLink && !formData.driveLink) {
+      showError('Please upload sample design photos or share a Google Drive / portfolio link.');
       return;
     }
 
     setSubmitting(true);
     try {
+      const combinedPortfolio = formData.driveLink
+        ? (formData.portfolioLink ? `${formData.portfolioLink} (Drive: ${formData.driveLink})` : formData.driveLink)
+        : formData.portfolioLink;
+
+      const combinedMessage = [
+        formData.message || '',
+        formData.driveLink ? `\n📂 Google Drive Portfolio Link: ${formData.driveLink}` : '',
+        sampleImages.length ? `\n📸 Attached Photos Count: ${sampleImages.length}` : '',
+      ].filter(Boolean).join('\n').trim();
+
       await ArtistApplicationsAPI.submit({
-        ...formData,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        city: formData.city,
+        yearsExperience: formData.yearsExperience,
+        specialization: formData.specialization,
+        portfolioLink: combinedPortfolio.slice(0, 290),
+        message: combinedMessage,
         sampleDesignCount: sampleImages.length,
       });
       setSubmitted(true);
@@ -109,13 +123,13 @@ export default function BecomeArtistPage() {
       category: 'Henna Materials & Cones',
       question: 'Who supplies the henna cones and raw materials?',
       answer:
-        'To ensure zero chemical burns and rich mahogany staining, Shringar supplies fresh, triple-filtered, 100% natural Sojat henna cones and Nilgiri eucalyptus essential oil blends free of cost for all confirmed bookings. You never have to spend your own money on cones.',
+        'Artists use trusted, store-available quality mehendi cones based on client preference. If the patron has specified a preferred store brand or provides their own cones, artists accommodate their choice seamlessly.',
     },
     {
       category: 'Commission & Earnings',
       question: 'What is the commission structure and artisan payout percentage?',
       answer:
-        'Shringar is founded on artisan empowerment. Artists receive 75% to 80% of the total booking price — one of the highest payouts in the Indian wedding industry. Our modest 20% platform fee covers client acquisition, free organic cone shipments, insurance, and doorstep logistics.',
+        'Shringar is founded on artisan empowerment. Artists receive 75% to 80% of the total booking price — one of the highest payouts in the Indian wedding industry. Our modest 20% platform fee covers client acquisition, logistics, and insurance.',
     },
     {
       category: 'Payout Timelines',
@@ -169,7 +183,7 @@ export default function BecomeArtistPage() {
               Join Our Elite Mehendi Artists
             </h1>
             <p className="text-brand-cream/80 text-sm sm:text-base leading-relaxed">
-              Showcase your handcrafted artistry to high-profile brides across India and abroad. We provide premium booking pipelines, organic henna materials, and guaranteed 24-hour payouts.
+              Showcase your handcrafted artistry to high-profile brides across India and abroad. We provide premium booking pipelines, verified clientele, and guaranteed 24-hour payouts.
             </p>
           </div>
         </div>
@@ -196,8 +210,8 @@ export default function BecomeArtistPage() {
             <div className="w-12 h-12 rounded-xl bg-amber-50 text-brand-gold mx-auto flex items-center justify-center">
               <Palette className="w-6 h-6 text-brand-maroon" />
             </div>
-            <h3 className="font-serif font-bold text-stone-900 text-base">Pure Sojat Cones</h3>
-            <p className="text-stone-500 text-xs">Complimentary batch supply of chemical-free triple-filtered Rajasthani henna cones.</p>
+            <h3 className="font-serif font-bold text-stone-900 text-base">Client Preference Cones</h3>
+            <p className="text-stone-500 text-xs">Work with store-available trusted cones or patron-preferred custom blends.</p>
           </div>
         </div>
 
@@ -246,7 +260,7 @@ export default function BecomeArtistPage() {
                       <span className="w-5 h-5 rounded-full bg-brand-maroon text-white flex items-center justify-center text-[10px]">3</span>
                       Welcome Artisan Kit Dispatched
                     </span>
-                    <p className="text-stone-600">Receive your batch of certified Sojat henna cones, eucalyptus sealant, and gold apron.</p>
+                    <p className="text-stone-600">Receive your Shringar toolkit, aftercare sealant, and gold apron.</p>
                   </div>
 
                   <div className="bg-white p-4 rounded-xl border border-amber-100 space-y-1">
@@ -431,67 +445,160 @@ export default function BecomeArtistPage() {
                 </div>
               </div>
 
-              {/* ── Sample Design Upload Section (Requirement from user) ── */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold uppercase text-stone-700">
-                    Upload Sample Mehendi Artworks / Portfolio (Up to 5 Photos) *
-                  </label>
-                  <span className="text-[11px] font-medium text-brand-gold-dark">
-                    {sampleImages.length} / 5 photos uploaded
-                  </span>
+              {/* ── Portfolio Submission: Unlimited Photo Uploads & Google Drive Sharing ── */}
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-stone-200">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-stone-800">
+                      Portfolio Submission: Google Drive Link or Photos (No Upload Limit) *
+                    </label>
+                    <p className="text-[11px] text-stone-500 mt-0.5">
+                      Share your work via Google Drive link or upload photos directly — no photo limits enforced.
+                    </p>
+                  </div>
+
+                  {/* Mode Selector Tabs */}
+                  <div className="flex rounded-lg border border-stone-300 p-0.5 bg-stone-100 text-xs font-semibold shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setPortfolioMethod('drive')}
+                      className={`px-3 py-1 rounded-md transition ${portfolioMethod === 'drive' ? 'bg-[#4A2511] text-[#FDFBF7] shadow' : 'text-stone-600 hover:text-stone-900'}`}
+                    >
+                      📁 Drive Link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPortfolioMethod('upload')}
+                      className={`px-3 py-1 rounded-md transition ${portfolioMethod === 'upload' ? 'bg-[#4A2511] text-[#FDFBF7] shadow' : 'text-stone-600 hover:text-stone-900'}`}
+                    >
+                      📸 Upload Photos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPortfolioMethod('both')}
+                      className={`px-3 py-1 rounded-md transition ${portfolioMethod === 'both' ? 'bg-[#4A2511] text-[#FDFBF7] shadow' : 'text-stone-600 hover:text-stone-900'}`}
+                    >
+                      ✨ Both
+                    </button>
+                  </div>
                 </div>
 
-                {/* Upload Drag/Click Zone */}
-                {sampleImages.length < 5 && (
-                  <div className="border-2 border-dashed border-stone-300 hover:border-brand-gold rounded-2xl p-6 text-center bg-stone-50/70 hover:bg-amber-50/20 transition cursor-pointer relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    />
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-full bg-brand-maroon/10 text-brand-maroon flex items-center justify-center">
-                        <Upload className="w-5 h-5" />
+                {/* Option 1: Google Drive Link Card */}
+                {(portfolioMethod === 'drive' || portfolioMethod === 'both') && (
+                  <div className="bg-gradient-to-r from-amber-50/80 via-white to-amber-50/50 border-2 border-[#B58E34]/40 rounded-2xl p-5 space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">📁</span>
+                        <div>
+                          <span className="font-serif font-bold text-sm text-[#4A2511] block">
+                            Share Google Drive Portfolio Folder
+                          </span>
+                          <span className="text-[11px] text-stone-500">
+                            Recommended for quick review of full portfolios & ceremony albums
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-xs font-semibold text-stone-800">
-                        Click or drag & drop sample design photos here
-                      </div>
-                      <div className="text-[11px] text-stone-500">
-                        Upload high-resolution photos of your hand/feet henna work (JPG, PNG, WEBP)
-                      </div>
+                      <span className="text-[10px] uppercase font-bold px-2.5 py-1 rounded-full bg-[#4A2511] text-[#FDFBF7]">
+                        Drive Link Option
+                      </span>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="url"
+                        value={formData.driveLink}
+                        onChange={(e) => setFormData({ ...formData, driveLink: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-stone-300 text-sm focus:ring-2 focus:ring-[#B58E34] outline-none bg-white placeholder-stone-400"
+                        placeholder="https://drive.google.com/drive/folders/... or Dropbox / OneDrive link"
+                      />
+                    </div>
+
+                    <div className="flex items-start gap-2 text-[11px] text-amber-900 bg-amber-100/60 p-2.5 rounded-xl border border-amber-200">
+                      <span className="shrink-0 font-bold">💡 Tip:</span>
+                      <span>
+                        Make sure your Google Drive link sharing permission is set to <strong>"Anyone with the link can view"</strong> so our jury board can review your high-resolution original shots without requesting access.
+                      </span>
                     </div>
                   </div>
                 )}
 
-                {/* Uploaded Photos Gallery Preview */}
-                {sampleImages.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
-                    {sampleImages.map((img, idx) => (
-                      <div
-                        key={img.id}
-                        className="relative aspect-square rounded-xl overflow-hidden border-2 border-brand-gold/60 group shadow-sm bg-stone-900"
-                      >
-                        <img
-                          src={img.url}
-                          alt={`Sample artwork ${idx + 1}`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeSampleImage(img.id)}
-                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/75 text-white flex items-center justify-center hover:bg-red-600 transition"
-                          title="Remove image"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                        <div className="absolute bottom-1 left-1.5 text-[10px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded">
-                          Sample #{idx + 1}
+                {/* Option 2: Direct Photo Upload Drag/Click Zone - Unlimited */}
+                {(portfolioMethod === 'upload' || portfolioMethod === 'both') && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-stone-700 flex items-center gap-1.5">
+                        <span>📸 Upload Design Photos Directly</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold uppercase tracking-wider">
+                          No Photo Limit
+                        </span>
+                      </span>
+                      <span className="text-[11px] font-medium text-brand-gold-dark">
+                        {sampleImages.length} {sampleImages.length === 1 ? 'photo' : 'photos'} attached
+                      </span>
+                    </div>
+
+                    <div className="border-2 border-dashed border-stone-300 hover:border-[#B58E34] rounded-2xl p-6 text-center bg-stone-50/70 hover:bg-amber-50/30 transition cursor-pointer relative group">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      />
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-[#4A2511]/10 text-[#4A2511] flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Upload className="w-5 h-5 text-[#4A2511]" />
+                        </div>
+                        <div className="text-xs font-bold text-stone-800">
+                          Click or drag & drop design photos here (No upload limit)
+                        </div>
+                        <div className="text-[11px] text-stone-500">
+                          Upload as many high-resolution photos of your hand/feet henna work as you wish (JPG, PNG, WEBP)
                         </div>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Uploaded Photos Gallery Preview */}
+                    {sampleImages.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-stone-500">
+                          <span>Attached Photos Preview:</span>
+                          <button
+                            type="button"
+                            onClick={() => setSampleImages([])}
+                            className="text-rose-600 hover:underline text-[11px] font-semibold"
+                          >
+                            Clear all photos
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-1">
+                          {sampleImages.map((img, idx) => (
+                            <div
+                              key={img.id}
+                              className="relative aspect-square rounded-xl overflow-hidden border-2 border-brand-gold/60 group shadow-sm bg-stone-900"
+                            >
+                              <img
+                                src={img.url}
+                                alt={`Sample artwork ${idx + 1}`}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeSampleImage(img.id)}
+                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/75 text-white flex items-center justify-center hover:bg-red-600 transition"
+                                title="Remove image"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                              <div className="absolute bottom-1 left-1.5 text-[10px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded">
+                                #{idx + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -541,7 +648,7 @@ export default function BecomeArtistPage() {
               Frequently Asked Questions for Artists
             </h2>
             <p className="text-stone-500 text-xs mt-1">
-              Everything you need to know about how bookings work, payments, commissions, and organic supplies.
+              Everything you need to know about how bookings work, payments, commissions, and materials.
             </p>
           </div>
 

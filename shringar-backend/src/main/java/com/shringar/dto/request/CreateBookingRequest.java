@@ -40,6 +40,7 @@ public class CreateBookingRequest {
     private String customerName;
 
     @NotBlank(message = "Customer phone is required")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Customer phone must be exactly 10 digits")
     private String customerPhone;
 
     private String customerEmail;

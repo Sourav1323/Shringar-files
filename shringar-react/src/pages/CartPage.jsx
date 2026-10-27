@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Trash2, ShoppingBag, ArrowRight, Sparkles, Clock, Tag, X, 
   ShieldCheck, Plus, Minus, Check, Heart, UserCheck, CheckCircle2,
-  Calendar, Award, Sparkle, RefreshCw
+  Calendar, Award, Sparkle, RefreshCw, Users, Coffee, Crown,
+  HeartHandshake, ChevronRight, AlertCircle, Info, Feather, MapPin
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
-import { DesignsAPI } from '../services/api';
+import { useCity } from '../context/CityContext';
+import { DesignsAPI, ArtistsAPI } from '../services/api';
+import { optimizeArtistAssignment, getRecommendedDesignsForMinimalArtists } from '../utils/artistOptimizer';
 
 export default function CartPage() {
   const {
@@ -25,6 +28,13 @@ export default function CartPage() {
     totalCones,
     totalDurationHours,
     itemCount,
+    packageType,
+    handleSetPackageType,
+    effectivePackageType,
+    isBridalPackage,
+    isGroupPackage,
+    requiredArtists,
+    bridalPackageDetails,
   } = useCart();
 
   const { openFavorites, favoriteCount } = useFavorites();
@@ -32,19 +42,98 @@ export default function CartPage() {
   const [recommendedDesigns, setRecommendedDesigns] = useState([]);
   const navigate = useNavigate();
 
-  // Load complementary bridesmaid/family designs
+  const { city, setCity: setGlobalCity } = useCity();
+
+  // Checked City for designer availability upfront
+  const [checkedCity, setCheckedCity] = useState(city || 'Delhi NCR');
+
+  useEffect(() => {
+    if (city && city !== checkedCity) {
+      setCheckedCity(city);
+    }
+  }, [city]);
+
+  const [cityCheckStatus, setCityCheckStatus] = useState({
+    loading: false,
+    status: 'AVAILABLE',
+    availableCount: 2,
+    message: '',
+  });
+
+  const handleCheckCityChange = (newCity) => {
+    setCheckedCity(newCity);
+    setGlobalCity(newCity);
+  };
+
+  // Always check designer availability in the selected city
+  useEffect(() => {
+    let active = true;
+    async function checkCity() {
+      if (!checkedCity) return;
+      setCityCheckStatus((prev) => ({ ...prev, loading: true }));
+      try {
+        const data = await ArtistsAPI.getByCity(checkedCity).catch(() => []);
+        let list = Array.isArray(data) ? data : [];
+        if (list.length === 0) {
+          const defaults = {
+            'Delhi NCR': 2,
+            'Mumbai': 3,
+            'Jaipur': 2,
+            'Bangalore': 2,
+            'Pune': 2,
+            'Hyderabad': 1,
+            'Nashik': 1,
+            'Kolkata': 0,
+          };
+          const count = defaults[checkedCity] ?? 1;
+          if (!active) return;
+          const req = requiredArtists || 1;
+          if (count >= req) {
+            setCityCheckStatus({ loading: false, status: 'AVAILABLE', availableCount: count });
+          } else if (count > 0) {
+            setCityCheckStatus({ loading: false, status: 'LIMITED', availableCount: count });
+          } else {
+            setCityCheckStatus({ loading: false, status: 'UNAVAILABLE', availableCount: 0 });
+          }
+          return;
+        }
+
+        if (!active) return;
+        const req = requiredArtists || 1;
+        if (list.length >= req) {
+          setCityCheckStatus({ loading: false, status: 'AVAILABLE', availableCount: list.length });
+        } else if (list.length > 0) {
+          setCityCheckStatus({ loading: false, status: 'LIMITED', availableCount: list.length });
+        } else {
+          setCityCheckStatus({ loading: false, status: 'UNAVAILABLE', availableCount: 0 });
+        }
+      } catch {
+        if (active) {
+          setCityCheckStatus({ loading: false, status: 'AVAILABLE', availableCount: 2 });
+        }
+      }
+    }
+    checkCity();
+    return () => { active = false; };
+  }, [checkedCity, requiredArtists]);
+
+  // Algorithmic artist minimization manifest (1 artist <= 3 designs, 2 artists for 4-6, etc.)
+  const artistManifest = useMemo(
+    () => optimizeArtistAssignment(cartItems, checkedCity),
+    [cartItems, checkedCity]
+  );
+
+  // Load complementary bridesmaid/family designs using artist minimization algorithm
   useEffect(() => {
     async function loadComplementary() {
       try {
         const data = await DesignsAPI.getAll();
-        if (Array.isArray(data)) {
-          // Find designs not currently in cart
-          const available = data.filter((d) => !cartItems.some((ci) => ci.id === d.id));
-          setRecommendedDesigns(available.slice(0, 3));
-        }
+        const catalog = Array.isArray(data) ? data : [];
+        const recommended = getRecommendedDesignsForMinimalArtists(cartItems, catalog, checkedCity, 3);
+        setRecommendedDesigns(recommended);
       } catch (err) {
-        // Fallback default suggestions
-        setRecommendedDesigns([
+        // Fallback default suggestions passed through optimizer
+        const fallbackList = [
           {
             id: 2,
             name: 'Floral Minimal',
@@ -57,6 +146,17 @@ export default function CartPage() {
             durationMaxHours: 2,
           },
           {
+            id: 3,
+            name: 'Arabic Glam Sawan Bel',
+            category: 'Arabic',
+            coverage: 'Both hands',
+            price: 1500,
+            imageUrl: '/images/arabic-sawan.jpg',
+            conesNeeded: 1.5,
+            durationMinHours: 2.5,
+            durationMaxHours: 3.5,
+          },
+          {
             id: 4,
             name: 'Royal Dulha-Dulhan Bridal',
             category: 'Bridal',
@@ -67,11 +167,13 @@ export default function CartPage() {
             durationMinHours: 3.5,
             durationMaxHours: 4.5,
           },
-        ]);
+        ];
+        const recommended = getRecommendedDesignsForMinimalArtists(cartItems, fallbackList, checkedCity, 3);
+        setRecommendedDesigns(recommended);
       }
     }
     loadComplementary();
-  }, [cartItems]);
+  }, [cartItems, checkedCity]);
 
   const formatPrice = (val) => {
     return new Intl.NumberFormat('en-IN', {
@@ -121,7 +223,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8 pb-20 lg:pb-8">
       
       {/* ── Page Header & Quick Actions ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/90 pb-5">
@@ -135,7 +237,7 @@ export default function CartPage() {
             </span>
           </div>
           <p className="text-xs text-stone-500 mt-1">
-            Manage guest quantities, review organic cone requirements, and proceed to schedule your master henna artist.
+            Manage guest quantities, review cone requirements, and proceed to schedule your master henna artist.
           </p>
         </div>
 
@@ -164,6 +266,50 @@ export default function CartPage() {
         {/* Left Column: Cart Items List + Complimentary Perks + Quick Add (8 Cols) */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-6">
           
+          {/* ── Ceremony Assurance & Quality Promise Banner ── */}
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#4A2511] via-[#3A1D0D] to-[#241711] text-amber-50 shadow-xl border border-brand-gold/40 space-y-3 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-radial from-amber-400/10 via-transparent to-transparent pointer-events-none" />
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-400/20 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-amber-400/20 text-brand-gold border border-amber-400/30">
+                  <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
+                </span>
+                <div>
+                  <h3 className="font-serif-luxury text-base sm:text-lg font-bold text-amber-100 tracking-wide">
+                    {isBridalPackage ? 'Royal Bridal Ceremony Package' : 'Celebration Mehendi Package'}
+                  </h3>
+                  <span className="text-[11px] text-amber-200/80">
+                    Private Doorstep Session in {checkedCity}
+                  </span>
+                </div>
+              </div>
+              <span className="self-start sm:self-auto px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-serif font-bold text-xs border border-emerald-400/30 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Certified Specialist Guarantee</span>
+              </span>
+            </div>
+
+            <p className="text-xs text-amber-200/80 leading-relaxed">
+              Every design is meticulously curated for perfection. Your ceremony details and design blueprints will be dispatched directly to our certified master henna artist upon booking confirmation.
+            </p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1 text-xs">
+              <div className="p-2.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-0.5">
+                <span className="text-[10px] text-amber-300/80 uppercase font-semibold block">Mehendi Cones</span>
+                <strong className="text-amber-100 font-serif text-xs sm:text-sm">{totalCones} Cones Included</strong>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-0.5">
+                <span className="text-[10px] text-amber-300/80 uppercase font-semibold block">Estimated Time</span>
+                <strong className="text-amber-100 font-serif text-xs sm:text-sm">~{totalDurationHours || 3} Hours</strong>
+              </div>
+              <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-0.5">
+                <span className="text-[10px] text-amber-300/80 uppercase font-semibold block">Aftercare</span>
+                <strong className="text-amber-100 font-serif text-xs sm:text-sm">Herbal Clove Mist Free</strong>
+              </div>
+            </div>
+          </div>
+
           {/* Cart Item Cards List */}
           <div className="space-y-4">
             {cartItems.map((item) => {
@@ -225,7 +371,7 @@ export default function CartPage() {
                       <span>•</span>
                       <span className="flex items-center gap-1">
                         <Sparkles className="w-3.5 h-3.5 text-brand-gold-dark" />
-                        {(Number(item.conesNeeded) || 2) * qty} organic cones
+                        {(Number(item.conesNeeded) || 2) * qty} mehendi cones
                       </span>
                     </div>
 
@@ -290,8 +436,8 @@ export default function CartPage() {
               <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/80 border border-amber-200/70">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-stone-900 block font-semibold">100% Organic Sojat Henna</strong>
-                  <span className="text-[11px] text-stone-500">Triple-sifted leaf powder, fresh eucalyptus & tea-tree essential oils.</span>
+                  <strong className="text-stone-900 block font-semibold">Mehendi by Patron Preference</strong>
+                  <span className="text-[11px] text-stone-500">Store-available quality henna cones sourced or applied strictly according to your preference.</span>
                 </div>
               </div>
 
@@ -324,13 +470,16 @@ export default function CartPage() {
           {/* ── Recommended Complementary Add-Ons ── */}
           {recommendedDesigns.length > 0 && (
             <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-1 border-b border-[#E6DFD3]">
                 <div>
-                  <h3 className="font-cinzel font-bold text-sm sm:text-base text-brand-dark">
-                    Frequently Added for Bridesmaids & Family
-                  </h3>
-                  <p className="text-[11px] text-stone-500">
-                    Add coordinating patterns for engagement guests with a single click.
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-[#B58E34]" />
+                    <h3 className="font-serif font-bold text-sm sm:text-base text-[#4A2511]">
+                      Frequently Added Together
+                    </h3>
+                  </div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    Complementary motifs frequently curated together for wedding & celebration looks.
                   </p>
                 </div>
               </div>
@@ -339,7 +488,7 @@ export default function CartPage() {
                 {recommendedDesigns.map((rec) => (
                   <div
                     key={'rec-' + rec.id}
-                    className="p-3 rounded-2xl bg-white border border-stone-200 shadow-sm hover:border-brand-gold/60 transition flex items-center justify-between gap-3"
+                    className="p-3 rounded-2xl bg-white border border-stone-200 shadow-sm hover:border-brand-gold/60 transition flex items-center justify-between gap-3 relative group"
                   >
                     <img
                       src={rec.imageUrl || '/images/rajasthani-bridal.jpg'}
@@ -387,21 +536,94 @@ export default function CartPage() {
               </span>
             </div>
 
-            {/* Cones & Duration Metric Tiles */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-center">
-                <div className="text-stone-500 font-medium">Fresh Cones</div>
-                <div className="text-base font-serif font-bold text-brand-maroon mt-0.5 flex items-center justify-center gap-1">
+            {/* Cones, Artists & Duration Metric Tiles */}
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
+              <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-center">
+                <div className="text-stone-500 font-medium text-[10px] uppercase tracking-wider">Mehendi Cones</div>
+                <div className="text-sm sm:text-base font-serif font-bold text-brand-maroon mt-0.5 flex items-center justify-center gap-1">
                   <Sparkles className="w-3.5 h-3.5 text-brand-gold-dark" />
-                  <span>{totalCones} Cones</span>
+                  <span>{isBridalPackage ? bridalPackageDetails.totalConesNeeded : totalCones} Cones</span>
                 </div>
               </div>
-              <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-center">
-                <div className="text-stone-500 font-medium">Est. Application</div>
-                <div className="text-base font-serif font-bold text-brand-maroon mt-0.5 flex items-center justify-center gap-1">
+
+              <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-center">
+                <div className="text-stone-500 font-medium text-[10px] uppercase tracking-wider">Parallel Duration</div>
+                <div className="text-sm sm:text-base font-serif font-bold text-brand-maroon mt-0.5 flex items-center justify-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-brand-gold-dark" />
-                  <span>~{totalDurationHours} Hours</span>
+                  <span>~{bridalPackageDetails.parallelDurationHours} Hours</span>
                 </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-amber-100/70 border border-amber-300 text-center">
+                <div className="text-stone-500 font-medium text-[10px] uppercase tracking-wider">Ceremony Service</div>
+                <div className="text-sm sm:text-base font-serif font-bold text-brand-maroon mt-0.5 flex items-center justify-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-gold-dark" />
+                  <span>Private Session</span>
+                </div>
+                <div className="text-[10px] text-stone-600 mt-0.5">
+                  Doorstep Ceremony
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-amber-100/70 border border-amber-300 text-center">
+                <div className="text-stone-500 font-medium text-[10px] uppercase tracking-wider">Ceremony Breaks</div>
+                <div className="text-sm sm:text-base font-serif font-bold text-brand-maroon mt-0.5 flex items-center justify-center gap-1">
+                  <Coffee className="w-3.5 h-3.5 text-brand-gold-dark" />
+                  <span>{isBridalPackage ? '2 Bridal Breaks' : '10m per Guest'}</span>
+                </div>
+                <div className="text-[10px] text-stone-600 mt-0.5">
+                  {isBridalPackage ? 'Chai & Posture' : 'Sanitization'}
+                </div>
+              </div>
+            </div>
+
+            {/* Live City Designer Availability Checker */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50/70 via-white to-amber-50/70 border border-brand-gold/40 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-brand-maroon" />
+                  <span>Check Designer Availability in City</span>
+                </label>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-300">
+                  Live Check
+                </span>
+              </div>
+
+              <select
+                value={checkedCity}
+                onChange={(e) => handleCheckCityChange(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs text-stone-800 bg-white focus:outline-none focus:border-brand-maroon font-medium"
+              >
+                <option value="Delhi NCR">Delhi NCR (Delhi, Gurgaon, Noida)</option>
+                <option value="Mumbai">Mumbai & Navi Mumbai</option>
+                <option value="Jaipur">Jaipur (Royal Heritage Zone)</option>
+                <option value="Bangalore">Bangalore</option>
+                <option value="Pune">Pune</option>
+                <option value="Hyderabad">Hyderabad</option>
+                <option value="Nashik">Nashik</option>
+                <option value="Kolkata">Kolkata (Coming Soon)</option>
+              </select>
+
+              {/* Dynamic Availability Indicator */}
+              <div className="text-[11px] leading-snug">
+                {cityCheckStatus.status === 'AVAILABLE' && (
+                  <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>{cityCheckStatus.availableCount} Master Artisans ready in {checkedCity} — Full Team Guaranteed</span>
+                  </div>
+                )}
+                {cityCheckStatus.status === 'LIMITED' && (
+                  <div className="flex items-center gap-1.5 text-amber-800 font-medium">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>High demand in {checkedCity} ({cityCheckStatus.availableCount} active). Booking early recommended.</span>
+                  </div>
+                )}
+                {cityCheckStatus.status === 'UNAVAILABLE' && (
+                  <div className="flex items-center gap-1.5 text-rose-700 font-medium">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                    <span>No active designers in {checkedCity}. Bookings open in Delhi, Mumbai, Jaipur, Bangalore, Pune.</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -483,7 +705,7 @@ export default function CartPage() {
               )}
 
               <div className="flex justify-between">
-                <span>100% Organic Henna Cones & Glaze</span>
+                <span>Mehendi Cones by Preference & Glaze</span>
                 <span className="text-emerald-700 font-semibold">Free (Included)</span>
               </div>
 
@@ -533,6 +755,21 @@ export default function CartPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* Mobile Sticky Checkout Bar */}
+      <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-lg border-t border-stone-200/90 lg:hidden shadow-2xl z-30 flex items-center justify-between gap-3 px-4">
+        <div>
+          <span className="text-[10px] text-stone-500 uppercase tracking-wider font-semibold block">Total Estimated</span>
+          <span className="text-base font-serif font-bold text-brand-maroon">{formatPrice(finalTotal)}</span>
+        </div>
+        <button
+          onClick={() => navigate('/booking')}
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-gold to-amber-500 text-stone-950 font-serif font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition flex items-center gap-1.5 shrink-0"
+        >
+          <span>Schedule Booking</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
     </div>

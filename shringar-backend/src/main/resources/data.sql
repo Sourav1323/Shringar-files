@@ -120,6 +120,22 @@ SELECT 'nashik', 'Nashik', 1, 0, 4, NULL
 WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'nashik');
 
 INSERT INTO cities (name, display_name, is_active, is_coming_soon, artist_count, launch_quarter)
+SELECT 'delhi', 'Delhi NCR', 1, 0, 15, NULL
+WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'delhi');
+
+INSERT INTO cities (name, display_name, is_active, is_coming_soon, artist_count, launch_quarter)
+SELECT 'bangalore', 'Bangalore', 1, 0, 10, NULL
+WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'bangalore');
+
+INSERT INTO cities (name, display_name, is_active, is_coming_soon, artist_count, launch_quarter)
+SELECT 'jaipur', 'Jaipur (Royal Heritage Zone)', 1, 0, 8, NULL
+WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'jaipur');
+
+INSERT INTO cities (name, display_name, is_active, is_coming_soon, artist_count, launch_quarter)
+SELECT 'hyderabad', 'Hyderabad', 1, 0, 7, NULL
+WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'hyderabad');
+
+INSERT INTO cities (name, display_name, is_active, is_coming_soon, artist_count, launch_quarter)
 SELECT 'aurangabad', 'Aurangabad', 0, 1, 0, 'Q3 2026'
 WHERE NOT EXISTS (SELECT 1 FROM cities WHERE name = 'aurangabad');
 
@@ -258,6 +274,34 @@ WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Deepa Kulkarni');
 INSERT INTO artists (name, specialization, city, rating, review_count, avatar_emoji, experience_years, is_active, is_top_artist, badge_label)
 SELECT 'Asha Desai', 'Traditional & Heritage', 'nashik', 4.6, 58, '🧕', 5, 1, 0, NULL
 WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Asha Desai');
+
+INSERT INTO artists (name, specialization, city, rating, review_count, avatar_emoji, experience_years, is_active, is_top_artist, badge_label)
+SELECT 'Kavita Sharma', 'Royal Dulhan & Traditional Bridal', 'delhi', 4.95, 340, '👩‍🎨', 10, 1, 1, 'Top Artist Delhi'
+WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Kavita Sharma');
+
+INSERT INTO artists (name, specialization, city, rating, review_count, avatar_emoji, experience_years, is_active, is_top_artist, badge_label)
+SELECT 'Pooja Mehra', 'Marwari Jaal & Arabic Fusion', 'delhi', 4.88, 220, '👩', 7, 1, 0, 'Highly Rated'
+WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Pooja Mehra');
+
+INSERT INTO artists (name, specialization, city, rating, review_count, avatar_emoji, experience_years, is_active, is_top_artist, badge_label)
+SELECT 'Divya Hegde', 'Bridal & South Indian Traditional', 'bangalore', 4.92, 195, '👩‍🎨', 8, 1, 1, 'Top Artist Bangalore'
+WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Divya Hegde');
+
+INSERT INTO artists (name, specialization, city, rating, review_count, avatar_emoji, experience_years, is_active, is_top_artist, badge_label)
+SELECT 'Meera Krishnan', 'Contemporary & Floral Mandala', 'bangalore', 4.85, 140, '👱‍♀️', 5, 1, 0, 'Rising Star'
+WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Meera Krishnan');
+
+INSERT INTO artists (name, specialization, city, rating, review_count, avatar_emoji, experience_years, is_active, is_top_artist, badge_label)
+SELECT 'Manju Shekhawat', 'Authentic Marwari Court Bridal', 'jaipur', 4.98, 410, '🧕', 14, 1, 1, 'Royal Heritage Master'
+WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Manju Shekhawat');
+
+INSERT INTO artists (name, specialization, city, rating, review_count, avatar_emoji, experience_years, is_active, is_top_artist, badge_label)
+SELECT 'Urmila Rathore', 'Rajasthani Peacock & Feet Specialist', 'jaipur', 4.90, 275, '👩', 9, 1, 0, 'Heritage Specialist'
+WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Urmila Rathore');
+
+INSERT INTO artists (name, specialization, city, rating, review_count, avatar_emoji, experience_years, is_active, is_top_artist, badge_label)
+SELECT 'Zoya Siddiqui', 'Nizami & Mughal Intricate Art', 'hyderabad', 4.93, 230, '🧕', 11, 1, 1, 'Top Artist Hyderabad'
+WHERE NOT EXISTS (SELECT 1 FROM artists WHERE name = 'Zoya Siddiqui');
 
 
 -- ── ARTIST SERVICE AREAS ──

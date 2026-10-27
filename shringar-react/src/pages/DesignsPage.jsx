@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, SlidersHorizontal, Sparkles, Filter, X, ArrowUpDown, Compass } from 'lucide-react';
+import { Search, SlidersHorizontal, Sparkles, Filter, X, ArrowUpDown, Compass, MapPin, CheckCircle2, ChevronDown } from 'lucide-react';
 import { DesignsAPI } from '../services/api';
 import DesignCard from '../components/designs/DesignCard';
 import AiTryOnModal from '../components/ai/AiTryOnModal';
+import { useCity } from '../context/CityContext';
+import { useCart } from '../context/CartContext';
+import { isDesignAvailableInCity } from '../utils/cityUtils';
+import { getArtistCompatibility } from '../utils/artistOptimizer';
 
 export default function DesignsPage() {
+  const { city, openCityModal } = useCity();
+  const { cartItems } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
   const [designs, setDesigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -238,6 +244,7 @@ export default function DesignsPage() {
           const matchCat = d.category?.toLowerCase().includes(q);
           if (!matchName && !matchDesc && !matchCat) return false;
         }
+
         return true;
       })
       .sort((a, b) => {
@@ -245,9 +252,31 @@ export default function DesignsPage() {
         if (sortBy === 'PRICE_HIGH') return (b.price || 0) - (a.price || 0);
         if (sortBy === 'DURATION') return (a.durationMinHours || 0) - (b.durationMinHours || 0);
         if (sortBy === 'POPULAR') return (b.clickCount || 0) - (a.clickCount || 0);
-        return 0; // FEATURED
+        
+        // FEATURED: Algorithmically arrange designs matching the current visiting artist first to minimize artist count
+        if (cartItems.length > 0) {
+          const matchA = getArtistCompatibility(a, cartItems, city).isMatch ? 1 : 0;
+          const matchB = getArtistCompatibility(b, cartItems, city).isMatch ? 1 : 0;
+          if (matchB !== matchA) return matchB - matchA;
+        }
+
+        return 0;
       });
-  }, [designs, selectedCategory, coverageFilter, searchQuery, sortBy]);
+  }, [designs, selectedCategory, coverageFilter, searchQuery, sortBy, cartItems, city]);
+
+  // Shuffle/rank designs: Location available designs first, followed by the rest in the SAME single list
+  const sortedAndShuffledDesigns = useMemo(() => {
+    const local = [];
+    const rest = [];
+    filteredAndSortedDesigns.forEach((d) => {
+      if (isDesignAvailableInCity(d, city)) {
+        local.push(d);
+      } else {
+        rest.push(d);
+      }
+    });
+    return [...local, ...rest];
+  }, [filteredAndSortedDesigns, city]);
 
   const relatedDesigns = useMemo(() => {
     if (!designs || designs.length === 0) return [];
@@ -277,33 +306,34 @@ export default function DesignsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
       {/* ── Page Header & Breadcrumbs ── */}
-      <div className="bg-gradient-to-r from-brand-maroon via-brand-maroon-dark to-brand-dark rounded-3xl p-8 sm:p-12 text-white border-2 border-brand-gold/40 shadow-xl relative overflow-hidden">
+      <div className="bg-[#FFFFFF] border border-[#E6DFD3] rounded-sm p-8 sm:p-12 shadow-sm relative overflow-hidden" data-testid="designs-header">
         <div className="relative z-10 max-w-2xl space-y-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-brand-gold">
+          <div className="shr-overline shr-gold-line text-[#B58E34]">
             <Link to="/" className="hover:underline">Home</Link>
-            <span>/</span>
-            <span className="text-brand-cream">Designs Catalog</span>
+            <span className="mx-2">/</span>
+            <span>The Collection</span>
           </div>
 
-          <h1 className="font-serif-luxury text-3xl sm:text-4xl lg:text-5xl font-black gold-gradient-text tracking-wide">
-            The Mehendi Catalog
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#4A2511] tracking-tight">
+            Handcrafted Mehndi Catalogue
           </h1>
 
-          <p className="text-xs sm:text-sm text-brand-cream/85 leading-relaxed font-light">
-            Browse our full library of bridal, festive, and contemporary henna patterns. Filter by body placement, estimated application time, and organic cones required.
+          <p className="text-sm text-[#7A6356] leading-relaxed">
+            Browse our full library of bridal, festive, and contemporary henna patterns. Filter by placement, duration, and mehendi cones required.
           </p>
 
-          {/* AI Virtual Try-On button temporarily commented out
-          <div className="pt-2">
+          {/* Connected Flow Step 2 Capsule */}
+          <div className="inline-flex items-center gap-2 p-1.5 px-3 rounded-full bg-[#F3EFE6] border border-[#B58E34]/30 text-xs font-semibold text-[#4A2511] shadow-2xs mt-2">
+            <span className="w-4 h-4 rounded-full bg-[#B58E34] text-white flex items-center justify-center text-[10px]">2</span>
+            <span>Step 2 of 3: Choosing Motifs in <strong>{city}</strong></span>
             <button
-              onClick={() => setAiModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-gold text-brand-dark text-xs font-bold uppercase tracking-wider shadow hover:brightness-110 transition"
+              onClick={openCityModal}
+              className="text-[#B58E34] hover:underline ml-1 text-[11px] inline-flex items-center gap-0.5"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Match With AI Virtual Try-On</span>
+              <span>(Change City)</span>
+              <ChevronDown className="w-3 h-3 text-[#B58E34]" />
             </button>
           </div>
-          */}
         </div>
       </div>
 
@@ -339,10 +369,10 @@ export default function DesignsPage() {
             <button
               key={cat.id}
               onClick={() => handleCategorySelect(cat.id)}
-              className={`px-5 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all shadow-sm ${
+              className={`px-5 py-2 rounded-sm text-xs font-medium tracking-wider uppercase whitespace-nowrap transition-all shadow-sm ${
                 isSelected
-                  ? 'bg-brand-maroon text-white border border-brand-maroon shadow-md scale-105'
-                  : 'bg-white text-stone-700 border border-stone-200 hover:border-brand-gold hover:bg-stone-50'
+                  ? 'bg-[#4A2511] text-[#FDFBF7] border border-[#4A2511] shadow'
+                  : 'bg-white text-[#2C160A] border border-[#E6DFD3] hover:border-[#B58E34] hover:bg-[#F3EFE6]'
               }`}
             >
               {cat.label}
@@ -434,18 +464,26 @@ export default function DesignsPage() {
         )}
       </div>
 
-      {/* ── Designs Grid ── */}
+      {/* ── Unified Designs Grid: Location available motifs shuffled first, followed by the rest ── */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-80 rounded-2xl bg-stone-200 animate-pulse"></div>
+            <div key={i} className="h-60 sm:h-80 rounded-2xl bg-stone-200 animate-pulse"></div>
           ))}
         </div>
-      ) : filteredAndSortedDesigns.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredAndSortedDesigns.map((design) => (
-            <DesignCard key={design.id} design={design} />
-          ))}
+      ) : sortedAndShuffledDesigns.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+          {sortedAndShuffledDesigns.map((design) => {
+            const isLocal = isDesignAvailableInCity(design, city);
+            return (
+              <DesignCard 
+                key={design.id} 
+                design={design} 
+                isLocalAvailable={isLocal} 
+                currentCity={city} 
+              />
+            );
+          })}
         </div>
       ) : (
         /* Empty State */
@@ -495,7 +533,7 @@ export default function DesignsPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {relatedDesigns.map((rDesign) => (
               <DesignCard key={'rel-' + rDesign.id} design={rDesign} />
             ))}

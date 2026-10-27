@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Mail, Lock, User, CheckCircle2, ArrowRight, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Mail, Lock, User, CheckCircle2, ArrowRight, Eye, EyeOff, Sparkles, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthAPI } from '../services/api';
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Login form state
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -36,22 +37,30 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const redirectPath = location.state?.from?.pathname || '/';
+  const fromState = location.state?.from;
+  const redirectPath = typeof fromState === 'string' ? fromState : (fromState?.pathname || '/');
+  const targetStep = location.state?.targetStep;
 
   // Handle Login Submit
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!loginIdentifier || !loginPassword) {
-      toast.error('Please enter your email/phone and password.');
+      const msg = 'Please enter both your email/phone and password.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
 
     setLoading(true);
     try {
       await login(loginIdentifier.trim(), loginPassword);
-      navigate(redirectPath, { replace: true });
-    } catch {
-      // toast error handled in AuthContext
+      const pendingStep = sessionStorage.getItem('shringar_booking_pending_step');
+      navigate(redirectPath, { replace: true, state: targetStep ? { step: targetStep } : undefined });
+    } catch (err) {
+      const msg = err?.message || 'Invalid email or password. Please check your credentials and try again.';
+      setErrorMessage(msg);
+      // toast error also handled in AuthContext
     } finally {
       setLoading(false);
     }
@@ -59,8 +68,11 @@ export default function LoginPage() {
 
   // Handle Send OTP to Email
   const handleSendEmailOtp = async () => {
+    setErrorMessage('');
     if (!signupEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(signupEmail)) {
-      toast.error('Please enter a valid email address before requesting an OTP code.');
+      const msg = 'Please enter a valid email address before requesting an OTP code.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
 
@@ -70,12 +82,14 @@ export default function LoginPage() {
       setIsOtpSent(true);
       if (res && res.devCode) {
         setEmailOtp(res.devCode);
-        toast.success(`Verification code: ${res.devCode} (Auto-filled for testing)`);
+        toast.info(`Test server mode: verification code is ${res.devCode}`);
       } else {
         toast.success(`6-digit verification code dispatched to ${signupEmail}! Please check your inbox.`);
       }
     } catch (err) {
-      toast.error(err.message || 'Could not send verification email. Try again.');
+      const msg = err.message || 'Could not send verification email. Try again.';
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setOtpLoading(false);
     }
@@ -83,8 +97,11 @@ export default function LoginPage() {
 
   // Handle Verify Email OTP
   const handleVerifyOtp = async () => {
+    setErrorMessage('');
     if (!emailOtp || emailOtp.length !== 6) {
-      toast.error('Enter the 6-digit code received on your email.');
+      const msg = 'Enter the 6-digit code received on your email.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
 
@@ -95,7 +112,9 @@ export default function LoginPage() {
       setIsOtpSent(false);
       toast.success('Email verified successfully!');
     } catch (err) {
-      toast.error(err.message || 'Invalid or expired verification code.');
+      const msg = err.message || 'Invalid or expired verification code.';
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setOtpLoading(false);
     }
@@ -104,20 +123,29 @@ export default function LoginPage() {
   // Handle Signup Submit
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!signupFirstName.trim()) {
-      toast.error('Please enter your first name.');
+      const msg = 'Please enter your first name.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
     if (!signupEmail.trim()) {
-      toast.error('Please enter your email address.');
+      const msg = 'Please enter your email address.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
     if (!isEmailVerified) {
-      toast.error('Please verify your email address using the 6-digit verification code.');
+      const msg = 'Please verify your email address using the 6-digit verification code.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
     if (!signupPassword || signupPassword.length < 8) {
-      toast.error('Password must be at least 8 characters with numbers and uppercase letters.');
+      const msg = 'Password must be at least 8 characters with numbers and uppercase letters.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
 
@@ -129,9 +157,12 @@ export default function LoginPage() {
         email: signupEmail.trim(),
         password: signupPassword,
       });
-      navigate(redirectPath, { replace: true });
-    } catch {
-      // toast handled in AuthContext
+      const pendingStep = sessionStorage.getItem('shringar_booking_pending_step');
+      navigate(redirectPath, { replace: true, state: targetStep ? { step: targetStep } : undefined });
+    } catch (err) {
+      const msg = err?.message || 'Could not create account. Please try again.';
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -140,8 +171,11 @@ export default function LoginPage() {
   // Handle Forgot Password
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!forgotEmail) {
-      toast.error('Please enter your registered email address.');
+      const msg = 'Please enter your registered email address.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
 
@@ -151,7 +185,9 @@ export default function LoginPage() {
       setIsResetCodeSent(true);
       toast.success('Reset code dispatched to your email address.');
     } catch (err) {
-      toast.error(err.message || 'Failed to dispatch password reset code.');
+      const msg = err.message || 'Failed to dispatch password reset code.';
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -159,8 +195,11 @@ export default function LoginPage() {
 
   const handleResetSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!resetCode || !resetNewPassword) {
-      toast.error('Please enter the 6-digit code and your new password.');
+      const msg = 'Please enter the 6-digit code and your new password.';
+      setErrorMessage(msg);
+      toast.error(msg);
       return;
     }
 
@@ -171,14 +210,16 @@ export default function LoginPage() {
       setTab('login');
       setIsResetCodeSent(false);
     } catch (err) {
-      toast.error(err.message || 'Failed to reset password.');
+      const msg = err.message || 'Failed to reset password.';
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[75vh] flex items-center justify-center px-4 py-6 sm:py-12 my-auto">
       <div className="max-w-md w-full bg-white rounded-3xl border border-stone-200 shadow-2xl overflow-hidden">
         
         {/* Card Header with Brand Logo */}
@@ -200,7 +241,7 @@ export default function LoginPage() {
         {tab !== 'forgot' && (
           <div className="flex border-b border-stone-200 bg-stone-50">
             <button
-              onClick={() => setTab('login')}
+              onClick={() => { setTab('login'); setErrorMessage(''); }}
               className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition ${
                 tab === 'login'
                   ? 'bg-white text-brand-maroon border-b-2 border-brand-maroon'
@@ -210,7 +251,7 @@ export default function LoginPage() {
               Sign In
             </button>
             <button
-              onClick={() => setTab('signup')}
+              onClick={() => { setTab('signup'); setErrorMessage(''); }}
               className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition ${
                 tab === 'signup'
                   ? 'bg-white text-brand-maroon border-b-2 border-brand-maroon'
@@ -227,6 +268,22 @@ export default function LoginPage() {
           {/* ── 1. SIGN IN FORM ── */}
           {tab === 'login' && (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
+              {/* Prominent In-Frame Error Alert */}
+              {errorMessage && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold flex items-start gap-2.5 shadow-sm animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 leading-relaxed">{errorMessage}</div>
+                  <button
+                    type="button"
+                    onClick={() => setErrorMessage('')}
+                    className="text-rose-400 hover:text-rose-700 font-bold p-0.5"
+                    title="Dismiss alert"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
                   Email or Registered Phone
@@ -297,6 +354,21 @@ export default function LoginPage() {
           {/* ── 2. CREATE ACCOUNT FORM (NO PHONE REQUIRED) ── */}
           {tab === 'signup' && (
             <form onSubmit={handleSignupSubmit} className="space-y-4">
+              {/* Prominent In-Frame Error Alert for Signup */}
+              {errorMessage && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold flex items-start gap-2.5 shadow-sm animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 leading-relaxed">{errorMessage}</div>
+                  <button
+                    type="button"
+                    onClick={() => setErrorMessage('')}
+                    className="text-rose-400 hover:text-rose-700 font-bold p-0.5"
+                    title="Dismiss alert"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">
@@ -433,6 +505,21 @@ export default function LoginPage() {
           {/* ── 3. FORGOT PASSWORD FORM ── */}
           {tab === 'forgot' && (
             <div className="space-y-4">
+              {/* Prominent In-Frame Error Alert for Forgot/Reset */}
+              {errorMessage && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold flex items-start gap-2.5 shadow-sm animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 leading-relaxed">{errorMessage}</div>
+                  <button
+                    type="button"
+                    onClick={() => setErrorMessage('')}
+                    className="text-rose-400 hover:text-rose-700 font-bold p-0.5"
+                    title="Dismiss alert"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
               {!isResetCodeSent ? (
                 <form onSubmit={handleForgotSubmit} className="space-y-4">
                   <p className="text-xs text-stone-500 leading-relaxed">
