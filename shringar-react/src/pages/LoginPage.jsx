@@ -82,10 +82,8 @@ export default function LoginPage() {
       setIsOtpSent(true);
       if (res && res.devCode) {
         setEmailOtp(res.devCode);
-        toast.info(`Test server mode: verification code is ${res.devCode}`);
-      } else {
-        toast.success(`6-digit verification code dispatched to ${signupEmail}! Please check your inbox.`);
       }
+      toast.success(`6-digit verification code dispatched to ${signupEmail}! Please check your email inbox.`);
     } catch (err) {
       const msg = err.message || 'Could not send verification email. Try again.';
       setErrorMessage(msg);

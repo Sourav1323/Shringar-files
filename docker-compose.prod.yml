@@ -57,6 +57,7 @@ services:
       SPRING_MAIL_PORT: ${SMTP_PORT:-587}
       SPRING_MAIL_USERNAME: ${SMTP_USERNAME}
       SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD}
+      OTP_DEV_SIMULATION_FALLBACK: "false"
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
       JAVA_OPTS: "-Xms128m -Xmx384m -XX:+UseSerialGC -Djava.security.egd=file:/dev/./urandom"

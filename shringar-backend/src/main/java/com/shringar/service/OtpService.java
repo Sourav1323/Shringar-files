@@ -36,7 +36,7 @@ public class OtpService {
     private final EmailService emailService;
     private final SmsService smsService;
 
-    @org.springframework.beans.factory.annotation.Value("${otp.dev-simulation-fallback:true}")
+    @org.springframework.beans.factory.annotation.Value("${otp.dev-simulation-fallback:false}")
     private boolean devSimulationFallback;
 
     private static final SecureRandom RANDOM = new SecureRandom();
