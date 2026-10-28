@@ -74,10 +74,10 @@
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Artist</th><th>City</th><th>Areas</th><th>Rating</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>Artist</th><th>City</th><th>Orders</th><th>Earnings</th><th>Rating</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody id="artists-table-body">
-              <tr><td colspan="6" class="loading-state">Loading artists…</td></tr>
+              <tr><td colspan="7" class="loading-state">Loading artists…</td></tr>
             </tbody>
           </table>
         </div>
@@ -208,7 +208,27 @@
   </div>
 </div>
 
+<!-- ══ ORDERS & LEDGER MODAL ══ -->
+<div class="modal-overlay" id="ledger-modal">
+  <div class="modal-box" style="max-width:850px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="ledger-modal-title">Artist Orders & Ledger</div>
+        <div style="font-size:12px;color:var(--tl);margin-top:2px;">Complete booking orders, dates, designs and earning statements</div>
+      </div>
+      <button class="modal-close" onclick="closeLedgerModal()">✕</button>
+    </div>
+    <div class="modal-body" id="ledger-modal-body">
+      <div class="loading-state">Loading artist order ledger…</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeLedgerModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/admin-api.js"></script>
+<script src="js/admin-api-extra.js"></script>
 <script>
 if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
 ShringarAdmin.paintAdminName();
@@ -218,6 +238,7 @@ const admin = ShringarAdmin.getAdmin();
 if (admin) document.getElementById('admin-avatar').textContent = (admin.firstName?.[0] || 'A').toUpperCase();
 
 let allArtists = [];
+let designerSummaries = {};
 let editingId = null;
 let areasList = [];
 let profileImageUrl = null;
@@ -256,14 +277,24 @@ async function loadArtists(btn) {
   }
   const tbody = document.getElementById('artists-table-body');
   try {
-    allArtists = await ShringarAdmin.Artists.all();
+    const [artistsData, summariesData] = await Promise.all([
+      ShringarAdmin.Artists.all(),
+      (ShringarAdmin.Designers && ShringarAdmin.Designers.summary) ? ShringarAdmin.Designers.summary().catch(() => []) : Promise.resolve([])
+    ]);
+    allArtists = artistsData || [];
+    designerSummaries = {};
+    if (Array.isArray(summariesData)) {
+      summariesData.forEach(s => {
+        if (s && s.designerId) designerSummaries[s.designerId] = s;
+      });
+    }
     renderTable();
     if (b) {
       b.innerHTML = '✓ Refreshed';
       setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
     }
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="icon">⚠️</div>${err.message}</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="icon">⚠️</div>' + err.message + '</td></tr>';
     if (b) {
       b.innerHTML = '⚠️ Failed';
       setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1500);
@@ -280,40 +311,123 @@ function renderTable() {
   if (filter === 'inactive') filtered = allArtists.filter(a => !a.isActive);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="icon"><svg class="icon-svg" style="width:26px;height:26px;margin:0 auto 6px;display:block;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></div>No artists found.</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="icon"><svg class="icon-svg" style="width:26px;height:26px;margin:0 auto 6px;display:block;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></div>No artists found.</td></tr>';
     return;
   }
 
   tbody.innerHTML = filtered.map(a => {
     const initials = (a.name || 'Artist').split(' ').map(w => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase();
+    const summary = designerSummaries[a.id] || { totalOrders: 0, totalEarnings: 0 };
     const imgCell = a.profileImageUrl
-      ? `<img class="cell-img" src="${ShringarAdmin.resolveUploadUrl(a.profileImageUrl)}" alt="${a.name}"/>`
-      : `<div class="client-avatar-badge" style="width:36px;height:36px;font-size:12px;">${initials}</div>`;
-    return `
-      <tr>
-        <td>
-          <div style="display:flex;align-items:center;gap:10px;">
-            ${imgCell}
-            <div>
-              <div class="cell-name">${a.name} ${a.isTopArtist ? '★' : ''}</div>
-              <div class="cell-sub">${a.specialization || ''}</div>
-            </div>
-          </div>
-        </td>
-        <td>${a.city}</td>
-        <td style="max-width:180px;font-size:12px;color:var(--tl);">${(a.serviceAreas||[]).join(', ') || '—'}</td>
-        <td>${a.rating ? '★ ' + a.rating : '—'} <span class="cell-sub">(${a.reviewCount ?? 0})</span></td>
-        <td>${a.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Removed</span>'}</td>
-        <td>
-          <div class="row-actions">
-            <button class="btn btn-sm btn-outline" onclick="openEditModal(${a.id})">Edit</button>
-            ${a.isActive
-              ? `<button class="btn btn-sm btn-danger" onclick="deleteArtist(${a.id},'${a.name.replace(/'/g,"\\'")}')">Delete</button>`
-              : `<button class="btn btn-sm btn-primary" onclick="restoreArtist(${a.id})">Restore</button>`}
-          </div>
-        </td>
-      </tr>`;
+      ? '<img class="cell-img" src="' + ShringarAdmin.resolveUploadUrl(a.profileImageUrl) + '" alt="' + a.name + '"/>'
+      : '<div class="client-avatar-badge" style="width:36px;height:36px;font-size:12px;">' + initials + '</div>';
+    return '<tr>' +
+      '<td>' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          imgCell +
+          '<div>' +
+            '<div class="cell-name">' + a.name + (a.isTopArtist ? ' ★' : '') + '</div>' +
+            '<div class="cell-sub">' + (a.specialization || '') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</td>' +
+      '<td>' + a.city + '</td>' +
+      '<td><span class="badge badge-gold" style="font-weight:700;">' + (summary.totalOrders || 0) + ' orders</span></td>' +
+      '<td><strong style="color:var(--m);font-weight:700;">' + ShringarAdmin.formatINR(summary.totalEarnings || 0) + '</strong></td>' +
+      '<td>' + (a.rating ? '★ ' + a.rating : '—') + ' <span class="cell-sub">(' + (a.reviewCount ?? 0) + ')</span></td>' +
+      '<td>' + (a.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Removed</span>') + '</td>' +
+      '<td>' +
+        '<div class="row-actions" style="flex-wrap:wrap;">' +
+          '<button class="btn btn-sm btn-outline" onclick="openLedgerModal(' + a.id + ','' + a.name.replace(/'/g, "\'") + '')">📖 Orders</button>' +
+          '<button class="btn btn-sm btn-outline" onclick="openEditModal(' + a.id + ')">Edit</button>' +
+          (a.isActive
+            ? '<button class="btn btn-sm btn-danger" onclick="deleteArtist(' + a.id + ','' + a.name.replace(/'/g, "\'") + '')">Delete</button>'
+            : '<button class="btn btn-sm btn-primary" onclick="restoreArtist(' + a.id + ')">Restore</button>') +
+        '</div>' +
+      '</td>' +
+    '</tr>';
   }).join('');
+}
+
+async function openLedgerModal(id, name) {
+  const modal = document.getElementById('ledger-modal');
+  const title = document.getElementById('ledger-modal-title');
+  const body = document.getElementById('ledger-modal-body');
+  title.textContent = name + ' — Orders & Earnings Ledger';
+  body.innerHTML = '<div class="loading-state">Retrieving verified designer orders…</div>';
+  modal.classList.add('open');
+
+  try {
+    const orders = (ShringarAdmin.Designers && ShringarAdmin.Designers.orders)
+      ? await ShringarAdmin.Designers.orders(id)
+      : [];
+    const summary = designerSummaries[id] || { totalOrders: orders ? orders.length : 0, totalEarnings: 0, totalGrossBookings: 0 };
+
+    if (!orders || orders.length === 0) {
+      body.innerHTML = '<div class="empty-state" style="padding:40px 20px;">' +
+        '<div class="icon" style="font-size:36px;margin-bottom:8px;">📦</div>' +
+        '<h3 style="font-family:'Cinzel',serif;font-size:16px;">No Orders Recorded Yet</h3>' +
+        '<p style="font-size:12.5px;color:var(--tl);margin-top:4px;">No appointments have been booked for ' + name + ' so far.</p>' +
+      '</div>';
+      return;
+    }
+
+    body.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:12px;margin-bottom:20px;">' +
+      '<div class="stat-card" style="padding:14px 16px;">' +
+        '<div class="stat-label">Total Bookings</div>' +
+        '<div class="stat-value" style="font-size:22px;">' + orders.length + '</div>' +
+      '</div>' +
+      '<div class="stat-card green" style="padding:14px 16px;">' +
+        '<div class="stat-label">Artist Earnings (80%)</div>' +
+        '<div class="stat-value" style="font-size:22px;color:var(--green);">' + ShringarAdmin.formatINR(summary.totalEarnings || 0) + '</div>' +
+      '</div>' +
+      '<div class="stat-card amber" style="padding:14px 16px;">' +
+        '<div class="stat-label">Platform Gross (100%)</div>' +
+        '<div class="stat-value" style="font-size:22px;">' + ShringarAdmin.formatINR(summary.totalGrossBookings || 0) + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="table-wrap">' +
+      '<table class="data-table" style="font-size:12px;">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>Date</th>' +
+            '<th>Ref #</th>' +
+            '<th>Customer</th>' +
+            '<th>Slot</th>' +
+            '<th>Designs</th>' +
+            '<th>Order Total</th>' +
+            '<th>Artist Earning</th>' +
+            '<th>Advance</th>' +
+            '<th>Status</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' +
+          orders.map(o => {
+            const statusBadge = (o.status === 'CONFIRMED')
+              ? '<span class="badge badge-green">Confirmed</span>'
+              : (o.status === 'COMPLETED' ? '<span class="badge badge-gold">Completed</span>' : '<span class="badge badge-amber">' + o.status + '</span>');
+            return '<tr>' +
+              '<td><strong>' + (o.appointmentDate || '—') + '</strong></td>' +
+              '<td><code style="font-size:11px;background:var(--cream);padding:2px 4px;border-radius:4px;">' + (o.bookingReference || '—') + '</code></td>' +
+              '<td>' + (o.customerName || '—') + '<br/><span style="font-size:11px;color:var(--tl);">' + (o.customerPhone || '') + '</span></td>' +
+              '<td>' + (o.preferredTime || o.timeSlot || '—') + '</td>' +
+              '<td style="max-width:160px;" title="' + (o.designsSummary || '') + '">' + (o.designsSummary || '—') + '</td>' +
+              '<td><strong>' + ShringarAdmin.formatINR(o.orderTotal || 0) + '</strong></td>' +
+              '<td style="color:var(--green);font-weight:700;">' + ShringarAdmin.formatINR(o.designerEarnings || 0) + '</td>' +
+              '<td>' + ShringarAdmin.formatINR(o.advanceAmount || 0) + '</td>' +
+              '<td>' + statusBadge + '</td>' +
+            '</tr>';
+          }).join('') +
+        '</tbody>' +
+      '</table>' +
+    '</div>';
+  } catch (err) {
+    body.innerHTML = '<div class="empty-state" style="padding:40px 20px;"><div class="icon">⚠️</div><p>' + err.message + '</p></div>';
+  }
+}
+
+function closeLedgerModal() {
+  document.getElementById('ledger-modal').classList.remove('open');
 }
 
 // ───────────────────────── Modal open/close ─────────────────────────

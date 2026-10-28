@@ -8,7 +8,7 @@ import { isDesignAvailableInCity, getDesignOriginCity } from '../../utils/cityUt
 import { getArtistCompatibility } from '../../utils/artistOptimizer';
 
 export default function DesignCard({ design, isLocalAvailable, currentCity }) {
-  const { cartItems, addToCart } = useCart();
+  const { cartItems, addToCart, updateQuantity } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { city } = useCity();
   const navigate = useNavigate();
@@ -22,7 +22,9 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
   // Artist compatibility with existing cart (minimizes visiting artists)
   const artistCompat = getArtistCompatibility(design, cartItems, effectiveCity);
 
-  const isInCart = cartItems.some((item) => String(item.id) === String(design.id));
+  const cartItem = cartItems.find((item) => String(item.id) === String(design.id));
+  const quantity = cartItem?.quantity || 0;
+  const isInCart = quantity > 0;
   const favorited = isFavorite(design.id);
 
   const formatPrice = (val) => {
@@ -159,18 +161,54 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
             </span>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => addToCart(design)}
-              className={`p-1.5 sm:p-2 rounded-sm text-xs font-semibold flex items-center justify-center transition ${
-                isInCart
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  : 'bg-[#F3EFE6] hover:bg-[#E6DFD3] text-[#4A2511] border border-[#E6DFD3]'
-              }`}
-              title={isInCart ? 'Already in cart' : 'Add to cart'}
-            >
-              {isInCart ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Plus className="w-3.5 h-3.5" />}
-            </button>
+          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {isInCart ? (
+              <div 
+                className="inline-flex items-center rounded-sm border border-[#B58E34] bg-[#FDFBF7] shadow-2xs overflow-hidden"
+                title="Change design quantity"
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateQuantity(design.id, quantity - 1);
+                  }}
+                  className="w-5 h-6 sm:w-6 sm:h-7 flex items-center justify-center text-[#4A2511] hover:bg-[#F3EFE6] hover:text-[#B58E34] transition active:scale-90 font-bold text-xs sm:text-sm select-none"
+                  title="Decrease quantity"
+                  aria-label="Decrease quantity"
+                >
+                  −
+                </button>
+                <span className="min-w-[16px] sm:min-w-[20px] text-center font-bold text-[11px] sm:text-xs text-[#4A2511] select-none px-0.5">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateQuantity(design.id, quantity + 1);
+                  }}
+                  className="w-5 h-6 sm:w-6 sm:h-7 flex items-center justify-center text-[#4A2511] hover:bg-[#F3EFE6] hover:text-[#B58E34] transition active:scale-90 font-bold text-xs sm:text-sm select-none"
+                  title="Increase quantity"
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(design, 1);
+                }}
+                className="p-1.5 sm:p-2 rounded-sm text-xs font-semibold flex items-center justify-center bg-[#F3EFE6] hover:bg-[#E6DFD3] text-[#4A2511] border border-[#E6DFD3] transition"
+                title="Add to booking package"
+                aria-label="Add to cart"
+              >
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4A2511]" />
+              </button>
+            )}
 
             <Link
               to={`/designs/${design.id}`}

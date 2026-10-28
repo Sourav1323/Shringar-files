@@ -107,24 +107,26 @@ export function CartProvider({ children }) {
     }
   }, [coupon, currentUserId, user?.id]);
 
-  const addToCart = (design, quantityToAdd = 1) => {
+  const addToCart = (design, quantityToAdd = 1, showToast = true) => {
     setCartItems((prev) => {
       const exists = prev.find((item) => item.id === design.id);
       if (exists) {
         const newQty = (exists.quantity || 1) + quantityToAdd;
-        toast.success(`Increased "${design.name}" quantity to ${newQty}!`);
+        // Do not spam toast when incrementing quantity
         return prev.map((item) =>
           item.id === design.id ? { ...item, quantity: newQty } : item
         );
       }
-      toast.success(`Added "${design.name}" to your booking package.`);
+      if (showToast) {
+        toast.success(`Added "${design.name}" to your booking package.`);
+      }
       return [...prev, { ...design, quantity: Math.max(1, quantityToAdd) }];
     });
   };
 
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity <= 0) {
-      removeFromCart(id);
+      removeFromCart(id, true);
       return;
     }
     setCartItems((prev) =>
@@ -134,9 +136,11 @@ export function CartProvider({ children }) {
     );
   };
 
-  const removeFromCart = (id) => {
+  const removeFromCart = (id, silent = false) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
-    toast.info('Item removed from cart.');
+    if (!silent) {
+      toast.info('Item removed from cart.');
+    }
   };
 
   const clearCart = () => {

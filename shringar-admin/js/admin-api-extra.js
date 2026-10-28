@@ -65,4 +65,10 @@
     all: (minRating) => _req(minRating ? `/admin/feedback?minRating=${minRating}` : '/admin/feedback'),
     featureTestimonial: (bookingId) => _req(`/admin/feedback/${bookingId}/feature-testimonial`, 'POST'),
   };
+
+  // Designers Performance & Orders Ledger
+  orig.Designers = {
+    summary: () => _req('/admin/designers/summary'),
+    orders: (id) => _req(`/admin/designers/${id}/orders`),
+  };
 })();

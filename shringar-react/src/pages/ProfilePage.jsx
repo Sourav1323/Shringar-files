@@ -354,21 +354,30 @@ export default function ProfilePage() {
                   {user?.fullName || user?.firstName || 'Esteemed Patron'}
                 </h1>
                 <p className="text-brand-gold-light/80 text-xs sm:text-sm mt-1 flex items-center justify-center md:justify-start gap-2">
-                  <Mail className="w-4 h-4 text-brand-gold" />
-                  <a href={`mailto:${user?.email}`} className="hover:underline">{user?.email}</a>
+                  {user?.email ? (
+                    <>
+                      <Mail className="w-4 h-4 text-brand-gold" />
+                      <a href={`mailto:${user.email}`} className="hover:underline">{user.email}</a>
+                    </>
+                  ) : (
+                    <>
+                      <Phone className="w-4 h-4 text-brand-gold" />
+                      <a href={`tel:${user?.phone || ''}`} className="hover:underline">{user?.phone || 'Verified Patron'}</a>
+                    </>
+                  )}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               {(user?.role === 'ROLE_ADMIN' || user?.role === 'ADMIN') && (
-                <Link
-                  to="/admin/dashboard"
+                <a
+                  href="/admin-portal/index.html"
                   className="px-5 py-2.5 bg-brand-gold text-brand-maroon-dark font-serif font-bold text-xs sm:text-sm rounded-full hover:bg-yellow-400 transition-colors shadow-md flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   Admin Console
-                </Link>
+                </a>
               )}
               <button
                 onClick={handleLogout}

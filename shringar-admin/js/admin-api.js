@@ -456,6 +456,74 @@ const ShringarAdmin = (() => {
     rightContainer.appendChild(badge);
   }
 
+  /** Initializes Mobile Hamburger Menu Toggle, Backdrop & Responsive Navigation */
+  function initMobileNavigation() {
+    const topbar = document.querySelector('.topbar');
+    const sidebar = document.querySelector('.sidebar');
+    if (!topbar || !sidebar) return;
+
+    // Create backdrop overlay if not already present
+    let backdrop = document.getElementById('sidebar-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'sidebar-backdrop';
+      backdrop.className = 'sidebar-backdrop';
+      document.body.appendChild(backdrop);
+    }
+
+    // Insert hamburger toggle button on the left of topbar
+    if (!topbar.querySelector('.menu-toggle-btn')) {
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'menu-toggle-btn';
+      toggleBtn.setAttribute('aria-label', 'Toggle Menu');
+      toggleBtn.innerHTML = `
+        <svg style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      `;
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = sidebar.classList.toggle('open');
+        backdrop.classList.toggle('open', isOpen);
+      });
+      topbar.insertBefore(toggleBtn, topbar.firstChild);
+    }
+
+    // Add close button inside sidebar header if not present
+    const sidebarLogo = sidebar.querySelector('.sidebar-logo');
+    if (sidebarLogo && !sidebar.querySelector('.sidebar-close-btn')) {
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'sidebar-close-btn';
+      closeBtn.setAttribute('aria-label', 'Close Menu');
+      closeBtn.innerHTML = `✕`;
+      closeBtn.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('open');
+      });
+      sidebarLogo.appendChild(closeBtn);
+    }
+
+    // Close on backdrop click
+    backdrop.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+    });
+
+    // Close on nav link click (mobile screens)
+    sidebar.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 900) {
+          sidebar.classList.remove('open');
+          backdrop.classList.remove('open');
+        }
+      });
+    });
+  }
+
   // Auto-init sidebar, nav, user profile, and logo styling across all pages on ready
   if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -464,6 +532,7 @@ const ShringarAdmin = (() => {
       paintAdminLogo();
       paintActiveNav();
       paintTopbarAdmin();
+      initMobileNavigation();
     });
   }
 

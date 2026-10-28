@@ -408,13 +408,17 @@ export default function DesignDetailPage() {
   const [activeAngleIndex, setActiveAngleIndex] = useState(0);
   const [selectedCoverageTier, setSelectedCoverageTier] = useState('standard'); // 'palm' | 'standard' | 'grand'
 
-  const { cartItems, addToCart } = useCart();
+  const { cartItems, addToCart, updateQuantity } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { showSuccess } = useToast();
   const { city } = useCity();
   const navigate = useNavigate();
 
   const currentDesign = design || ALL_DESIGNS_MASTER.find((d) => String(d.id) === String(id)) || ALL_DESIGNS_MASTER[0];
+
+  const cartItem = cartItems.find((item) => String(item.id) === String(currentDesign.id));
+  const quantity = cartItem?.quantity || 0;
+  const isInCart = quantity > 0;
 
   const singleArtistPairings = useMemo(() => {
     return getRecommendedDesignsForMinimalArtists([currentDesign], ALL_DESIGNS_MASTER, city, 4);
@@ -470,7 +474,6 @@ export default function DesignDetailPage() {
   };
 
   const favorited = isFavorite(currentDesign?.id);
-  const isInCart = cartItems.some((item) => String(item.id) === String(currentDesign?.id));
 
   // Dynamic coverage options & prices with rock-solid numeric defaults
   const basePrice = Number(currentDesign?.price) || 2000;
@@ -538,8 +541,7 @@ export default function DesignDetailPage() {
       coverage: selectedTierData.title,
       conesNeeded: selectedTierData.cones,
     };
-    addToCart(itemToAdd);
-    showSuccess(`Added "${currentDesign.name}" (${selectedTierData.title}) to your booking cart!`);
+    addToCart(itemToAdd, 1);
   };
 
   const handleBookNow = () => {
@@ -815,26 +817,45 @@ export default function DesignDetailPage() {
           {/* Action Buttons */}
           <div className="pt-6 border-t border-stone-200 space-y-3">
             <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleAddToCart}
-                className={`flex-1 py-3.5 rounded-full font-serif font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 border ${
-                  isInCart
-                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                    : 'bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300 shadow-sm'
-                }`}
-              >
-                {isInCart ? (
-                  <>
+              {isInCart ? (
+                <div className="flex-1 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-950 border border-emerald-300 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-600" />
-                    <span>Added in Cart ({formatPrice(activePrice)})</span>
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Add to Booking Cart</span>
-                  </>
-                )}
-              </button>
+                    <span className="font-serif font-bold text-xs uppercase tracking-wider text-emerald-900">
+                      In Package ({formatPrice(activePrice)})
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white rounded-full border border-emerald-300 px-2 py-0.5 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(currentDesign.id, quantity - 1)}
+                      className="w-6 h-6 flex items-center justify-center text-emerald-900 font-bold hover:text-emerald-700 active:scale-90 text-sm select-none"
+                      title="Decrease quantity"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[18px] text-center font-bold text-xs text-emerald-950 select-none">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(currentDesign.id, quantity + 1)}
+                      className="w-6 h-6 flex items-center justify-center text-emerald-900 font-bold hover:text-emerald-700 active:scale-90 text-sm select-none"
+                      title="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 py-3.5 rounded-full font-serif font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 border bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300 shadow-sm"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Add to Booking Cart</span>
+                </button>
+              )}
 
               <button
                 onClick={handleBookNow}
@@ -1005,17 +1026,36 @@ export default function DesignDetailPage() {
           <span className="text-base font-serif font-bold text-brand-maroon">{formatPrice(activePrice)}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleAddToCart}
-            className={`px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1 border ${
-              isInCart
-                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                : 'bg-stone-100 text-stone-800 border-stone-300'
-            }`}
-            title={isInCart ? 'In Cart' : 'Add to Cart'}
-          >
-            {isInCart ? <Check className="w-4 h-4 text-emerald-600" /> : <ShoppingBag className="w-4 h-4" />}
-          </button>
+          {isInCart ? (
+            <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 rounded-xl px-2.5 py-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => updateQuantity(currentDesign.id, quantity - 1)}
+                className="w-6 h-7 flex items-center justify-center text-emerald-900 font-bold active:scale-90 text-sm select-none"
+                title="Decrease quantity"
+              >
+                −
+              </button>
+              <span className="font-bold text-xs text-emerald-950 px-1 select-none">{quantity}</span>
+              <button
+                type="button"
+                onClick={() => updateQuantity(currentDesign.id, quantity + 1)}
+                className="w-6 h-7 flex items-center justify-center text-emerald-900 font-bold active:scale-90 text-sm select-none"
+                title="Increase quantity"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300 shadow-2xs"
+              title="Add to Cart"
+            >
+              <ShoppingBag className="w-4 h-4 text-stone-700" />
+              <span>Add</span>
+            </button>
+          )}
           <button
             onClick={handleBookNow}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-maroon to-brand-maroon-dark text-brand-gold font-serif font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition flex items-center gap-1.5"
