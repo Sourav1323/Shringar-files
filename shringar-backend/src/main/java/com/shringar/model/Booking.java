@@ -180,6 +180,9 @@ public class Booking {
     @Column(name = "refund_notes", columnDefinition = "TEXT")
     private String refundNotes;
 
+    @Column(name = "customer_upi_id", length = 100)
+    private String customerUpiId; // Customer's provided UPI ID for receiving refunds
+
     @Column(name = "approval_token", length = 64)
     private String approvalToken;
 

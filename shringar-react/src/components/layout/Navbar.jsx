@@ -121,7 +121,7 @@ export default function Navbar() {
   const userName = user?.fullName || user?.firstName || 'Royal Patron';
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#FDFBF7]/95 text-[#2C160A] border-b border-[#E6DFD3] shadow-xs transition-all duration-300 w-full">
+    <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/95 text-[#2C160A] border-b border-[#E6DFD3] shadow-xs transition-all duration-300 w-full">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4 w-full">
         
         {/* Brand Logo & Title (Increased mobile size) */}

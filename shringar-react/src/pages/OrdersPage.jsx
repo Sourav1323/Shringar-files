@@ -14,6 +14,8 @@ export default function OrdersPage() {
   // Cancellation Modal State
   const [cancelModalBooking, setCancelModalBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
+  const [cancelUpiId, setCancelUpiId] = useState('');
+  const [upiError, setUpiError] = useState('');
   const [cancelling, setCancelling] = useState(false);
 
   const loadBookings = async () => {
@@ -45,16 +47,30 @@ export default function OrdersPage() {
 
   const handleConfirmCancellation = async () => {
     if (!cancelModalBooking) return;
+    setUpiError('');
+
+    // If advance was paid or booking is eligible for refund, require valid UPI ID
+    const advancePaid = Number(cancelModalBooking.advanceAmount || 0) > 0 || cancelModalBooking.isAdvancePaid;
+    if (advancePaid) {
+      const upiRegex = /^[\w.-]+@[\w.-]+$/;
+      if (!cancelUpiId.trim() || !upiRegex.test(cancelUpiId.trim())) {
+        setUpiError('Please enter a valid UPI ID (e.g. 9876543210@upi or yourname@okhdfcbank) to receive your refund.');
+        return;
+      }
+    }
+
     setCancelling(true);
     try {
-      await BookingsAPI.cancel(cancelModalBooking.id, cancelReason);
+      await BookingsAPI.cancel(cancelModalBooking.id, cancelReason, cancelUpiId.trim());
       showSuccess(
         cancelModalBooking.canCancelFree
-          ? 'Booking cancelled! 100% full advance refund has been initiated.'
-          : 'Booking cancelled. Refund request sent to admin for review.'
+          ? 'Booking cancelled! 100% full advance refund has been initiated to your UPI ID.'
+          : 'Booking cancelled. Refund request sent to admin with your UPI ID for review.'
       );
       setCancelModalBooking(null);
       setCancelReason('');
+      setCancelUpiId('');
+      setUpiError('');
       loadBookings();
     } catch (err) {
       showError(err.message || 'Could not cancel booking.');
@@ -204,6 +220,9 @@ export default function OrdersPage() {
 
                   {/* Refund Info Notes */}
                   <div className="text-xs text-stone-700 bg-white/80 p-3 rounded-lg border border-rose-200/40 space-y-1">
+                    {b.customerUpiId && (
+                      <p><span className="text-stone-500 font-medium">Refund Destination (UPI):</span> <code className="font-mono font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">{b.customerUpiId}</code></p>
+                    )}
                     {b.cancellationReason && (
                       <p><span className="text-stone-500 font-medium">Cancellation Reason:</span> <em>"{b.cancellationReason}"</em></p>
                     )}
@@ -323,6 +342,26 @@ export default function OrdersPage() {
                   ? `You are within the free cancellation window! Full advance payment of ${formatPrice(cancelModalBooking.advanceAmount)} will be refunded to your original payment method.`
                   : `This cancellation is within 48 hours of the appointment. A refund request will be automatically dispatched to our administrative team for review.`}
               </p>
+            </div>
+
+            {/* UPI ID Input for Refund Deposit */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-stone-800 block flex items-center justify-between">
+                <span>UPI ID to Receive Refund *</span>
+                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Required for Refund</span>
+              </label>
+              <input
+                type="text"
+                value={cancelUpiId}
+                onChange={(e) => { setCancelUpiId(e.target.value); setUpiError(''); }}
+                placeholder="e.g. 9876543210@upi or yourname@okhdfcbank"
+                className={`w-full text-xs p-3 rounded-xl border ${upiError ? 'border-rose-500 bg-rose-50/40 ring-1 ring-rose-500' : 'border-stone-300'} focus:outline-none focus:border-[#B58E34] focus:ring-1 focus:ring-[#B58E34]`}
+              />
+              {upiError ? (
+                <p className="text-[11px] text-rose-600 font-medium">{upiError}</p>
+              ) : (
+                <p className="text-[10px] text-stone-500">Your advance refund will be disbursed directly to this UPI handle.</p>
+              )}
             </div>
 
             {/* Reason Input */}

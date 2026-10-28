@@ -317,6 +317,7 @@ public class EmailServiceImpl implements EmailService {
                     <tr><td style="padding:5px 0;"><strong>Order Reference:</strong></td><td>#%s</td></tr>
                     <tr><td style="padding:5px 0;"><strong>Grand Total:</strong></td><td>%s</td></tr>
                     <tr><td style="padding:5px 0;"><strong>Advance Paid:</strong></td><td><strong>%s</strong></td></tr>
+                    <tr><td style="padding:5px 0;"><strong>Customer Refund UPI ID:</strong></td><td><strong style="color:#0f5132;background:#d1e7dd;padding:2px 8px;border-radius:4px;">%s</strong></td></tr>
                     <tr><td style="padding:5px 0;"><strong>Free Window Active?</strong></td><td>%s</td></tr>
                     <tr><td style="padding:5px 0;"><strong>Refund Status:</strong></td><td><span style="color:#b58e34;font-weight:700;">%s</span></td></tr>
                     <tr><td style="padding:5px 0;"><strong>Reason:</strong></td><td><em>%s</em></td></tr>
@@ -332,6 +333,7 @@ public class EmailServiceImpl implements EmailService {
                         booking.getBookingReference(),
                         formatINR(booking.getGrandTotal()),
                         formatINR(booking.getAdvanceAmount()),
+                        booking.getCustomerUpiId() != null && !booking.getCustomerUpiId().isBlank() ? booking.getCustomerUpiId() : "Not provided",
                         Boolean.TRUE.equals(booking.getIsRefundEligible()) ? "YES (100% Eligible)" : "NO (Outside Free Window)",
                         refundStatus,
                         booking.getCancellationReason() != null ? booking.getCancellationReason() : "Customer cancelled via portal",

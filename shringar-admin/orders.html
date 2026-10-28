@@ -115,21 +115,22 @@ const STATUS_BADGE = {
 };
 
 function getRefundBadge(o) {
+  let upiHtml = o.customerUpiId ? `<div style="margin-top:3px;font-size:10.5px;color:#1e4620;background:#eef7ee;border:1px solid #c2e2c2;padding:2px 6px;border-radius:4px;display:inline-block;">💳 UPI: <strong>${o.customerUpiId}</strong></div>` : '';
   if (o.status === 'CANCELLED') {
     if (o.refundStatus === 'REFUNDED') {
-      return '<div style="margin-top:4px;"><span class="badge badge-green">✓ Refunded (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span>' + (o.refundId ? '<div class="cell-sub" style="font-size:10px;">ID: ' + o.refundId + '</div>' : '') + '</div>';
+      return '<div style="margin-top:4px;"><span class="badge badge-green">✓ Refunded (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span>' + (o.refundId ? '<div class="cell-sub" style="font-size:10px;">ID: ' + o.refundId + '</div>' : '') + upiHtml + '</div>';
     }
     if (o.refundStatus === 'INITIATED') {
-      return '<div style="margin-top:4px;"><span class="badge badge-blue">🔄 Refund Initiated (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span></div>';
+      return '<div style="margin-top:4px;"><span class="badge badge-blue">🔄 Refund Initiated (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span>' + upiHtml + '</div>';
     }
     if (o.refundStatus === 'REQUESTED') {
-      return '<div style="margin-top:4px;"><span class="badge badge-amber">⚠️ Refund Requested (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span></div>';
+      return '<div style="margin-top:4px;"><span class="badge badge-amber">⚠️ Refund Requested (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span>' + upiHtml + '</div>';
     }
     if (o.refundStatus === 'REJECTED') {
-      return '<div style="margin-top:4px;"><span class="badge badge-red">✕ Refund Declined</span></div>';
+      return '<div style="margin-top:4px;"><span class="badge badge-red">✕ Refund Declined</span>' + upiHtml + '</div>';
     }
     if (o.isRefundEligible) {
-      return '<div style="margin-top:4px;"><span class="badge badge-amber">Refund Eligible</span></div>';
+      return '<div style="margin-top:4px;"><span class="badge badge-amber">Refund Eligible</span>' + upiHtml + '</div>';
     }
   }
   return '';

@@ -180,6 +180,9 @@ public class BookingService {
                 : "Cancelled by customer");
         booking.setCancelledBy("CUSTOMER");
         booking.setIsRefundEligible(freeCancellation);
+        if (request != null && request.getEffectiveUpiId() != null) {
+            booking.setCustomerUpiId(request.getEffectiveUpiId());
+        }
 
         if (Boolean.TRUE.equals(booking.getIsAdvancePaid())) {
             booking.setRefundAmount(booking.getAdvanceAmount());
@@ -544,6 +547,7 @@ public class BookingService {
                 .isRefundEligible(b.getIsRefundEligible())
                 .refundProcessedAt(b.getRefundProcessedAt())
                 .refundNotes(b.getRefundNotes())
+                .customerUpiId(b.getCustomerUpiId())
                 .customerConfirmedCompletion(b.getCustomerConfirmedCompletion())
                 .designerConfirmedCompletion(b.getDesignerConfirmedCompletion())
                 .fulfillmentRating(b.getFulfillmentRating())

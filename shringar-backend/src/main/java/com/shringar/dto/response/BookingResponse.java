@@ -51,6 +51,7 @@ public class BookingResponse {
     private Boolean isRefundEligible;
     private LocalDateTime refundProcessedAt;
     private String refundNotes;
+    private String customerUpiId;
     private Boolean customerConfirmedCompletion;
     private Boolean designerConfirmedCompletion;
     private Integer fulfillmentRating;

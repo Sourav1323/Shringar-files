@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { CartProvider } from './context/CartContext';
@@ -83,6 +83,46 @@ function ScrollToTop() {
   return null;
 }
 
+// Website Story Hierarchy Navigation:
+// Guarantees predictable chronological back-stepping so users never get trapped in cyclic loops.
+// Fixed steps from deep pages: /booking -> /cart -> /designs -> / -> Exit
+function getStoryParent(pathname) {
+  if (!pathname || pathname === '/') return null; // Root level: natural exit on back
+  if (pathname.startsWith('/booking')) return '/cart';
+  if (pathname.startsWith('/cart')) return '/designs';
+  if (pathname.startsWith('/designs/')) return '/designs';
+  // Top-level hub pages navigate straight back to Home (/)
+  return '/';
+}
+
+function StoryNavigationManager() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPathRef = useRef(location.pathname);
+
+  useEffect(() => {
+    currentPathRef.current = location.pathname;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const currentPath = currentPathRef.current;
+      const targetParent = getStoryParent(currentPath);
+
+      if (targetParent) {
+        // Enforce website story chronology: step upward towards Home in fixed steps
+        navigate(targetParent, { replace: true });
+      }
+      // If currentPath is '/', targetParent is null, so browser naturally exits the website.
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigate]);
+
+  return null;
+}
+
 // Omit footer on designs catalog and inside design detail pages (Amazon-style continuous exploration)
 function ConditionalFooter() {
   const { pathname } = useLocation();
@@ -102,6 +142,7 @@ export default function App() {
               <CartProvider>
                 <FavoritesProvider>
                   <ScrollToTop />
+                  <StoryNavigationManager />
                   <SiteSettingsSync />
                   <FavoritesModal />
                   <CityModal />

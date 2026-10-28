@@ -52,6 +52,7 @@ public class AdminBookingResponse {
     private Boolean isRefundEligible;
     private LocalDateTime refundProcessedAt;
     private String refundNotes;
+    private String customerUpiId;
     private Boolean customerConfirmedCompletion;
     private Integer fulfillmentRating;
     private String fulfillmentFeedback;

@@ -121,6 +121,7 @@ public class AdminDashboardService {
                 .isRefundEligible(b.getIsRefundEligible())
                 .refundProcessedAt(b.getRefundProcessedAt())
                 .refundNotes(b.getRefundNotes())
+                .customerUpiId(b.getCustomerUpiId())
                 .customerConfirmedCompletion(b.getCustomerConfirmedCompletion())
                 .fulfillmentRating(b.getFulfillmentRating())
                 .fulfillmentFeedback(b.getFulfillmentFeedback())

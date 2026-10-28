@@ -59,8 +59,16 @@ export default function HelpPage() {
       a: 'Yes, our Master and Royal Signature artists regularly travel pan-India and globally for destination celebrations. Destination bookings can be initiated directly via our concierge team.'
     },
     {
-      q: 'What is your reschedule or cancellation policy?',
-      a: 'Bookings can be rescheduled at zero charge up to 48 hours prior to the slot. For emergency adjustments, connect with our 24/7 bridal concierge.'
+      q: 'What is your cancellation and refund policy?',
+      a: 'We offer 100% full advance refund if cancelled within the free cancellation window (up to 48 hours prior to the slot). For cancellations within 48 hours, an automated refund request is reviewed by our administration. If Shringar initiates a cancellation, a 100% full refund is guaranteed. Refunds are credited directly to your submitted UPI ID within 2–4 business days.'
+    },
+    {
+      q: 'How and when do I receive my refund?',
+      a: 'When initiating cancellation from your Profile or Orders page, you enter your active UPI ID (e.g., 9876543210@upi or user@okhdfcbank). Approved refunds are dispatched directly via UPI and reflect in your linked bank account within 24 to 72 hours.'
+    },
+    {
+      q: 'Can I reschedule an appointment instead of cancelling?',
+      a: 'Yes, appointments can be rescheduled with zero fee up to 48 hours before the ceremony slot. Simply connect with our concierge desk via phone or WhatsApp.'
     }
   ];
 
@@ -315,6 +323,63 @@ export default function HelpPage() {
             </div>
           </div>
 
+        </div>
+
+        {/* ── Official Cancellation & Refund Policy Section ── */}
+        <div className="bg-gradient-to-br from-[#FAF7F2] to-white rounded-3xl p-6 sm:p-8 border border-[#E6DFD3] shadow-sm space-y-6">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[#B58E34] bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block">
+              Transparent Patron Protection
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#4A2511]">
+              Cancellation & Refund Policy
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+              We understand wedding schedules and auspicious timings can shift. Our transparent cancellation and refund framework ensures complete peace of mind.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div className="p-5 rounded-2xl bg-white border border-emerald-200/80 shadow-xs space-y-2.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                ✓
+              </div>
+              <h3 className="font-serif font-bold text-sm text-[#4A2511]">Free Cancellation Window</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Cancel free of charge up to <strong>48 hours before</strong> your appointment slot. Your full advance deposit (100%) is automatically queued for instant refund to your entered UPI ID.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-amber-200/80 shadow-xs space-y-2.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-lg">
+                ⏳
+              </div>
+              <h3 className="font-serif font-bold text-sm text-[#4A2511]">Within 48 Hours</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                For cancellations within 48 hours of appointment, a formal refund request is submitted along with your UPI ID to the executive admin desk for priority case review within 24–48 hours.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-blue-200/80 shadow-xs space-y-2.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-lg">
+                🛡️
+              </div>
+              <h3 className="font-serif font-bold text-sm text-[#4A2511]">Admin Cancellation Guarantee</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                If Shringar initiates a cancellation due to unforeseen artist illness or operational schedule changes, the customer is <strong>guaranteed a 100% full refund</strong> with zero deductions.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-[#E6DFD3] text-xs text-stone-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-base">💳</span>
+              <span><strong>UPI Disbursement:</strong> Refunds are disbursed directly via UPI (<code className="text-stone-800 font-mono">user@bank</code>) and typically reflect in 2 to 4 working days.</span>
+            </div>
+            <a href="tel:+919876543210" className="text-[#B58E34] font-bold hover:underline shrink-0 text-xs">
+              Contact Refund Support →
+            </a>
+          </div>
         </div>
 
         {/* FAQs */}
