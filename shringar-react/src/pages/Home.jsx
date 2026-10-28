@@ -252,14 +252,14 @@ export default function Home() {
         {/* Full-Bleed Dark Cinematic Wedding Imagery */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1920&q=85"
-            alt="Royal Indian Bride with Luxury Mehendi"
-            className="w-full h-full object-cover object-center opacity-45 scale-105 transform duration-1000 ease-out"
-            onError={(e) => { e.target.src = '/images/rajasthani-bridal.jpg'; }}
+            src="/images/hero-bride-mehndi-happiness.jpg"
+            alt="Joyful Indian Bride Celebrating Her Sacred Mehendi & Wedding Moment"
+            className="w-full h-full object-cover object-center opacity-75 sm:opacity-80 scale-100 transform duration-1000 ease-out"
+            onError={(e) => { e.target.src = '/images/hero-bride-joyful-henna.jpg'; }}
           />
-          {/* Multi-Stop Cinematic Dark Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-stone-950/85 via-stone-900/60 to-stone-950/95" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none" />
+          {/* Multi-Stop Cinematic Warm Atmosphere Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-stone-950/65 via-stone-900/35 to-stone-950/85" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-stone-950/40 pointer-events-none" />
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto py-12 sm:py-16 space-y-4">
