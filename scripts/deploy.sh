@@ -35,6 +35,9 @@ fi
 echo "📦 Building and launching production containers with zero-downtime rolling restart..."
 $DOCKER_CMD compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
+echo "🔄 Refreshing gateway upstream DNS resolution..."
+$DOCKER_CMD compose -f docker-compose.prod.yml restart gateway
+
 echo "🧹 Cleaning up old unused images..."
 $DOCKER_CMD image prune -f
 
