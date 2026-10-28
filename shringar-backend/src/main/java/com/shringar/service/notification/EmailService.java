@@ -11,7 +11,11 @@ import com.shringar.model.Booking;
  */
 public interface EmailService {
 
+    void sendBookingReceivedToCustomer(Booking booking);
+
     void sendBookingConfirmationToCustomer(Booking booking);
+
+    void sendBookingReceivedToAdmin(Booking booking);
 
     void sendBookingNotificationToAdmin(Booking booking);
 

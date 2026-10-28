@@ -53,54 +53,116 @@ public class EmailServiceImpl implements EmailService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy");
 
+    // ───────────────────────── Customer: booking request received ─────────────────────────
+
+    @Override
+    @Async("notificationExecutor")
+    public void sendBookingReceivedToCustomer(Booking booking) {
+        if (booking.getCustomerEmail() == null || booking.getCustomerEmail().isBlank()) {
+            log.info("Booking {} has no customer email on file — skipping customer booking received email.", booking.getBookingReference());
+            return;
+        }
+
+        String subject = "✦ Booking Request Received — " + booking.getBookingReference() + " (Awaiting Verification)";
+        String body = wrapTemplate(
+                "Appointment Request Received!",
+                "Hi " + firstName(booking.getCustomerName()) + ", thank you for booking your luxury mehendi with Shringar.",
+                """
+                <p style="font-size:14px;color:#5c3d1e;line-height:1.8;">
+                  We have received your appointment details for <strong>%s</strong> (%s).
+                  Our royal concierge is verifying your submitted advance payment. Once confirmed, you will receive your official confirmation immediately.
+                </p>
+                <div style="background:#faf7f2;border:1px solid #e8dec8;border-radius:12px;padding:16px 20px;margin:18px 0;font-size:13px;color:#3d2410;">
+                  <div style="font-weight:700;color:#8a6040;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Appointment & Venue Summary</div>
+                  <div><strong>Booking Reference:</strong> %s</div>
+                  <div style="margin-top:4px;"><strong>Ceremony Date:</strong> %s (%s)</div>
+                  <div style="margin-top:4px;"><strong>Venue Address:</strong> %s, %s, %s %s</div>
+                  %s
+                </div>
+                %s
+                %s
+                <div style="background:#fdf6ec;border:1px solid #f5e8d0;border-radius:10px;padding:16px 20px;margin:20px 0;">
+                  <div style="font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#8a6040;margin-bottom:6px;">Advance Payable / Submitted</div>
+                  <div style="font-size:22px;font-weight:700;color:#2a1a08;">%s</div>
+                  <div style="font-size:12px;color:#8a6040;margin-top:6px;">Remaining balance of %s is payable directly to your artist upon ceremony completion.</div>
+                </div>
+                %s
+                """.formatted(
+                        booking.getAppointmentDate().format(DATE_FMT),
+                        preferredTimeLabel(booking),
+                        booking.getBookingReference(),
+                        booking.getAppointmentDate().format(DATE_FMT),
+                        preferredTimeLabel(booking),
+                        booking.getFullAddress(), booking.getArea(), booking.getCity(),
+                        booking.getPincode() != null ? "— PIN: " + booking.getPincode() : "",
+                        booking.getUpiTransactionRef() != null && !booking.getUpiTransactionRef().isBlank()
+                                ? "<div style=\"margin-top:4px;\"><strong>Submitted UPI UTR:</strong> <span style=\"font-family:monospace;background:#f3efe6;padding:2px 6px;border-radius:4px;\">" + booking.getUpiTransactionRef() + "</span></div>"
+                                : "",
+                        designsListHtml(booking),
+                        paymentSummaryHtml(booking),
+                        formatINR(booking.getAdvanceAmount()),
+                        formatINR(booking.getBalanceAmount()),
+                        ctaButtonHtml("View Booking in Your Profile", orderUrl(booking))
+                ),
+                "Have questions or need to make adjustments? Reach our royal concierge at shringar.admin@gmail.com or WhatsApp +91 98765 43210."
+        );
+
+        send(booking.getCustomerEmail(), subject, body);
+    }
+
     // ───────────────────────── Customer: booking confirmed ─────────────────────────
 
     @Override
     @Async("notificationExecutor")
     public void sendBookingConfirmationToCustomer(Booking booking) {
         if (booking.getCustomerEmail() == null || booking.getCustomerEmail().isBlank()) {
-            log.info("Booking {} has no customer email on file — skipping customer email.", booking.getBookingReference());
+            log.info("Booking {} has no customer email on file — skipping customer confirmation email.", booking.getBookingReference());
             return;
         }
 
-        String subject = "✦ Booking Confirmed — " + booking.getBookingReference();
+        String subject = "✨ Booking & Payment Confirmed — " + booking.getBookingReference();
         String body = wrapTemplate(
-                "Booking Confirmed!",
-                "Hi " + firstName(booking.getCustomerName()) + ", your mehendi appointment is booked.",
+                "Booking Confirmed & Verified!",
+                "Hi " + firstName(booking.getCustomerName()) + ", your advance payment has been verified and your mehendi appointment is officially confirmed.",
                 """
                 <p style="font-size:14px;color:#5c3d1e;line-height:1.8;">
-                  Your artist will arrive on <strong>%s</strong> (%s) at your address in <strong>%s, %s</strong>.
-                  We can't wait for you to be adorned beautifully!
+                  Your master henna artist will arrive on <strong>%s</strong> (%s) at your address in <strong>%s, %s %s</strong>.
+                  We can't wait to adorn you with royal henna!
                 </p>
+                <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:14px 18px;margin:16px 0;color:#065f46;font-size:13px;">
+                  <strong>✓ Payment Status: Advance Verified & Locked</strong><br/>
+                  <span style="font-size:12px;">Your ceremony slot has been reserved with dedicated designer allocation.</span>
+                </div>
                 %s
                 %s
                 <div style="background:#fdf6ec;border:1px solid #f5e8d0;border-radius:10px;padding:16px 20px;margin:20px 0;">
-                  <div style="font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#8a6040;margin-bottom:6px;">Advance Paid</div>
+                  <div style="font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#8a6040;margin-bottom:6px;">Advance Paid (Confirmed)</div>
                   <div style="font-size:22px;font-weight:700;color:#2a1a08;">%s</div>
-                  <div style="font-size:12px;color:#8a6040;margin-top:6px;">Balance of %s is payable directly to your artist after the design is complete.</div>
+                  <div style="font-size:12px;color:#8a6040;margin-top:6px;">Remaining balance of %s is payable directly to your artist after the design is complete.</div>
                 </div>
                 %s
                 """.formatted(
                         booking.getAppointmentDate().format(DATE_FMT),
                         preferredTimeLabel(booking),
                         booking.getArea(), booking.getCity(),
+                        booking.getPincode() != null ? "— PIN: " + booking.getPincode() : "",
                         designsListHtml(booking),
                         paymentSummaryHtml(booking),
                         formatINR(booking.getAdvanceAmount()),
                         formatINR(booking.getBalanceAmount()),
-                        ctaButtonHtml("View Your Booking", orderUrl(booking))
+                        ctaButtonHtml("View Booking Details", orderUrl(booking))
                 ),
-                "Need to make a change? Free cancellation is available up to 48 hours before your appointment from the booking page above."
+                "Need to make a change? Free cancellation is available up to 48 hours before your appointment from your profile."
         );
 
         send(booking.getCustomerEmail(), subject, body);
     }
 
-    // ───────────────────────── Admin: new booking notification ─────────────────────────
+    // ───────────────────────── Admin: new booking order alert (with 1-Click Mail Approval) ─────────────────────────
 
     @Override
     @Async("notificationExecutor")
-    public void sendBookingNotificationToAdmin(Booking booking) {
+    public void sendBookingReceivedToAdmin(Booking booking) {
         List<String> adminEmails = Arrays.stream(adminEmailsCsv.split(","))
                 .map(String::trim).filter(s -> !s.isBlank()).toList();
 
@@ -109,37 +171,63 @@ public class EmailServiceImpl implements EmailService {
             return;
         }
 
-        String subject = "🔔 New Booking — " + booking.getBookingReference() + " (" + formatINR(booking.getGrandTotal()) + ")";
+        String subject = "🔔 New Order Booked #" + booking.getId() + " (" + booking.getBookingReference() + ") — "
+                + formatINR(booking.getGrandTotal()) + " [Advance: " + formatINR(booking.getAdvanceAmount()) + "] - " + booking.getCity();
+
+        String approvalButtonHtml = approvalBoxHtml(booking);
+
         String body = wrapTemplate(
-                "New Booking Received",
-                "A customer has confirmed a booking and paid the advance.",
+                "New Booking Order Alert",
+                "A customer has placed a new booking. Details, amount, location, and 1-click approval below:",
                 """
-                <table style="width:100%%;font-size:13px;color:#2a1a08;border-collapse:collapse;margin-bottom:16px;">
-                  <tr><td style="padding:6px 0;color:#8a6040;">Customer</td><td style="padding:6px 0;font-weight:600;">%s · %s</td></tr>
-                  <tr><td style="padding:6px 0;color:#8a6040;">Email</td><td style="padding:6px 0;">%s</td></tr>
-                  <tr><td style="padding:6px 0;color:#8a6040;">Date / Time</td><td style="padding:6px 0;">%s · %s</td></tr>
-                  <tr><td style="padding:6px 0;color:#8a6040;">Location</td><td style="padding:6px 0;">%s, %s — %s</td></tr>
-                  <tr><td style="padding:6px 0;color:#8a6040;">Assigned Artist</td><td style="padding:6px 0;">%s</td></tr>
-                </table>
+                <div style="background:#faf7f2;border:1px solid #e8dec8;border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+                  <table style="width:100%%;font-size:13px;color:#2a1a08;border-collapse:collapse;">
+                    <tr><td style="padding:6px 0;color:#8a6040;width:120px;">Booking Ref</td><td style="padding:6px 0;font-weight:700;font-family:monospace;font-size:14px;">#SHR-%s (%s)</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Customer</td><td style="padding:6px 0;font-weight:600;">%s · <a href="tel:%s" style="color:#7a2c1a;">%s</a></td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Email</td><td style="padding:6px 0;"><a href="mailto:%s" style="color:#7a2c1a;">%s</a></td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Date & Time</td><td style="padding:6px 0;font-weight:600;">%s · %s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Full Venue Address</td><td style="padding:6px 0;font-weight:600;">%s, %s, %s %s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Assigned Artist</td><td style="padding:6px 0;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Grand Total</td><td style="padding:6px 0;font-weight:700;color:#2a1a08;font-size:15px;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Advance Amount</td><td style="padding:6px 0;font-weight:700;color:#16a34a;font-size:15px;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Balance Due</td><td style="padding:6px 0;font-weight:600;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Customer UPI UTR</td><td style="padding:6px 0;font-weight:700;font-family:monospace;background:#fef3c7;padding:4px 8px;border-radius:4px;display:inline-block;">%s</td></tr>
+                  </table>
+                </div>
                 %s
                 %s
                 %s
                 """.formatted(
-                        booking.getCustomerName(), booking.getCustomerPhone(),
+                        booking.getId(), booking.getBookingReference(),
+                        booking.getCustomerName(), booking.getCustomerPhone(), booking.getCustomerPhone(),
+                        booking.getCustomerEmail() != null ? booking.getCustomerEmail() : "—",
                         booking.getCustomerEmail() != null ? booking.getCustomerEmail() : "—",
                         booking.getAppointmentDate().format(DATE_FMT), preferredTimeLabel(booking),
-                        booking.getArea(), booking.getCity(), booking.getFullAddress(),
-                        booking.getArtist() != null ? booking.getArtist().getName() : "Unassigned",
+                        booking.getFullAddress(), booking.getArea(), booking.getCity(),
+                        booking.getPincode() != null ? "— PIN: " + booking.getPincode() : "",
+                        booking.getArtist() != null ? booking.getArtist().getName() : "Auto-Assigned",
+                        formatINR(booking.getGrandTotal()),
+                        formatINR(booking.getAdvanceAmount()),
+                        formatINR(booking.getBalanceAmount()),
+                        booking.getUpiTransactionRef() != null && !booking.getUpiTransactionRef().isBlank()
+                                ? booking.getUpiTransactionRef() : "Awaiting customer UTR entry",
                         designsListHtml(booking),
                         paymentSummaryHtml(booking),
-                        ctaButtonHtml("View Booking Details", orderUrl(booking))
+                        approvalButtonHtml
                 ),
-                null
+                "Clicking 'Approve Booking' instantly confirms this order and triggers the confirmation email to the customer."
         );
 
         for (String adminEmail : adminEmails) {
             send(adminEmail, subject, body);
         }
+    }
+
+    @Override
+    @Async("notificationExecutor")
+    public void sendBookingNotificationToAdmin(Booking booking) {
+        // Delegate to sendBookingReceivedToAdmin which includes full details, amounts, and 1-click approve link
+        sendBookingReceivedToAdmin(booking);
     }
 
     // ───────────────────────── Artist: assigned booking notification ─────────────────────────
@@ -270,7 +358,7 @@ public class EmailServiceImpl implements EmailService {
                 </div>
                 <div style="background:#fdf6ec;border:1px solid #f5e8d0;border-top:none;border-radius:0 0 16px 16px;padding:18px 28px;text-align:center;">
                   %s
-                  <p style="font-size:11px;color:#8a6040;margin:8px 0 0;">© 2026 Shringar · hello@shringar.in · +91 98765 43210</p>
+                  <p style="font-size:11px;color:#8a6040;margin:8px 0 0;">© 2026 Shringar · <a href="mailto:shringar.admin@gmail.com" style="color:#8a6040;text-decoration:underline;">shringar.admin@gmail.com</a> · <a href="tel:+919876543210" style="color:#8a6040;text-decoration:underline;">+91 98765 43210</a></p>
                 </div>
               </div>
             </body>
@@ -337,8 +425,33 @@ public class EmailServiceImpl implements EmailService {
         return booking.getSpecificTime() != null ? base + " · requested " + booking.getSpecificTime() : base;
     }
 
+    private String approvalBoxHtml(Booking booking) {
+        String token = booking.getApprovalToken() != null ? booking.getApprovalToken() : "";
+        String approveLink = frontendBaseUrl + "/api/public/bookings/" + booking.getBookingReference() + "/approve?token=" + token;
+        String adminLink = frontendBaseUrl + "/admin/dashboard";
+
+        return """
+            <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:12px;padding:20px;margin:24px 0;text-align:center;">
+              <div style="font-size:13px;font-weight:bold;color:#166534;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">
+                ⚡ Royal Executive 1-Click Mail Approval
+              </div>
+              <p style="font-size:12px;color:#15803d;margin:0 0 16px;line-height:1.6;">
+                Verified the payment in your UPI app / bank statement? Click below to instantly approve and confirm this booking without logging into the admin portal.
+              </p>
+              <div>
+                <a href="%s" style="display:inline-block;background:#16a34a;color:#ffffff;padding:13px 30px;border-radius:28px;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 2px 5px rgba(0,0,0,0.15);">
+                  ✓ Approve Booking Now (1-Click)
+                </a>
+              </div>
+              <div style="margin-top:14px;font-size:11px;color:#15803d;">
+                Or view in <a href="%s" style="color:#166534;font-weight:600;text-decoration:underline;">Admin Portal Dashboard →</a>
+              </div>
+            </div>
+            """.formatted(approveLink, adminLink);
+    }
+
     private String orderUrl(Booking booking) {
-        return frontendBaseUrl + "/order.html?ref=" + booking.getBookingReference();
+        return frontendBaseUrl + "/profile";
     }
 
     // ───────────────────────── Artist application notification ─────────────────────────

@@ -50,6 +50,13 @@ export default function AdminDashboard() {
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
 
+  // Designer Orders & Earnings Ledger State (Item 9)
+  const [designerSummaries, setDesignerSummaries] = useState({});
+  const [selectedDesignerOrders, setSelectedDesignerOrders] = useState([]);
+  const [selectedDesignerName, setSelectedDesignerName] = useState('');
+  const [showDesignerLedgerModal, setShowDesignerLedgerModal] = useState(false);
+  const [loadingDesignerOrders, setLoadingDesignerOrders] = useState(false);
+
   // New Admin form
   const [newAdmin, setNewAdmin] = useState({
     firstName: '',
@@ -116,6 +123,16 @@ export default function AdminDashboard() {
         { id: 2, name: 'Ananya Roy', city: 'Mumbai', experienceYears: 5, rating: 4.8, bookingsCompleted: 215, specialization: 'Arabic Florals' },
         { id: 3, name: 'Ritu Mehendi Artist', city: 'Jaipur', experienceYears: 9, rating: 5.0, bookingsCompleted: 580, specialization: 'Dulha Dulhan Portraits' },
       ]);
+
+      // Fetch dedicated designer orders & earnings summaries (Item 9)
+      const dSummaries = await AdminAPI.getDesignerSummaries().catch(() => []);
+      if (Array.isArray(dSummaries)) {
+        const sumMap = {};
+        dSummaries.forEach((s) => {
+          sumMap[s.designerId] = s;
+        });
+        setDesignerSummaries(sumMap);
+      }
 
       // 3. Fetch Bookings
       const bList = await AdminAPI.getAllBookings().catch(() => []);
@@ -603,23 +620,46 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs bg-stone-50 p-2.5 rounded-xl border border-stone-100">
                     <div>
                       <span className="text-[10px] text-stone-400 block">Experience</span>
-                      <strong className="text-stone-800">{art.experienceYears} Years</strong>
+                      <strong className="text-stone-800">{art.experienceYears || 3} Yrs</strong>
                     </div>
                     <div>
                       <span className="text-[10px] text-stone-400 block">Rating</span>
                       <strong className="text-amber-700 flex items-center justify-center gap-0.5">★ {art.rating || 4.9}</strong>
                     </div>
                     <div>
-                      <span className="text-[10px] text-stone-400 block">Completed</span>
-                      <strong className="text-stone-800">{art.bookingsCompleted || 100}+</strong>
+                      <span className="text-[10px] text-stone-400 block">Total Orders</span>
+                      <strong className="text-brand-maroon">{designerSummaries[art.id]?.totalOrdersCount ?? (art.bookingsCompleted || 0)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-stone-400 block">Earnings</span>
+                      <strong className="text-emerald-700 font-bold">₹{designerSummaries[art.id]?.totalDesignerEarnings ?? 0}</strong>
                     </div>
                   </div>
 
-                  <div className="text-xs text-stone-600">
-                    <span className="font-semibold text-stone-700">Specialization:</span> {art.specialization || 'Bridal Marwari & Royal Jaal'}
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs text-stone-600 truncate">
+                      <span className="font-semibold text-stone-700">Spec:</span> {art.specialization || 'Bridal Marwari & Royal Jaal'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setSelectedDesignerName(art.name);
+                        setShowDesignerLedgerModal(true);
+                        setLoadingDesignerOrders(true);
+                        try {
+                          const orders = await AdminAPI.getDesignerOrders(art.id).catch(() => []);
+                          setSelectedDesignerOrders(Array.isArray(orders) ? orders : []);
+                        } finally {
+                          setLoadingDesignerOrders(false);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-[#4A2511] text-[#FDFBF7] rounded-lg text-[11px] font-bold hover:bg-[#34180A] transition shrink-0 ml-2 shadow-xs"
+                    >
+                      Orders & Ledger
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1282,6 +1322,129 @@ export default function AdminDashboard() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL: DESIGNER ORDERS & EARNINGS LEDGER (Item 9) ── */}
+        {showDesignerLedgerModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto border border-stone-200">
+              <div className="flex justify-between items-center border-b pb-3">
+                <div>
+                  <h3 className="font-serif font-bold text-xl text-brand-maroon flex items-center gap-2">
+                    <span>👑 Designer Orders & Earnings Ledger:</span>
+                    <span className="text-stone-900">{selectedDesignerName}</span>
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    Track order count, ceremony dates, selected designs, booking amounts, and designer payouts.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDesignerLedgerModal(false)}
+                  className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {loadingDesignerOrders ? (
+                <div className="py-12 text-center text-xs text-stone-500">
+                  Retrieving designer order records from database…
+                </div>
+              ) : selectedDesignerOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Top Aggregate Summary Strip */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-stone-50 p-4 rounded-2xl border border-stone-200 text-center">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-stone-500 block">Total Orders Handled</span>
+                      <strong className="text-lg font-serif text-brand-maroon">{selectedDesignerOrders.length} Orders</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-stone-500 block">Total Gross Order Volume</span>
+                      <strong className="text-lg font-serif text-stone-900">
+                        ₹{selectedDesignerOrders.reduce((sum, o) => sum + Number(o.orderTotal || 0), 0)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-stone-500 block">Designer Cumulative Earnings</span>
+                      <strong className="text-lg font-serif text-emerald-700">
+                        ₹{selectedDesignerOrders.reduce((sum, o) => sum + Number(o.designerEarnings || 0), 0)}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Orders Table */}
+                  <div className="overflow-x-auto rounded-2xl border border-stone-200">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-stone-100/80 text-stone-600 uppercase font-semibold text-[10px] border-b">
+                        <tr>
+                          <th className="py-3 px-3">Order / Ref</th>
+                          <th className="py-3 px-3">Date & Slot</th>
+                          <th className="py-3 px-3">Designs Booked</th>
+                          <th className="py-3 px-3">Customer</th>
+                          <th className="py-3 px-3">Order Total</th>
+                          <th className="py-3 px-3">Artist Share</th>
+                          <th className="py-3 px-3 text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 text-stone-800">
+                        {selectedDesignerOrders.map((ord) => (
+                          <tr key={ord.id} className="hover:bg-amber-50/20">
+                            <td className="py-2.5 px-3 font-mono font-bold text-brand-maroon">
+                              #{ord.bookingId || ord.id}
+                              <div className="text-[10px] text-stone-400 font-normal">{ord.bookingReference}</div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="font-semibold">{ord.appointmentDate}</div>
+                              <div className="text-[10px] text-stone-500">{ord.timeSlot || ord.preferredTime}</div>
+                            </td>
+                            <td className="py-2.5 px-3 max-w-[200px] truncate" title={ord.designsSummary}>
+                              {ord.designsSummary}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div>{ord.customerName}</div>
+                              <div className="text-[10px] text-stone-500">{ord.customerPhone}</div>
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-stone-900">
+                              ₹{ord.orderTotal}
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-emerald-700">
+                              ₹{ord.designerEarnings}
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                ord.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
+                                ord.status === 'COMPLETED' ? 'bg-amber-100 text-amber-900' :
+                                ord.status === 'CANCELLED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-50 text-amber-800'
+                              }`}>
+                                {ord.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center bg-stone-50 rounded-2xl border border-stone-200 text-xs text-stone-500 space-y-2">
+                  <p className="font-semibold text-stone-700">No Orders Recorded for {selectedDesignerName} Yet</p>
+                  <p className="text-[11px] max-w-sm mx-auto">
+                    When patrons book ceremonies with this designer, each booking is logged into the designer_orders table with date, designs, and earnings.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowDesignerLedgerModal(false)}
+                  className="px-5 py-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs"
+                >
+                  Close Ledger
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -35,6 +35,7 @@ public class BookingService {
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
     private final BookingNotificationService bookingNotificationService;
+    private final DesignerOrderService designerOrderService;
 
     private static final BigDecimal ADVANCE_PERCENT = new BigDecimal("0.30");
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -62,6 +63,9 @@ public class BookingService {
         if (Boolean.FALSE.equals(artist.getIsActive())) {
             throw new BadRequestException("Selected artist is currently unavailable or inactive.");
         }
+
+        // ── Strict Designer Availability Check: No Ambiguity for Date & Slot ──
+        designerOrderService.validateDesignerAvailability(artist.getId(), request.getAppointmentDate(), request.getPreferredTime());
 
         // ── Confirm artist is free that day (basic same-day-slot guard) ──
         List<Booking> conflicting = bookingRepository.findByArtistIdAndAppointmentDateAndStatusIn(
@@ -127,6 +131,12 @@ public class BookingService {
                 .build();
         paymentRepository.save(payment);
 
+        // Record in dedicated designer_orders database table
+        designerOrderService.recordBookingOrder(savedBooking);
+
+        // Send booking details email to customer and new order alert email (with 1-click approve link) to admin
+        bookingNotificationService.notifyBookingReceived(savedBooking);
+
         return toResponse(savedBooking);
     }
 
@@ -170,7 +180,10 @@ public class BookingService {
         booking.setCancellationReason(request.getReason());
         booking.setIsRefundEligible(freeCancellation);
 
-        bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+
+        // Update dedicated designer_orders table
+        designerOrderService.updateOrderStatus(saved.getId(), BookingStatus.CANCELLED);
 
         // Trigger refund automatically if within the free-cancellation window and advance was paid
         if (freeCancellation && Boolean.TRUE.equals(booking.getIsAdvancePaid())) {
@@ -254,8 +267,9 @@ public class BookingService {
             booking.setStatus(BookingStatus.COMPLETED); // customer confirmation alone is sufficient for now
         }
 
-        bookingRepository.save(booking);
-        return toResponse(booking);
+        Booking saved = bookingRepository.save(booking);
+        designerOrderService.updateOrderStatus(saved.getId(), BookingStatus.COMPLETED);
+        return toResponse(saved);
     }
 
     /**
@@ -287,8 +301,15 @@ public class BookingService {
         booking.setUpiTransactionRef(transactionRef != null && !transactionRef.isBlank() ? transactionRef.trim() : null);
         booking.setUpiSubmittedAt(LocalDateTime.now());
 
-        bookingRepository.save(booking);
-        return toResponse(booking);
+        Booking saved = bookingRepository.save(booking);
+
+        // Update designer order record if needed
+        designerOrderService.recordBookingOrder(saved);
+
+        // Re-notify admin and customer with updated UTR
+        bookingNotificationService.notifyBookingReceived(saved);
+
+        return toResponse(saved);
     }
 
     /**
@@ -305,17 +326,54 @@ public class BookingService {
 
         booking.setIsAdvancePaid(true);
         booking.setStatus(BookingStatus.CONFIRMED);
-        bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
 
         // Force-initialize the lazy artist association inside this transaction —
         // notifications fire on a separate async thread after this method returns.
-        if (booking.getArtist() != null) {
-            booking.getArtist().getName();
+        if (saved.getArtist() != null) {
+            saved.getArtist().getName();
         }
 
-        bookingNotificationService.notifyBookingConfirmed(booking);
+        // Update dedicated designer_orders table
+        designerOrderService.updateOrderStatus(saved.getId(), BookingStatus.CONFIRMED);
 
-        return toResponse(booking);
+        bookingNotificationService.notifyBookingConfirmed(saved);
+
+        return toResponse(saved);
+    }
+
+    /**
+     * One-click approval from admin notification email without requiring login to the admin portal.
+     * Marks the booking CONFIRMED and fires customer payment confirmation email.
+     */
+    @Transactional
+    public Booking approveBookingByToken(String reference, String token) {
+        Booking booking = bookingRepository.findByBookingReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking reference not found: " + reference));
+
+        if (token == null || booking.getApprovalToken() == null || !token.trim().equals(booking.getApprovalToken().trim())) {
+            throw new BadRequestException("Invalid or expired 1-click approval security token.");
+        }
+
+        if (booking.getStatus() == BookingStatus.CONFIRMED && Boolean.TRUE.equals(booking.getIsAdvancePaid())) {
+            return booking;
+        }
+
+        booking.setIsAdvancePaid(true);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        Booking saved = bookingRepository.save(booking);
+
+        if (saved.getArtist() != null) {
+            saved.getArtist().getName();
+        }
+
+        // Synchronize dedicated designer_orders table
+        designerOrderService.updateOrderStatus(saved.getId(), BookingStatus.CONFIRMED);
+
+        // Trigger payment confirmation email to customer, artist and admin
+        bookingNotificationService.notifyBookingConfirmed(saved);
+
+        return saved;
     }
 
     private BookingResponse toResponse(Booking b) {

@@ -162,6 +162,9 @@ public class Booking {
     @Column(name = "is_refund_eligible")
     private Boolean isRefundEligible;
 
+    @Column(name = "approval_token", length = 64)
+    private String approvalToken;
+
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL)
     private Payment payment;
 
@@ -172,6 +175,13 @@ public class Booking {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void ensureApprovalToken() {
+        if (this.approvalToken == null || this.approvalToken.isBlank()) {
+            this.approvalToken = java.util.UUID.randomUUID().toString().replace("-", "");
+        }
+    }
 
     public LocalDateTime getSlotDateTime() {
         if (appointmentDate == null) return null;

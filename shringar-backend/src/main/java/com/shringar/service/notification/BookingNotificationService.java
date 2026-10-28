@@ -25,6 +25,15 @@ public class BookingNotificationService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("d MMM yyyy");
 
+    /** Call immediately when a customer creates a booking or submits UPI transaction reference */
+    public void notifyBookingReceived(Booking booking) {
+        log.info("Firing booking-received notifications for order {}", booking.getBookingReference());
+        // Customer — email breakdown of booking and pending advance
+        emailService.sendBookingReceivedToCustomer(booking);
+        // Admin team — email alert with total amount, location, UTR, and 1-click mail approval
+        emailService.sendBookingReceivedToAdmin(booking);
+    }
+
     /** Call once, right after a booking's advance payment is verified and status becomes CONFIRMED. */
     public void notifyBookingConfirmed(Booking booking) {
         log.info("Firing booking-confirmed notifications for {}", booking.getBookingReference());

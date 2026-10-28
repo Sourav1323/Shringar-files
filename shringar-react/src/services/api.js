@@ -261,6 +261,11 @@ export const AdminAPI = {
   updateArtistApplication: (id, status, notes) => 
     request(`/admin/artist-applications/${id}/status`, { method: 'PATCH', body: { status, adminNotes: notes } }),
 
+  // Designer Orders & Earnings Ledger (Item 9)
+  getDesignerSummaries: () => request('/admin/designers/summary'),
+  getDesignerOrders: (artistId) => request(`/admin/designers/${artistId}/orders`),
+  getDesignerSummary: (artistId) => request(`/admin/designers/${artistId}/summary`),
+
   // Artists
   getAllArtists: async () => {
     try {

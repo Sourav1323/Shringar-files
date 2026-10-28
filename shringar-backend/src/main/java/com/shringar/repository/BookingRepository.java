@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
     Optional<Booking> findByBookingReference(String reference);
+    Optional<Booking> findByBookingReferenceAndApprovalToken(String reference, String approvalToken);
+    Optional<Booking> findByApprovalToken(String approvalToken);
     List<Booking> findByArtistIdAndAppointmentDateAndStatusIn(
             Long artistId, java.time.LocalDate date, List<BookingStatus> statuses);
     Optional<Booking> findByIdAndUserId(Long id, Long userId);
