@@ -26,8 +26,12 @@ cd /opt/shringar
 echo "==> Making scripts executable..."
 chmod +x scripts/*.sh
 
-echo "==> Initializing server dependencies and firewall..."
-./scripts/setup-server.sh
+if ! command -v docker &>/dev/null; then
+    echo "==> Initializing server dependencies and firewall..."
+    ./scripts/setup-server.sh
+else
+    echo "==> Docker already verified, skipping OS package re-installation..."
+fi
 
 echo "==> Launching production containers..."
 ./scripts/deploy.sh

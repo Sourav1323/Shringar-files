@@ -85,6 +85,7 @@ Write-Host "Creating compressed tar.gz archive..." -ForegroundColor Gray
 $tarArgs = @(
     "-czf", $bundleTar,
     "--exclude=*node_modules*",
+    "--exclude=*target*",
     "--exclude=.git",
     "--exclude=.vscode",
     "--exclude=*.log",
