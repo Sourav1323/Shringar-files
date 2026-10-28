@@ -7,11 +7,12 @@ on:
     branches: [ main, dev, 'release/**' ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
-  IMAGE_BACKEND: ghcr.io/${{ github.repository }}/backend
-  IMAGE_FRONTEND: ghcr.io/${{ github.repository }}/frontend
-  IMAGE_ADMIN: ghcr.io/${{ github.repository }}/admin
 
 jobs:
   # ============================================================================
@@ -62,6 +63,9 @@ jobs:
     needs: test-and-verify
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout Code
@@ -77,10 +81,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Determine environment tags
+      # Determine environment tags & strictly lowercase repository name for Docker registry
       - name: Extract Docker Metadata
         id: meta
         run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "REPO_LOWER=${REPO_LOWER}" >> $GITHUB_OUTPUT
+          echo "IMAGE_BACKEND=ghcr.io/${REPO_LOWER}/shringar-backend" >> $GITHUB_OUTPUT
+          echo "IMAGE_FRONTEND=ghcr.io/${REPO_LOWER}/shringar-frontend" >> $GITHUB_OUTPUT
+          echo "IMAGE_ADMIN=ghcr.io/${REPO_LOWER}/shringar-admin" >> $GITHUB_OUTPUT
+
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "ENV_TAG=latest" >> $GITHUB_OUTPUT
             echo "DEPLOY_TARGET=production" >> $GITHUB_OUTPUT
@@ -100,8 +110,8 @@ jobs:
           file: ./shringar-backend/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
-            ${{ env.IMAGE_BACKEND }}:${{ steps.meta.outputs.ENV_TAG }}
+            ${{ steps.meta.outputs.IMAGE_BACKEND }}:${{ github.sha }}
+            ${{ steps.meta.outputs.IMAGE_BACKEND }}:${{ steps.meta.outputs.ENV_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -113,8 +123,8 @@ jobs:
           file: ./shringar-react/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
-            ${{ env.IMAGE_FRONTEND }}:${{ steps.meta.outputs.ENV_TAG }}
+            ${{ steps.meta.outputs.IMAGE_FRONTEND }}:${{ github.sha }}
+            ${{ steps.meta.outputs.IMAGE_FRONTEND }}:${{ steps.meta.outputs.ENV_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -126,8 +136,8 @@ jobs:
           file: ./shringar-admin/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_ADMIN }}:${{ github.sha }}
-            ${{ env.IMAGE_ADMIN }}:${{ steps.meta.outputs.ENV_TAG }}
+            ${{ steps.meta.outputs.IMAGE_ADMIN }}:${{ github.sha }}
+            ${{ steps.meta.outputs.IMAGE_ADMIN }}:${{ steps.meta.outputs.ENV_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -145,16 +155,18 @@ jobs:
       - name: Determine Server Secrets
         id: server_env
         run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "REPO_LOWER=${REPO_LOWER}" >> $GITHUB_OUTPUT
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "target=production" >> $GITHUB_OUTPUT
             echo "host=${{ secrets.PROD_SERVER_HOST }}" >> $GITHUB_OUTPUT
-            echo "user=${{ secrets.PROD_SERVER_USER }}" >> $GITHUB_OUTPUT
+            echo "user=${{ secrets.PROD_SERVER_USER || 'ubuntu' }}" >> $GITHUB_OUTPUT
             echo "key=${{ secrets.PROD_SSH_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
           else
             echo "target=staging" >> $GITHUB_OUTPUT
-            echo "host=${{ secrets.STAGING_SERVER_HOST }}" >> $GITHUB_OUTPUT
-            echo "user=${{ secrets.STAGING_SERVER_USER }}" >> $GITHUB_OUTPUT
-            echo "key=${{ secrets.STAGING_SSH_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
+            echo "host=${{ secrets.STAGING_SERVER_HOST || secrets.PROD_SERVER_HOST }}" >> $GITHUB_OUTPUT
+            echo "user=${{ secrets.STAGING_SERVER_USER || secrets.PROD_SERVER_USER || 'ubuntu' }}" >> $GITHUB_OUTPUT
+            echo "key=${{ secrets.STAGING_SSH_PRIVATE_KEY || secrets.PROD_SSH_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy on Remote Virtual Server via SSH
@@ -175,7 +187,7 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
             # 3. Pull latest images
-            export DOCKER_REGISTRY="ghcr.io/${{ github.repository }}"
+            export DOCKER_REGISTRY="ghcr.io/${{ steps.server_env.outputs.REPO_LOWER }}"
             export IMAGE_TAG="${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}"
             docker compose -f docker-compose.prod.yml pull
 
