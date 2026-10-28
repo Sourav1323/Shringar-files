@@ -27,32 +27,59 @@ export default function BecomeArtistPage() {
 
   const [portfolioMethod, setPortfolioMethod] = useState('both'); // 'drive' | 'upload' | 'both'
   const [sampleImages, setSampleImages] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    files.forEach((file) => {
+    setUploadingImages(true);
+    let successCount = 0;
+
+    for (const file of files) {
       if (!file.type.startsWith('image/')) {
-        showError('Please select valid image files (JPG, PNG, WEBP).');
-        return;
+        showError(`${file.name} is not an image file (JPG, PNG, WEBP).`);
+        continue;
       }
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
+      try {
+        const uploaded = await ArtistApplicationsAPI.uploadImage(file);
+        const serverUrl = uploaded?.url || '';
         setSampleImages((prev) => [
           ...prev,
           {
             id: Date.now() + Math.random(),
-            url: uploadEvent.target.result,
+            url: serverUrl.startsWith('http') ? serverUrl : (serverUrl.startsWith('/') ? serverUrl : `/${serverUrl}`),
+            serverUrl: serverUrl,
             name: file.name,
           },
         ]);
-      };
-      reader.readAsDataURL(file);
-    });
+        successCount++;
+      } catch (uploadErr) {
+        // Fallback to local DataURL preview
+        const reader = new FileReader();
+        reader.onload = (uploadEvent) => {
+          setSampleImages((prev) => [
+            ...prev,
+            {
+              id: Date.now() + Math.random(),
+              url: uploadEvent.target.result,
+              serverUrl: uploadEvent.target.result,
+              name: file.name,
+            },
+          ]);
+        };
+        reader.readAsDataURL(file);
+        successCount++;
+      }
+    }
+    setUploadingImages(false);
+    if (successCount > 0) {
+      showSuccess(`Attached ${successCount} sample ${successCount === 1 ? 'artwork' : 'artworks'}!`);
+    }
+    e.target.value = '';
   };
 
   const removeSampleImage = (id) => {
@@ -77,10 +104,14 @@ export default function BecomeArtistPage() {
         ? (formData.portfolioLink ? `${formData.portfolioLink} (Drive: ${formData.driveLink})` : formData.driveLink)
         : formData.portfolioLink;
 
+      const uploadedUrls = sampleImages
+        .map((img) => img.serverUrl || img.url)
+        .filter((u) => u && !u.startsWith('data:image'));
+
       const combinedMessage = [
         formData.message || '',
         formData.driveLink ? `\n📂 Google Drive Portfolio Link: ${formData.driveLink}` : '',
-        sampleImages.length ? `\n📸 Attached Photos Count: ${sampleImages.length}` : '',
+        uploadedUrls.length ? `\n📸 Attached Sample Artwork Photos (${uploadedUrls.length}):\n${uploadedUrls.join('\n')}` : (sampleImages.length ? `\n📸 Attached Photos Count: ${sampleImages.length}` : ''),
       ].filter(Boolean).join('\n').trim();
 
       await ArtistApplicationsAPI.submit({
@@ -90,9 +121,10 @@ export default function BecomeArtistPage() {
         city: formData.city,
         yearsExperience: formData.yearsExperience,
         specialization: formData.specialization,
-        portfolioLink: combinedPortfolio.slice(0, 290),
+        portfolioLink: (combinedPortfolio || '').slice(0, 290),
         message: combinedMessage,
         sampleDesignCount: sampleImages.length,
+        samplePhotos: uploadedUrls,
       });
       setSubmitted(true);
       showSuccess('Your artist application and portfolio have been submitted to the Shringar Guild!');
@@ -537,26 +569,34 @@ export default function BecomeArtistPage() {
                       </span>
                     </div>
 
-                    <div className="border-2 border-dashed border-stone-300 hover:border-[#B58E34] rounded-2xl p-6 text-center bg-stone-50/70 hover:bg-amber-50/30 transition cursor-pointer relative group">
+                    <label
+                      htmlFor="artist-file-input"
+                      className="border-2 border-dashed border-stone-300 hover:border-[#B58E34] rounded-2xl p-6 text-center bg-stone-50/70 hover:bg-amber-50/30 transition cursor-pointer relative group block"
+                    >
                       <input
+                        id="artist-file-input"
                         type="file"
                         accept="image/*"
                         multiple
+                        disabled={uploadingImages}
                         onChange={handleImageUpload}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        className="sr-only"
                       />
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-12 h-12 rounded-full bg-[#4A2511]/10 text-[#4A2511] flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Upload className="w-5 h-5 text-[#4A2511]" />
+                          <Upload className={`w-5 h-5 text-[#4A2511] ${uploadingImages ? 'animate-bounce' : ''}`} />
                         </div>
                         <div className="text-xs font-bold text-stone-800">
-                          Click or drag & drop design photos here (No upload limit)
+                          {uploadingImages ? 'Uploading artwork photos to Shringar Guild…' : 'Tap to Browse or Drag & Drop Photos (No limit)'}
                         </div>
                         <div className="text-[11px] text-stone-500">
-                          Upload as many high-resolution photos of your hand/feet henna work as you wish (JPG, PNG, WEBP)
+                          Upload high-resolution photos of your henna artistry (JPG, PNG, WEBP)
                         </div>
+                        <span className="mt-1 px-4 py-1.5 rounded-full bg-[#4A2511] text-[#FDFBF7] text-xs font-semibold shadow-xs">
+                          {uploadingImages ? 'Processing Photos…' : 'Choose Photos from Device'}
+                        </span>
                       </div>
-                    </div>
+                    </label>
 
                     {/* Uploaded Photos Gallery Preview */}
                     {sampleImages.length > 0 && (

@@ -268,8 +268,21 @@ export default function HelpPage() {
                     <Phone className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs text-brand-gold-light/60">Phone / WhatsApp</p>
-                    <p className="font-serif font-bold text-white">+91 98765 43210</p>
+                    <p className="text-xs text-brand-gold-light/60">Phone / Direct Hotline</p>
+                    <div className="flex items-center gap-2">
+                      <a href="tel:+919876543210" className="font-serif font-bold text-white hover:text-brand-gold hover:underline transition">
+                        +91 98765 43210
+                      </a>
+                      <a
+                        href="https://wa.me/919876543210?text=Hello%20Shringar%2C%20I%20need%20assistance%20with%20mehendi%20services"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-brand-gold hover:underline font-semibold"
+                        title="Chat on WhatsApp"
+                      >
+                        (WhatsApp ↗)
+                      </a>
+                    </div>
                   </div>
                 </div>
 
@@ -279,17 +292,12 @@ export default function HelpPage() {
                   </div>
                   <div>
                     <p className="text-xs text-brand-gold-light/60">Concierge Desk</p>
-                    <p className="font-serif font-bold text-white">concierge@shringarmehendi.com</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-brand-gold">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-brand-gold-light/60">Flagship Studio</p>
-                    <p className="font-serif font-bold text-white">402 Royal Palms, MG Road, Bangalore</p>
+                    <a
+                      href="mailto:shringar.admin@gmail.com"
+                      className="font-serif font-bold text-white hover:text-brand-gold hover:underline transition"
+                    >
+                      shringar.admin@gmail.com
+                    </a>
                   </div>
                 </div>
               </div>

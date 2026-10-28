@@ -110,19 +110,36 @@ export default function Footer() {
             </h4>
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-brand-gold flex-shrink-0" />
-              <span>shringar.admin@gmail.com</span>
+              <a
+                href="mailto:shringar.admin@gmail.com"
+                className="hover:text-brand-gold hover:underline transition"
+                title="Send email to Shringar Admin"
+              >
+                shringar.admin@gmail.com
+              </a>
             </div>
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-brand-gold flex-shrink-0" />
-              <span>+91 98765 43210</span>
+              <a
+                href="tel:+919876543210"
+                className="hover:text-brand-gold hover:underline transition"
+                title="Call Shringar Concierge"
+              >
+                +91 98765 43210
+              </a>
+              <a
+                href="https://wa.me/919876543210?text=Hello%20Shringar%2C%20I%20would%20like%20to%20inquire%20about%20mehendi%20booking"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-gold hover:underline text-[11px] font-semibold"
+                title="Chat on WhatsApp"
+              >
+                (WhatsApp)
+              </a>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-brand-gold flex-shrink-0" />
               <span>9:00 AM – 9:00 PM IST (Daily)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-brand-gold flex-shrink-0" />
-              <span>Operating in Delhi NCR, Mumbai, Jaipur & Bangalore</span>
             </div>
           </div>
 

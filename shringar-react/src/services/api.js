@@ -136,6 +136,26 @@ export const ArtistApplicationsAPI = {
   submit: (formData) => 
     request('/public/artist-applications', { method: 'POST', body: formData }),
 
+  // Public artist sample artwork upload
+  uploadImage: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = getAuthToken();
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch('/api/public/uploads', {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.message || 'Failed to upload photo');
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
   // Admin management
   getAll: () => 
     request('/admin/artist-applications'),
@@ -188,6 +208,9 @@ export const BookingsAPI = {
 
   getById: (id) => 
     request(`/bookings/${id}`),
+
+  getByReference: (ref) =>
+    request(`/bookings/reference/${ref}`),
 
   submitUpiPayment: (id, transactionRef) => 
     request(`/bookings/${id}/submit-upi-payment`, { method: 'PATCH', body: { transactionRef } }),

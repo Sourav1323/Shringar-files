@@ -178,16 +178,16 @@ export default function Navbar() {
             <Search className="w-4 h-4" />
           </button>
 
-          {/* Saved Favorites Icon with Live Badge (Desktop only to prevent mobile header crowding) */}
+          {/* Saved Favorites Icon with Live Badge (Responsive across Mobile, Tablet & Desktop) */}
           <button
             onClick={openFavorites}
-            className="hidden md:flex relative w-8 h-8 sm:w-9 sm:h-9 rounded-sm border border-[#E6DFD3] items-center justify-center hover:border-[#B58E34] hover:bg-[#F3EFE6]/60 text-[#4A2511] transition group"
-            title="Saved Favorites"
+            className="flex relative w-7 h-7 sm:w-9 sm:h-9 rounded-sm border border-[#E6DFD3] items-center justify-center hover:border-[#B58E34] hover:bg-[#F3EFE6]/60 text-[#4A2511] transition group"
+            title="Saved Favorites (Liked Designs)"
             aria-label="Saved Designs"
           >
             <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition ${favoriteCount > 0 ? 'text-rose-500 fill-rose-500' : 'text-[#4A2511] group-hover:text-[#B58E34]'}`} />
             {favoriteCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] px-1 bg-[#4A2511] text-[#FDFBF7] rounded-full text-[9px] sm:text-[10px] font-bold flex items-center justify-center shadow">
+              <span className="absolute -top-1.5 -right-1.5 min-w-[15px] sm:min-w-[18px] h-[15px] sm:h-[18px] px-1 bg-[#4A2511] text-[#FDFBF7] rounded-full text-[9px] sm:text-[10px] font-bold flex items-center justify-center shadow">
                 {favoriteCount}
               </span>
             )}
@@ -303,14 +303,24 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <Link
-              to="/login"
-              className="hidden md:inline-flex shr-btn-primary !py-1.5 sm:!py-2 !px-3 sm:!px-4 !text-xs font-semibold tracking-wider uppercase rounded-sm shadow-sm"
-              title="Sign In"
-              data-testid="nav-login-btn"
-            >
-              Sign In
-            </Link>
+            <div className="flex items-center gap-1.5">
+              <Link
+                to="/profile"
+                className="flex md:hidden w-7 h-7 rounded-sm border border-[#E6DFD3] items-center justify-center text-[#4A2511] hover:bg-[#F3EFE6] transition"
+                title="My Profile & Bookings"
+                aria-label="My Profile & Bookings"
+              >
+                <User className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                to="/login"
+                className="hidden md:inline-flex shr-btn-primary !py-1.5 sm:!py-2 !px-3 sm:!px-4 !text-xs font-semibold tracking-wider uppercase rounded-sm shadow-sm"
+                title="Sign In"
+                data-testid="nav-login-btn"
+              >
+                Sign In
+              </Link>
+            </div>
           )}
 
           {/* Mobile Menu Button */}
@@ -420,6 +430,36 @@ export default function Navbar() {
                 {itemCount}
               </span>
             )}
+          </Link>
+
+          {/* Mobile Liked Designs (Saved Favorites) */}
+          <button
+            type="button"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              openFavorites();
+            }}
+            className="w-full flex items-center justify-between text-sm uppercase tracking-wider font-medium text-[#4A2511] hover:text-[#B58E34] text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Heart className={`w-4 h-4 ${favoriteCount > 0 ? 'text-rose-500 fill-rose-500' : 'text-[#B58E34]'}`} />
+              <span>Liked Designs (Favorites)</span>
+            </div>
+            {favoriteCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-[#4A2511] text-[#FDFBF7] font-bold text-xs">
+                {favoriteCount}
+              </span>
+            )}
+          </button>
+
+          {/* Mobile Direct Profile & My Bookings Link */}
+          <Link
+            to="/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-sm uppercase tracking-wider font-medium text-[#4A2511] hover:text-[#B58E34] flex items-center gap-2"
+          >
+            <User className="w-4 h-4 text-[#B58E34]" />
+            <span>My Profile & Bookings</span>
           </Link>
 
           <Link

@@ -33,7 +33,8 @@ public class CreateBookingRequest {
     @NotBlank(message = "Full address is required")
     private String fullAddress;
 
-    @Pattern(regexp = "^[0-9]{6}$", message = "Pincode must be 6 digits")
+    @NotBlank(message = "Pincode is required")
+    @Pattern(regexp = "^[1-9][0-9]{5}$", message = "Pincode must be a valid 6-digit Indian PIN code")
     private String pincode;
 
     @NotBlank(message = "Customer name is required")

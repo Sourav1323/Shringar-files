@@ -281,8 +281,14 @@ export default function BookingPage() {
     }
 
     if (name === 'pincode') {
-      if (cleanVal && !/^[1-9][0-9]{5}$/.test(cleanVal)) {
-        error = 'Pincode must be 6 digits (e.g. 110001).';
+      if (!cleanVal) {
+        error = 'Pincode is mandatory. Please enter your 6-digit Indian PIN code.';
+      } else if (cleanVal.startsWith('0')) {
+        error = 'Invalid Indian PIN: PIN codes in India cannot start with 0.';
+      } else if (cleanVal.length < 6) {
+        error = `Entering PIN: ${cleanVal.length}/6 digits (must be 6 digits).`;
+      } else if (!/^[1-9][0-9]{5}$/.test(cleanVal)) {
+        error = 'Pincode must be exactly 6 digits (e.g. 110001, 302001).';
       }
     }
 
@@ -405,7 +411,7 @@ export default function BookingPage() {
       city: selectedCity,
       area: `${selectedCity} Zone`,
       fullAddress: eventAddress,
-      pincode: pincode && pincode.length === 6 ? pincode : '110001',
+      pincode: pincode.trim(),
       customerName: fullName.trim(),
       customerPhone: cleanPhone,
       customerEmail: contactEmail.trim() || user?.email || '',
@@ -979,25 +985,28 @@ export default function BookingPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">
-                  Pin Code (6 Digits)
+                  Pin Code (6 Digits) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
+                  required
                   maxLength={6}
-                  placeholder="110001"
+                  placeholder="e.g. 110001"
                   value={pincode}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '');
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
                     setPincode(val);
-                    if (errors.pincode) validateField('pincode', val);
+                    validateField('pincode', val);
                   }}
                   onBlur={(e) => validateField('pincode', e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-base sm:text-xs text-stone-800 focus:outline-none transition ${
-                    errors.pincode ? 'border-red-400 bg-red-50/20 focus:border-red-500' : 'border-stone-200 focus:border-brand-maroon'
+                    errors.pincode ? 'border-red-400 bg-red-50/20 focus:border-red-500' : (pincode.length === 6 ? 'border-emerald-500 bg-emerald-50/20' : 'border-stone-200 focus:border-brand-maroon')
                   }`}
                 />
-                {errors.pincode && (
+                {errors.pincode ? (
                   <p className="text-[11px] text-red-600 font-medium mt-1">{errors.pincode}</p>
+                ) : pincode.length === 6 && (
+                  <p className="text-[11px] text-emerald-700 font-semibold mt-1">✓ Valid 6-Digit Indian Postal Code</p>
                 )}
               </div>
 
@@ -1009,7 +1018,7 @@ export default function BookingPage() {
                   <textarea
                     rows={2}
                     required
-                    placeholder="Flat 402, Royal Palms Apartment, Sector 54, Golf Course Road..."
+                    placeholder="House / Flat No., Society / Venue Name, Landmark, Sector or Area..."
                     value={eventAddress}
                     onChange={(e) => {
                       setEventAddress(e.target.value);
