@@ -42,6 +42,15 @@ public class BookingResponse {
     private Boolean canCancelFree;
     private LocalDateTime cancellationDeadline;
     private Long cancellationRemainingSeconds;
+    private String refundStatus;
+    private BigDecimal refundAmount;
+    private String refundId;
+    private String cancelledBy;
+    private LocalDateTime cancelledAt;
+    private String cancellationReason;
+    private Boolean isRefundEligible;
+    private LocalDateTime refundProcessedAt;
+    private String refundNotes;
     private Boolean customerConfirmedCompletion;
     private Boolean designerConfirmedCompletion;
     private Integer fulfillmentRating;

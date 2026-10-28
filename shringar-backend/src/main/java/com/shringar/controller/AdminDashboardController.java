@@ -54,4 +54,40 @@ public class AdminDashboardController {
     public ApiResponse<BookingResponse> confirmUpiPayment(@PathVariable Long id) {
         return ApiResponse.success("Payment confirmed — booking is now confirmed", bookingService.confirmUpiPayment(id));
     }
+
+    /**
+     * POST /api/admin/dashboard/orders/{id}/cancel
+     * Admin initiates booking cancellation and immediately triggers 100% full customer refund.
+     */
+    @PostMapping("/orders/{id}/cancel")
+    public ApiResponse<BookingResponse> adminCancelBooking(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String reason = body != null ? body.get("reason") : "Administrative cancellation";
+        return ApiResponse.success("Booking cancelled and 100% full refund initiated", bookingService.adminCancelBooking(id, reason));
+    }
+
+    /**
+     * POST /api/admin/dashboard/orders/{id}/approve-refund
+     * Admin approves a customer's refund request.
+     */
+    @PostMapping("/orders/{id}/approve-refund")
+    public ApiResponse<BookingResponse> adminApproveRefund(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String notes = body != null ? body.get("notes") : "Approved by administrator";
+        return ApiResponse.success("Refund approved and processed", bookingService.adminApproveRefund(id, notes));
+    }
+
+    /**
+     * POST /api/admin/dashboard/orders/{id}/reject-refund
+     * Admin rejects a customer's refund request with explanation.
+     */
+    @PostMapping("/orders/{id}/reject-refund")
+    public ApiResponse<BookingResponse> adminRejectRefund(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String reason = body != null ? body.get("reason") : "Cancellation outside free-cancellation policy";
+        return ApiResponse.success("Refund request rejected", bookingService.adminRejectRefund(id, reason));
+    }
 }

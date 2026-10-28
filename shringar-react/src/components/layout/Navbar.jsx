@@ -3,17 +3,21 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, User, X, Shield, 
   Calendar, Compass, Search, Palette, HeartHandshake,
-  LogOut, ChevronDown, Heart, Camera, MapPin, ArrowRight
+  LogOut, ChevronDown, Heart, Camera, MapPin, ArrowRight,
+  Sparkles, Tag
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
 import { useCity } from '../../context/CityContext';
+import { DesignsAPI } from '../../services/api';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [allDesigns, setAllDesigns] = useState([]);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -23,31 +27,85 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const profileDropdownRef = useRef(null);
+  const desktopSearchRef = useRef(null);
+  const mobileSearchRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
 
-  // Close profile dropdown on outside click
+  // Pre-load design catalog for instant relevant search suggestions
+  useEffect(() => {
+    let mounted = true;
+    DesignsAPI.getAll()
+      .then(res => {
+        if (mounted && res) {
+          setAllDesigns(Array.isArray(res) ? res : (res.content || []));
+        }
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  // Close profile dropdown & search suggestions on outside click
   useEffect(() => {
     function handleClickOutside(e) {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
         setProfileDropdownOpen(false);
+      }
+      if (
+        desktopSearchRef.current && !desktopSearchRef.current.contains(e.target) &&
+        mobileSearchRef.current && !mobileSearchRef.current.contains(e.target)
+      ) {
+        setShowSuggestions(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close mobile menu on route change
+  // Close mobile menu & suggestions on route change
   useEffect(() => {
     setMobileMenuOpen(false);
     setSearchOpen(false);
+    setShowSuggestions(false);
   }, [location.pathname]);
+
+  const searchWords = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+
+  const matchingCategories = searchWords.length === 0 ? [] : [
+    { label: 'Bridal Couture', value: 'Bridal' },
+    { label: 'Arabic Contemporary', value: 'Arabic' },
+    { label: 'Rajasthani Royal', value: 'Bridal' },
+    { label: 'Indo-Western Fusion', value: 'Indo-Arabic' },
+    { label: 'Mughal Jaal Artwork', value: 'Mughal' },
+    { label: 'Minimalist Floral', value: 'Minimal' },
+    { label: 'Full Hand & Arms', value: 'Bridal' },
+    { label: 'Feet & Ankles', value: 'Bridal' }
+  ].filter(c => searchWords.some(w => c.label.toLowerCase().includes(w) || c.value.toLowerCase().includes(w)));
+
+  const matchingDesigns = searchWords.length === 0 ? [] : allDesigns.filter(d => {
+    const text = `${d.name || ''} ${d.category || ''} ${d.description || ''} ${d.tags || ''}`.toLowerCase();
+    return searchWords.some(word => text.includes(word));
+  }).slice(0, 5);
+
+  const handleSelectSuggestion = (type, value) => {
+    setShowSuggestions(false);
+    setSearchOpen(false);
+    setSearchQuery('');
+    if (type === 'design') {
+      navigate(`/designs/${value}`);
+    } else if (type === 'category') {
+      navigate(`/designs?category=${encodeURIComponent(value)}`);
+    } else {
+      navigate(`/designs?search=${encodeURIComponent(value)}`);
+    }
+  };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/designs?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
+      setShowSuggestions(false);
       setSearchQuery('');
     }
   };
@@ -133,17 +191,93 @@ export default function Navbar() {
         </nav>
 
         {/* Global Search Bar (Desktop) */}
-        <div className="flex-1 max-w-xs hidden md:block">
+        <div className="flex-1 max-w-xs hidden md:block relative" ref={desktopSearchRef}>
           <form onSubmit={handleSearchSubmit} className="relative">
             <Search className="w-4 h-4 text-[#7A6356] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+              }}
               placeholder="Search bridal, arabic motifs..."
               className="w-full pl-9 pr-3 py-2 rounded-sm bg-[#F3EFE6] text-[#2C160A] placeholder-[#7A6356]/70 text-xs border border-[#E6DFD3] focus:outline-none focus:border-[#B58E34] focus:ring-1 focus:ring-[#B58E34] transition"
             />
           </form>
+
+          {/* Real-time Search Suggestions Dropdown (Desktop) */}
+          {showSuggestions && searchQuery.trim().length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#B58E34]/30 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              {matchingCategories.length > 0 && (
+                <div className="p-2.5 border-b border-[#E6DFD3]/60 bg-[#F8F5EE]">
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-[#7A6356] mb-1.5 flex items-center gap-1">
+                    <Tag className="w-3 h-3 text-[#B58E34]" /> Categories
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {matchingCategories.map((c, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleSelectSuggestion('category', c.value)}
+                        className="text-[11px] px-2 py-0.5 rounded-full bg-[#EFE9DB] hover:bg-[#B58E34] hover:text-white text-[#4A2511] font-medium transition cursor-pointer"
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {matchingDesigns.length > 0 ? (
+                <div className="divide-y divide-[#E6DFD3]/40 max-h-64 overflow-y-auto">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-[#7A6356] bg-[#FDFBF7]">
+                    Matching Designs
+                  </div>
+                  {matchingDesigns.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => handleSelectSuggestion('design', d.id)}
+                      className="w-full px-3 py-2 flex items-center gap-2.5 hover:bg-[#F3EFE6] transition text-left cursor-pointer group"
+                    >
+                      <div className="w-8 h-8 rounded-md overflow-hidden bg-stone-200 shrink-0 border border-[#B58E34]/20 flex items-center justify-center text-xs">
+                        {d.imageUrl ? (
+                          <img src={d.imageUrl} alt={d.name} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                        ) : (
+                          <span>{d.emojiIcon || '🤲'}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-[#4A2511] truncate group-hover:text-[#B58E34] transition">
+                          {d.name}
+                        </div>
+                        <div className="text-[10px] text-[#7A6356] flex items-center gap-1.5">
+                          <span>{d.category || 'Mehendi'}</span>
+                          {d.price && <span>• ₹{d.price}</span>}
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#B58E34] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-3 py-2 text-xs text-[#7A6356] text-center italic">
+                  Press enter to search "{searchQuery}"
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSearchSubmit}
+                className="w-full px-3 py-2 bg-[#F3EFE6] hover:bg-[#E6DFD3] text-center text-xs font-semibold text-[#4A2511] flex items-center justify-center gap-1.5 border-t border-[#E6DFD3]/60 cursor-pointer"
+              >
+                <span>View all results for "{searchQuery}"</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#B58E34]" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Action Icons (City Selector, Search, Favorites, Cart & Unified Profile Menu) */}
@@ -335,18 +469,94 @@ export default function Navbar() {
 
       {/* Mobile Search Bar Dropdown */}
       {searchOpen && (
-        <div className="md:hidden bg-[#FDFBF7] px-4 py-3 border-t border-[#E6DFD3]">
+        <div className="md:hidden bg-[#FDFBF7] px-4 py-3 border-t border-[#E6DFD3] relative" ref={mobileSearchRef}>
           <form onSubmit={handleSearchSubmit} className="relative">
             <Search className="w-4 h-4 text-[#7A6356] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               autoFocus
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+              }}
               placeholder="Search bridal, arabic motifs..."
               className="w-full pl-9 pr-3 py-2 rounded-sm bg-[#F3EFE6] text-[#2C160A] placeholder-[#7A6356]/70 text-xs border border-[#E6DFD3] focus:outline-none focus:border-[#B58E34]"
             />
           </form>
+
+          {/* Real-time Search Suggestions Dropdown (Mobile) */}
+          {showSuggestions && searchQuery.trim().length > 0 && (
+            <div className="mt-2 bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#B58E34]/30 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              {matchingCategories.length > 0 && (
+                <div className="p-2.5 border-b border-[#E6DFD3]/60 bg-[#F8F5EE]">
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-[#7A6356] mb-1.5 flex items-center gap-1">
+                    <Tag className="w-3 h-3 text-[#B58E34]" /> Categories
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {matchingCategories.map((c, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleSelectSuggestion('category', c.value)}
+                        className="text-[11px] px-2 py-0.5 rounded-full bg-[#EFE9DB] text-[#4A2511] font-medium transition cursor-pointer"
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {matchingDesigns.length > 0 ? (
+                <div className="divide-y divide-[#E6DFD3]/40 max-h-56 overflow-y-auto">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-[#7A6356] bg-[#FDFBF7]">
+                    Matching Designs
+                  </div>
+                  {matchingDesigns.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => handleSelectSuggestion('design', d.id)}
+                      className="w-full px-3 py-2 flex items-center gap-2.5 hover:bg-[#F3EFE6] transition text-left cursor-pointer group"
+                    >
+                      <div className="w-8 h-8 rounded-md overflow-hidden bg-stone-200 shrink-0 border border-[#B58E34]/20 flex items-center justify-center text-xs">
+                        {d.imageUrl ? (
+                          <img src={d.imageUrl} alt={d.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{d.emojiIcon || '🤲'}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-[#4A2511] truncate">
+                          {d.name}
+                        </div>
+                        <div className="text-[10px] text-[#7A6356] flex items-center gap-1.5">
+                          <span>{d.category || 'Mehendi'}</span>
+                          {d.price && <span>• ₹{d.price}</span>}
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#B58E34]" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-3 py-2 text-xs text-[#7A6356] text-center italic">
+                  Press search for "{searchQuery}"
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSearchSubmit}
+                className="w-full px-3 py-2 bg-[#F3EFE6] hover:bg-[#E6DFD3] text-center text-xs font-semibold text-[#4A2511] flex items-center justify-center gap-1.5 border-t border-[#E6DFD3]/60 cursor-pointer"
+              >
+                <span>View all results for "{searchQuery}"</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#B58E34]" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -480,26 +690,6 @@ export default function Navbar() {
               <User className="w-4 h-4 text-[#B58E34]" />
               <span>My Profile & Bookings</span>
             </Link>
-
-            {/* Mobile Liked Designs (Favorites) */}
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                openFavorites();
-              }}
-              className="w-full flex items-center justify-between py-2 px-3 rounded-lg hover:bg-[#F3EFE6] uppercase tracking-wider text-xs font-semibold text-left"
-            >
-              <div className="flex items-center gap-2">
-                <Heart className={`w-4 h-4 ${favoriteCount > 0 ? 'text-rose-500 fill-rose-500' : 'text-[#B58E34]'}`} />
-                <span>Liked Designs (Favorites)</span>
-              </div>
-              {favoriteCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-[#4A2511] text-[#FDFBF7] font-bold text-[10px]">
-                  {favoriteCount}
-                </span>
-              )}
-            </button>
 
             <Link
               to="/custom-design"

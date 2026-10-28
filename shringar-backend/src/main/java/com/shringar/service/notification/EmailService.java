@@ -23,6 +23,14 @@ public interface EmailService {
 
     void sendBookingCancellationToCustomer(Booking booking);
 
+    void sendRefundRequestToAdmin(Booking booking);
+
+    void sendAdminCancellationWithRefundToCustomer(Booking booking);
+
+    void sendRefundApprovedToCustomer(Booking booking);
+
+    void sendRefundRejectedToCustomer(Booking booking, String reason);
+
     void sendArtistApplicationNotification(ArtistApplication application);
 
     /** Synchronous (not @Async like the notifications above) — the caller needs to

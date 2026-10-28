@@ -294,6 +294,145 @@ public class EmailServiceImpl implements EmailService {
         send(booking.getCustomerEmail(), subject, body);
     }
 
+    @Override
+    @Async("notificationExecutor")
+    public void sendRefundRequestToAdmin(Booking booking) {
+        List<String> adminEmails = Arrays.stream(adminEmailsCsv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
+
+        if (adminEmails.isEmpty()) return;
+
+        String subject = "[Action Required] Refund Request: Booking #" + booking.getBookingReference() + " (" + booking.getCustomerName() + ")";
+        String refundStatus = booking.getEffectiveRefundStatus();
+        String body = wrapTemplate(
+                "Booking Cancellation & Refund Alert",
+                "A customer has cancelled booking #" + booking.getBookingReference() + ". Review refund details below:",
+                """
+                <div style="background:#fcf9f2;border:1px solid #e7d5b8;border-radius:10px;padding:18px;margin-bottom:16px;">
+                  <table style="width:100%%;font-size:13px;color:#5c3d1e;border-collapse:collapse;">
+                    <tr><td style="padding:5px 0;"><strong>Customer:</strong></td><td>%s (%s)</td></tr>
+                    <tr><td style="padding:5px 0;"><strong>Email:</strong></td><td>%s</td></tr>
+                    <tr><td style="padding:5px 0;"><strong>Order Reference:</strong></td><td>#%s</td></tr>
+                    <tr><td style="padding:5px 0;"><strong>Grand Total:</strong></td><td>%s</td></tr>
+                    <tr><td style="padding:5px 0;"><strong>Advance Paid:</strong></td><td><strong>%s</strong></td></tr>
+                    <tr><td style="padding:5px 0;"><strong>Free Window Active?</strong></td><td>%s</td></tr>
+                    <tr><td style="padding:5px 0;"><strong>Refund Status:</strong></td><td><span style="color:#b58e34;font-weight:700;">%s</span></td></tr>
+                    <tr><td style="padding:5px 0;"><strong>Reason:</strong></td><td><em>%s</em></td></tr>
+                  </table>
+                </div>
+                <div style="text-align:center;margin-top:20px;">
+                  <a href="%s/admin-portal/orders.html" style="background:#4a2511;color:#fdfbf7;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:13px;">Manage in Admin Portal →</a>
+                </div>
+                """.formatted(
+                        booking.getCustomerName(),
+                        booking.getCustomerPhone(),
+                        booking.getCustomerEmail(),
+                        booking.getBookingReference(),
+                        formatINR(booking.getGrandTotal()),
+                        formatINR(booking.getAdvanceAmount()),
+                        Boolean.TRUE.equals(booking.getIsRefundEligible()) ? "YES (100% Eligible)" : "NO (Outside Free Window)",
+                        refundStatus,
+                        booking.getCancellationReason() != null ? booking.getCancellationReason() : "Customer cancelled via portal",
+                        frontendBaseUrl
+                ),
+                "Shringar Luxury Mehendi Management Console"
+        );
+
+        for (String adminEmail : adminEmails) {
+            send(adminEmail, subject, body);
+        }
+    }
+
+    @Override
+    @Async("notificationExecutor")
+    public void sendAdminCancellationWithRefundToCustomer(Booking booking) {
+        if (booking.getCustomerEmail() == null || booking.getCustomerEmail().isBlank()) return;
+
+        String subject = "Important: Booking #" + booking.getBookingReference() + " Cancelled by Shringar — Full Refund Initiated";
+        String body = wrapTemplate(
+                "Booking Update: Full Refund Initiated",
+                "Dear " + firstName(booking.getCustomerName()) + ", we regret to inform you that your booking #" + booking.getBookingReference() + " has been cancelled by our administration.",
+                """
+                <p style="font-size:14px;color:#5c3d1e;line-height:1.8;">
+                  <strong>Reason for cancellation:</strong> %s
+                </p>
+                <div style="background:#eef7ee;border:1px solid #c2e2c2;border-radius:10px;padding:16px;margin:18px 0;">
+                  <div style="font-size:14px;font-weight:700;color:#216e28;margin-bottom:6px;">✓ 100%% Full Refund Processed</div>
+                  <div style="font-size:13px;color:#2d5032;line-height:1.6;">
+                    Because this cancellation was initiated from our end, we have processed a <strong>100%% full refund of %s</strong> to your original payment method.<br>
+                    <strong>Estimated credit time:</strong> 3–5 working days.<br>
+                    %s
+                  </div>
+                </div>
+                """.formatted(
+                        booking.getCancellationReason() != null ? booking.getCancellationReason() : "Administrative schedule conflict",
+                        formatINR(booking.getAdvanceAmount()),
+                        booking.getRefundId() != null ? "<strong>Refund Reference ID:</strong> " + booking.getRefundId() : ""
+                ) + designsListHtml(booking),
+                "We sincerely apologize for any inconvenience caused. For immediate assistance, reach our concierge at +91 98765 43210."
+        );
+
+        send(booking.getCustomerEmail(), subject, body);
+    }
+
+    @Override
+    @Async("notificationExecutor")
+    public void sendRefundApprovedToCustomer(Booking booking) {
+        if (booking.getCustomerEmail() == null || booking.getCustomerEmail().isBlank()) return;
+
+        String subject = "Refund Approved & Processed — Booking #" + booking.getBookingReference();
+        String body = wrapTemplate(
+                "Refund Approved",
+                "Dear " + firstName(booking.getCustomerName()) + ", your refund request has been approved by our team.",
+                """
+                <div style="background:#eef7ee;border:1px solid #c2e2c2;border-radius:10px;padding:16px;margin:18px 0;">
+                  <div style="font-size:14px;font-weight:700;color:#216e28;margin-bottom:6px;">✓ Refund Processed Successfully</div>
+                  <div style="font-size:13px;color:#2d5032;line-height:1.6;">
+                    <strong>Refund Amount:</strong> %s<br>
+                    <strong>Booking Reference:</strong> #%s<br>
+                    %s
+                    <strong>Credit Timeline:</strong> 3–5 business days to your original payment account.
+                  </div>
+                </div>
+                """.formatted(
+                        formatINR(booking.getRefundAmount() != null ? booking.getRefundAmount() : booking.getAdvanceAmount()),
+                        booking.getBookingReference(),
+                        booking.getRefundId() != null ? "<strong>Refund Transaction ID:</strong> " + booking.getRefundId() + "<br>" : ""
+                ),
+                "Thank you for choosing Shringar Luxury Mehendi."
+        );
+
+        send(booking.getCustomerEmail(), subject, body);
+    }
+
+    @Override
+    @Async("notificationExecutor")
+    public void sendRefundRejectedToCustomer(Booking booking, String reason) {
+        if (booking.getCustomerEmail() == null || booking.getCustomerEmail().isBlank()) return;
+
+        String subject = "Refund Request Update — Booking #" + booking.getBookingReference();
+        String body = wrapTemplate(
+                "Refund Request Review",
+                "Dear " + firstName(booking.getCustomerName()) + ", an update regarding your refund request for booking #" + booking.getBookingReference() + ".",
+                """
+                <div style="background:#fff4f2;border:1px solid #fad2cf;border-radius:10px;padding:16px;margin:18px 0;">
+                  <div style="font-size:14px;font-weight:700;color:#8f231b;margin-bottom:6px;">Refund Request Not Approved</div>
+                  <div style="font-size:13px;color:#61201b;line-height:1.6;">
+                    <strong>Reason:</strong> %s<br><br>
+                    As outlined in our booking terms, advance payments for cancellations outside the free cancellation window are committed to the designated artist's reserved schedule.
+                  </div>
+                </div>
+                """.formatted(
+                        reason != null && !reason.isBlank() ? reason : "Cancellation occurred after the free-cancellation deadline"
+                ),
+                "If you believe this is in error, please reply to this email or contact support."
+        );
+
+        send(booking.getCustomerEmail(), subject, body);
+    }
+
     // ───────────────────────── Shared HTML building blocks ─────────────────────────
 
     private String designsListHtml(Booking booking) {

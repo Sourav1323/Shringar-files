@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { 
   User, Mail, Phone, MapPin, Shield, Calendar, 
   ShoppingBag, LogOut, Heart, Clock, CheckCircle2,
-  Sparkles, Search, ArrowRight, AlertCircle, RefreshCw
+  Sparkles, Search, ArrowRight, AlertCircle, RefreshCw, X
 } from 'lucide-react';
 import { BookingsAPI } from '../services/api';
 
@@ -33,6 +33,11 @@ export default function ProfilePage() {
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
 
+  // Cancellation & Refund Modal State
+  const [cancelModalBooking, setCancelModalBooking] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+
   // Guest booking reference lookup state
   const [lookupRef, setLookupRef] = useState('');
   const [lookedUpBooking, setLookedUpBooking] = useState(null);
@@ -56,24 +61,48 @@ export default function ProfilePage() {
     }
   }, [user?.id]);
 
-  // Fetch user bookings on mount or when auth state changes
-  useEffect(() => {
-    async function fetchBookings() {
-      if (!isAuthenticated) return;
-      setLoadingBookings(true);
-      try {
-        const data = await BookingsAPI.getMyBookings();
-        if (Array.isArray(data)) {
-          setBookings(data);
-        }
-      } catch (err) {
-        console.warn('Error fetching patron bookings:', err);
-      } finally {
-        setLoadingBookings(false);
+  // Fetch user bookings
+  const fetchBookings = async () => {
+    if (!isAuthenticated) return;
+    setLoadingBookings(true);
+    try {
+      const data = await BookingsAPI.getMyBookings();
+      if (Array.isArray(data)) {
+        setBookings(data);
       }
+    } catch (err) {
+      console.warn('Error fetching patron bookings:', err);
+    } finally {
+      setLoadingBookings(false);
     }
+  };
+
+  useEffect(() => {
     fetchBookings();
   }, [isAuthenticated]);
+
+  const handleConfirmCancellation = async () => {
+    if (!cancelModalBooking) return;
+    setCancelling(true);
+    try {
+      await BookingsAPI.cancel(cancelModalBooking.id, cancelReason);
+      showSuccess(
+        cancelModalBooking.canCancelFree
+          ? 'Booking cancelled! 100% full advance refund has been initiated.'
+          : 'Booking cancelled. Refund request sent to admin for review.'
+      );
+      setCancelModalBooking(null);
+      setCancelReason('');
+      fetchBookings();
+      if (lookedUpBooking && lookedUpBooking.id === cancelModalBooking.id) {
+        handleLookupBooking(lookedUpBooking.bookingReference);
+      }
+    } catch (err) {
+      showError(err.message || 'Could not cancel booking.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const handleLookupSubmit = async (e) => {
     e.preventDefault();
@@ -215,6 +244,95 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* Dedicated Refund Process & Status Card for Cancelled Bookings */}
+        {isCancelled && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-200/60 pb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-base">💳</span>
+                <div>
+                  <h4 className="font-serif font-bold text-sm text-[#4A2511]">Refund Process & Settlement Status</h4>
+                  <p className="text-[11px] text-stone-600">
+                    Cancelled by {b.cancelledBy === 'ADMIN' ? 'Shringar Administration' : 'You (Customer)'}
+                    {b.cancelledAt && ` on ${new Date(b.cancelledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <div>
+                {b.refundStatus === 'REFUNDED' ? (
+                  <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>100% Refund Completed ({formatPrice(b.refundAmount || b.advanceAmount)})</span>
+                  </span>
+                ) : b.refundStatus === 'INITIATED' ? (
+                  <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-300 font-bold text-xs flex items-center gap-1">
+                    <RefreshCw className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+                    <span>Refund Initiated ({formatPrice(b.refundAmount || b.advanceAmount)})</span>
+                  </span>
+                ) : b.refundStatus === 'REQUESTED' ? (
+                  <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Refund Under Review ({formatPrice(b.refundAmount || b.advanceAmount)})</span>
+                  </span>
+                ) : b.refundStatus === 'REJECTED' ? (
+                  <span className="px-3 py-1 rounded-full bg-stone-200 text-stone-700 font-bold text-xs">
+                    ✕ Refund Declined
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full bg-stone-100 text-stone-600 text-xs">
+                    No Advance Charged
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Refund Process Progress Steps */}
+            {(b.refundStatus === 'INITIATED' || b.refundStatus === 'REFUNDED' || b.refundStatus === 'REQUESTED') && (
+              <div className="grid grid-cols-3 gap-2 text-center text-[10px] sm:text-xs pt-1">
+                <div className="p-2 rounded-lg bg-white border border-emerald-200 text-emerald-800 font-semibold">
+                  ✓ Cancellation Confirmed
+                </div>
+                <div className={`p-2 rounded-lg border font-semibold ${
+                  b.refundStatus === 'REFUNDED' || b.refundStatus === 'INITIATED'
+                    ? 'bg-white border-blue-200 text-blue-800'
+                    : 'bg-stone-50 border-stone-200 text-stone-500'
+                }`}>
+                  {b.refundStatus === 'REQUESTED' ? '⏳ Admin Review' : '✓ Refund Processed'}
+                </div>
+                <div className={`p-2 rounded-lg border font-semibold ${
+                  b.refundStatus === 'REFUNDED'
+                    ? 'bg-white border-emerald-200 text-emerald-800'
+                    : 'bg-stone-50 border-stone-200 text-stone-500'
+                }`}>
+                  {b.refundStatus === 'REFUNDED' ? '✓ Credited' : '⏳ Estimated 3-5 Days'}
+                </div>
+              </div>
+            )}
+
+            {/* Refund Info Notes */}
+            <div className="text-xs text-stone-700 bg-white/80 p-3 rounded-lg border border-rose-200/40 space-y-1">
+              {b.cancellationReason && (
+                <p><span className="text-stone-500 font-medium">Cancellation Reason:</span> <em>"{b.cancellationReason}"</em></p>
+              )}
+              {b.refundId && (
+                <p><span className="text-stone-500 font-medium">Refund Reference ID:</span> <code className="font-mono font-bold text-[#4A2511]">{b.refundId}</code></p>
+              )}
+              {b.refundNotes && (
+                <p><span className="text-stone-500 font-medium">Administrative Note:</span> {b.refundNotes}</p>
+              )}
+              <p className="text-[11px] text-stone-500 pt-1">
+                {b.cancelledBy === 'ADMIN'
+                  ? '🛡️ This cancellation was initiated by Shringar. Full 100% advance refund is guaranteed and returns to your original payment mode.'
+                  : b.canCancelFree
+                  ? '🛡️ Cancelled within free cancellation policy. Full advance refund has been initiated to your original payment account.'
+                  : 'Notice: If cancelled outside the free-window, your refund request is submitted for manual policy review by our administration.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Pricing & Advance Summary Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-3 border-t border-stone-200/70 text-xs gap-3">
           <div className="flex flex-wrap items-center gap-3 sm:gap-5">
@@ -244,13 +362,25 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <Link
-            to="/help"
-            className="text-[#B58E34] hover:underline font-semibold text-xs flex items-center gap-1 shrink-0"
-          >
-            <span>Need Help / Reschedule</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="flex items-center gap-3">
+            {!isCancelled && !isCompleted && (
+              <button
+                type="button"
+                onClick={() => setCancelModalBooking(b)}
+                className="px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 font-semibold text-xs transition cursor-pointer"
+              >
+                Cancel Booking
+              </button>
+            )}
+
+            <Link
+              to="/help"
+              className="text-[#B58E34] hover:underline font-semibold text-xs flex items-center gap-1 shrink-0"
+            >
+              <span>Need Help / Reschedule</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -593,6 +723,92 @@ export default function ProfilePage() {
           )}
         </div>
 
+      {/* Cancellation Confirmation Modal */}
+      {cancelModalBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-serif font-bold text-lg text-brand-maroon">
+                Cancel Booking #{cancelModalBooking.id || cancelModalBooking.bookingReference}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCancelModalBooking(null)}
+                className="text-stone-400 hover:text-stone-700 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Eligibility Note */}
+            <div className={`p-3.5 rounded-xl text-xs space-y-1.5 border ${
+              cancelModalBooking.canCancelFree
+                ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                : 'bg-amber-50 text-amber-900 border-amber-200'
+            }`}>
+              <div className="font-bold flex items-center gap-1.5">
+                {cancelModalBooking.canCancelFree ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Free Cancellation Active — 100% Advance Refund</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                    <span>Free Window Expired — Refund Request Required</span>
+                  </>
+                )}
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                {cancelModalBooking.canCancelFree
+                  ? `You are within the free cancellation window! Full advance payment of ${formatPrice(cancelModalBooking.advanceAmount)} will be refunded to your original payment method.`
+                  : `This cancellation is within 48 hours of the appointment. A refund request will be automatically dispatched to our administrative team for review.`}
+              </p>
+            </div>
+
+            {/* Reason Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-stone-700 block">
+                Reason for Cancellation (Optional)
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Change of plans, date conflict, medical reasons..."
+                rows={3}
+                className="w-full text-xs p-3 rounded-xl border border-stone-300 focus:outline-none focus:border-[#B58E34] focus:ring-1 focus:ring-[#B58E34]"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={() => setCancelModalBooking(null)}
+                className="px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl transition cursor-pointer"
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={handleConfirmCancellation}
+                className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition shadow-md flex items-center gap-2 cursor-pointer"
+              >
+                {cancelling ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Processing Cancellation...</span>
+                  </>
+                ) : (
+                  <span>Confirm Cancellation</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

@@ -172,6 +172,18 @@ const ShringarAdmin = (() => {
     orders: (page = 0, size = 20, status = null) =>
       get(`/admin/dashboard/orders?page=${page}&size=${size}` + (status ? `&status=${status}` : '')),
     confirmUpiPayment: (id) => request(`/admin/dashboard/orders/${id}/confirm-upi-payment`, { method: 'PATCH' }),
+    cancelOrder: (id, reason) => request(`/admin/dashboard/orders/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    }),
+    approveRefund: (id, notes) => request(`/admin/dashboard/orders/${id}/approve-refund`, {
+      method: 'POST',
+      body: JSON.stringify({ notes })
+    }),
+    rejectRefund: (id, reason) => request(`/admin/dashboard/orders/${id}/reject-refund`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    }),
   };
 
   // ───────────────────────── Cities (read-only, for area-name suggestions) ─────────────────────────

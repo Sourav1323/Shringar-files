@@ -53,10 +53,30 @@ public class BookingNotificationService {
         emailService.sendBookingNotificationToArtist(booking);
     }
 
-    /** Call once, right after a booking is cancelled. */
+    /** Call once, right after a booking is cancelled by the customer. */
     public void notifyBookingCancelled(Booking booking) {
         log.info("Firing booking-cancelled notification for {}", booking.getBookingReference());
         emailService.sendBookingCancellationToCustomer(booking);
+        // Alert admin team with refund request status
+        emailService.sendRefundRequestToAdmin(booking);
+    }
+
+    /** Call once, right after a booking is cancelled by the administration. */
+    public void notifyAdminCancelledBooking(Booking booking) {
+        log.info("Firing admin-cancelled booking notification with full refund for {}", booking.getBookingReference());
+        emailService.sendAdminCancellationWithRefundToCustomer(booking);
+    }
+
+    /** Call once, right after admin approves a customer refund request. */
+    public void notifyRefundApproved(Booking booking) {
+        log.info("Firing refund-approved notification for {}", booking.getBookingReference());
+        emailService.sendRefundApprovedToCustomer(booking);
+    }
+
+    /** Call once, right after admin rejects a refund request. */
+    public void notifyRefundRejected(Booking booking, String reason) {
+        log.info("Firing refund-rejected notification for {}", booking.getBookingReference());
+        emailService.sendRefundRejectedToCustomer(booking, reason);
     }
 
     private String buildCustomerSms(Booking booking) {

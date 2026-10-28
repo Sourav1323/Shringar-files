@@ -114,6 +114,63 @@ const STATUS_BADGE = {
   RESCHEDULED: '<span class="badge badge-amber">Rescheduled</span>',
 };
 
+function getRefundBadge(o) {
+  if (o.status === 'CANCELLED') {
+    if (o.refundStatus === 'REFUNDED') {
+      return '<div style="margin-top:4px;"><span class="badge badge-green">✓ Refunded (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span>' + (o.refundId ? '<div class="cell-sub" style="font-size:10px;">ID: ' + o.refundId + '</div>' : '') + '</div>';
+    }
+    if (o.refundStatus === 'INITIATED') {
+      return '<div style="margin-top:4px;"><span class="badge badge-blue">🔄 Refund Initiated (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span></div>';
+    }
+    if (o.refundStatus === 'REQUESTED') {
+      return '<div style="margin-top:4px;"><span class="badge badge-amber">⚠️ Refund Requested (' + ShringarAdmin.formatINR(o.refundAmount || o.advanceAmount) + ')</span></div>';
+    }
+    if (o.refundStatus === 'REJECTED') {
+      return '<div style="margin-top:4px;"><span class="badge badge-red">✕ Refund Declined</span></div>';
+    }
+    if (o.isRefundEligible) {
+      return '<div style="margin-top:4px;"><span class="badge badge-amber">Refund Eligible</span></div>';
+    }
+  }
+  return '';
+}
+
+async function cancelOrderAsAdmin(id) {
+  const reason = prompt('Please enter the cancellation reason (customer will receive cancellation email and 100% full refund):', 'Artist unavailable / Schedule adjustment');
+  if (!reason) return;
+  try {
+    await ShringarAdmin.Dashboard.cancelOrder(id, reason);
+    ShringarAdmin.toast('Booking cancelled and 100% full refund initiated', 'success');
+    loadOrders();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+async function approveRefund(id) {
+  const notes = prompt('Enter transaction reference or approval note:', 'Refund approved and processed by administrator');
+  if (notes === null) return;
+  try {
+    await ShringarAdmin.Dashboard.approveRefund(id, notes);
+    ShringarAdmin.toast('Refund approved and customer notified', 'success');
+    loadOrders();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+async function rejectRefund(id) {
+  const reason = prompt('Enter reason for declining the refund request:', 'Cancellation outside the free cancellation window');
+  if (!reason) return;
+  try {
+    await ShringarAdmin.Dashboard.rejectRefund(id, reason);
+    ShringarAdmin.toast('Refund request declined and customer notified', 'warning');
+    loadOrders();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
 async function confirmUpiPayment(id) {
   if (!confirm('Confirm you\'ve verified this payment in your UPI app/bank statement? This will mark the booking as paid and confirmed, and notify the customer and artist.')) return;
   try {
@@ -166,7 +223,7 @@ async function loadOrders(btn) {
               : '<span class="badge badge-gray">Not paid</span>'}
           <div class="cell-sub">${ShringarAdmin.formatINR(o.advanceAmount)}</div>
         </td>
-        <td>${STATUS_BADGE[o.status] || o.status}</td>
+        <td>${STATUS_BADGE[o.status] || o.status}${getRefundBadge(o)}</td>
         <td>
           ${!o.isAdvancePaid && o.upiPaymentSubmitted
             ? `<button class="btn btn-sm btn-primary" onclick="confirmUpiPayment(${o.id})">Confirm Payment</button>`

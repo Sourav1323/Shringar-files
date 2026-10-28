@@ -19,6 +19,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 public class AdminDashboardService {
@@ -110,6 +112,15 @@ public class AdminDashboardService {
                 .upiPaymentSubmitted(b.getUpiPaymentSubmitted())
                 .upiTransactionRef(b.getUpiTransactionRef())
                 .isBalancePaid(b.getIsBalancePaid())
+                .refundStatus(b.getEffectiveRefundStatus())
+                .refundAmount(b.getRefundAmount() != null ? b.getRefundAmount() : (Boolean.TRUE.equals(b.getIsRefundEligible()) && b.getAdvanceAmount() != null ? b.getAdvanceAmount() : BigDecimal.ZERO))
+                .refundId(b.getRefundId())
+                .cancelledBy(b.getCancelledBy())
+                .cancelledAt(b.getCancelledAt())
+                .cancellationReason(b.getCancellationReason())
+                .isRefundEligible(b.getIsRefundEligible())
+                .refundProcessedAt(b.getRefundProcessedAt())
+                .refundNotes(b.getRefundNotes())
                 .customerConfirmedCompletion(b.getCustomerConfirmedCompletion())
                 .fulfillmentRating(b.getFulfillmentRating())
                 .fulfillmentFeedback(b.getFulfillmentFeedback())

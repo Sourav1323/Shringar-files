@@ -214,6 +214,9 @@ export const BookingsAPI = {
 
   submitUpiPayment: (id, transactionRef) => 
     request(`/bookings/${id}/submit-upi-payment`, { method: 'PATCH', body: { transactionRef } }),
+
+  cancel: (id, reason = '') =>
+    request(`/bookings/${id}/cancel`, { method: 'PATCH', body: { reason } }),
 };
 
 export const ConcernsAPI = {

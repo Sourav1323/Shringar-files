@@ -43,6 +43,15 @@ public class AdminBookingResponse {
     private Boolean upiPaymentSubmitted;
     private String upiTransactionRef;
     private Boolean isBalancePaid;
+    private String refundStatus;
+    private BigDecimal refundAmount;
+    private String refundId;
+    private String cancelledBy;
+    private LocalDateTime cancelledAt;
+    private String cancellationReason;
+    private Boolean isRefundEligible;
+    private LocalDateTime refundProcessedAt;
+    private String refundNotes;
     private Boolean customerConfirmedCompletion;
     private Integer fulfillmentRating;
     private String fulfillmentFeedback;

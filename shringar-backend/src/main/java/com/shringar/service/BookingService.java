@@ -13,6 +13,7 @@ import com.shringar.model.enums.PaymentStatus;
 import com.shringar.repository.*;
 import com.shringar.service.notification.BookingNotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.time.Year;
 import java.util.List;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class BookingService {
 
@@ -159,8 +161,9 @@ public class BookingService {
 
     @Transactional
     public BookingResponse cancelBooking(Long userId, Long bookingId, CancelBookingRequest request) {
-        Booking booking = bookingRepository.findByIdAndUserId(bookingId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+        Booking booking = (userId != null)
+                ? bookingRepository.findByIdAndUserId(bookingId, userId).orElseGet(() -> bookingRepository.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Booking not found")))
+                : bookingRepository.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BadRequestException("This booking is already cancelled");
@@ -169,30 +172,144 @@ public class BookingService {
             throw new BadRequestException("Completed bookings cannot be cancelled");
         }
 
-        if (!booking.canCancelFree()) {
-            throw new BadRequestException("The free cancellation window has expired (0 hours left). Cancellations can only be made while the timer is active.");
-        }
-
-        boolean freeCancellation = true;
-
+        boolean freeCancellation = booking.canCancelFree();
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancelledAt(LocalDateTime.now());
-        booking.setCancellationReason(request.getReason());
+        booking.setCancellationReason(request != null && request.getReason() != null && !request.getReason().isBlank() 
+                ? request.getReason() 
+                : "Cancelled by customer");
+        booking.setCancelledBy("CUSTOMER");
         booking.setIsRefundEligible(freeCancellation);
+
+        if (Boolean.TRUE.equals(booking.getIsAdvancePaid())) {
+            booking.setRefundAmount(booking.getAdvanceAmount());
+            if (freeCancellation) {
+                booking.setRefundStatus("INITIATED");
+                try {
+                    paymentService.processRefundIfEligible(booking.getId());
+                    booking.setRefundStatus("REFUNDED");
+                    booking.setRefundProcessedAt(LocalDateTime.now());
+                } catch (Exception e) {
+                    log.warn("Auto-refund could not complete via gateway: {}. Flagged as INITIATED for administrative transfer.", e.getMessage());
+                    booking.setRefundStatus("INITIATED");
+                }
+            } else {
+                // Outside free cancellation window — submit refund request to admin for review
+                booking.setRefundStatus("REQUESTED");
+                booking.setRefundNotes("Customer requested cancellation outside free-cancellation window. Submitted to admin for policy review.");
+            }
+        } else {
+            booking.setRefundStatus("NOT_APPLICABLE");
+            booking.setRefundAmount(BigDecimal.ZERO);
+        }
 
         Booking saved = bookingRepository.save(booking);
 
         // Update dedicated designer_orders table
         designerOrderService.updateOrderStatus(saved.getId(), BookingStatus.CANCELLED);
 
-        // Trigger refund automatically if within the free-cancellation window and advance was paid
-        if (freeCancellation && Boolean.TRUE.equals(booking.getIsAdvancePaid())) {
-            paymentService.processRefundIfEligible(booking.getId());
-        }
-
+        // Trigger notifications to customer and admin
         bookingNotificationService.notifyBookingCancelled(booking);
 
-        return toResponse(booking);
+        return toResponse(saved);
+    }
+
+    /**
+     * Admin cancels a booking for any reason (e.g. artist illness, operational reasons).
+     * Because the platform initiates cancellation, the customer is ALWAYS entitled to a 100% full refund!
+     */
+    @Transactional
+    public BookingResponse adminCancelBooking(Long bookingId, String reason) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking #" + bookingId + " not found"));
+
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new BadRequestException("This booking is already cancelled");
+        }
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new BadRequestException("Completed bookings cannot be cancelled");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setCancelledAt(LocalDateTime.now());
+        booking.setCancellationReason(reason != null && !reason.isBlank() ? reason : "Cancelled by Administration");
+        booking.setCancelledBy("ADMIN");
+        booking.setIsRefundEligible(true);
+
+        if (Boolean.TRUE.equals(booking.getIsAdvancePaid())) {
+            booking.setRefundAmount(booking.getAdvanceAmount());
+            booking.setRefundStatus("INITIATED");
+            try {
+                paymentService.processRefundIfEligible(booking.getId());
+                booking.setRefundStatus("REFUNDED");
+                booking.setRefundProcessedAt(LocalDateTime.now());
+            } catch (Exception e) {
+                log.warn("Automatic gateway refund notice: {}. Marked as INITIATED for direct payout.", e.getMessage());
+                booking.setRefundStatus("INITIATED");
+            }
+        } else {
+            booking.setRefundStatus("NOT_APPLICABLE");
+            booking.setRefundAmount(BigDecimal.ZERO);
+        }
+
+        Booking saved = bookingRepository.save(booking);
+        designerOrderService.updateOrderStatus(saved.getId(), BookingStatus.CANCELLED);
+
+        // Notify customer that admin cancelled and 100% full refund was initiated
+        bookingNotificationService.notifyAdminCancelledBooking(booking);
+
+        return toResponse(saved);
+    }
+
+    /**
+     * Admin approves a customer refund request that was pending review.
+     */
+    @Transactional
+    public BookingResponse adminApproveRefund(Long bookingId, String notes) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking #" + bookingId + " not found"));
+
+        booking.setIsRefundEligible(true);
+        booking.setRefundStatus("REFUNDED");
+        booking.setRefundProcessedAt(LocalDateTime.now());
+        booking.setRefundAmount(booking.getAdvanceAmount());
+        if (notes != null && !notes.isBlank()) {
+            booking.setRefundNotes(notes);
+        }
+        if (booking.getRefundId() == null || booking.getRefundId().isBlank()) {
+            booking.setRefundId("REF-" + System.currentTimeMillis());
+        }
+
+        Payment payment = paymentRepository.findByBookingId(bookingId).orElse(null);
+        if (payment != null) {
+            payment.setAdvanceStatus(com.shringar.model.enums.PaymentStatus.REFUNDED);
+            payment.setRefundAmount(booking.getAdvanceAmount());
+            payment.setRefundId(booking.getRefundId());
+            paymentRepository.save(payment);
+        }
+
+        Booking saved = bookingRepository.save(booking);
+        bookingNotificationService.notifyRefundApproved(booking);
+
+        return toResponse(saved);
+    }
+
+    /**
+     * Admin rejects a refund request (e.g. late cancellation where policy strictly applies).
+     */
+    @Transactional
+    public BookingResponse adminRejectRefund(Long bookingId, String reason) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking #" + bookingId + " not found"));
+
+        booking.setIsRefundEligible(false);
+        booking.setRefundStatus("REJECTED");
+        booking.setRefundNotes(reason);
+
+        Booking saved = bookingRepository.save(booking);
+        bookingNotificationService.notifyRefundRejected(booking, reason);
+
+        return toResponse(saved);
     }
 
     /**
@@ -418,6 +535,15 @@ public class BookingService {
                 .canCancelFree(b.canCancelFree())
                 .cancellationDeadline(deadline)
                 .cancellationRemainingSeconds(remainingSeconds)
+                .refundStatus(b.getEffectiveRefundStatus())
+                .refundAmount(b.getRefundAmount() != null ? b.getRefundAmount() : (Boolean.TRUE.equals(b.getIsRefundEligible()) && b.getAdvanceAmount() != null ? b.getAdvanceAmount() : BigDecimal.ZERO))
+                .refundId(b.getRefundId())
+                .cancelledBy(b.getCancelledBy())
+                .cancelledAt(b.getCancelledAt())
+                .cancellationReason(b.getCancellationReason())
+                .isRefundEligible(b.getIsRefundEligible())
+                .refundProcessedAt(b.getRefundProcessedAt())
+                .refundNotes(b.getRefundNotes())
                 .customerConfirmedCompletion(b.getCustomerConfirmedCompletion())
                 .designerConfirmedCompletion(b.getDesignerConfirmedCompletion())
                 .fulfillmentRating(b.getFulfillmentRating())

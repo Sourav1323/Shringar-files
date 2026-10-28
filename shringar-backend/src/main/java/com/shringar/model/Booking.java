@@ -162,6 +162,24 @@ public class Booking {
     @Column(name = "is_refund_eligible")
     private Boolean isRefundEligible;
 
+    @Column(name = "refund_status", length = 40)
+    private String refundStatus; // NOT_APPLICABLE, REQUESTED, INITIATED, REFUNDED, REJECTED
+
+    @Column(name = "refund_amount", precision = 10, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column(name = "refund_id", length = 80)
+    private String refundId;
+
+    @Column(name = "cancelled_by", length = 30)
+    private String cancelledBy; // CUSTOMER, ADMIN
+
+    @Column(name = "refund_processed_at")
+    private LocalDateTime refundProcessedAt;
+
+    @Column(name = "refund_notes", columnDefinition = "TEXT")
+    private String refundNotes;
+
     @Column(name = "approval_token", length = 64)
     private String approvalToken;
 
@@ -211,5 +229,21 @@ public class Booking {
 
         LocalDateTime deadline = getCancellationDeadline();
         return deadline != null && now.isBefore(deadline);
+    }
+
+    public String getEffectiveRefundStatus() {
+        if (refundStatus != null && !refundStatus.isBlank()) {
+            return refundStatus;
+        }
+        if (status == com.shringar.model.enums.BookingStatus.CANCELLED) {
+            if (Boolean.TRUE.equals(isRefundEligible) && Boolean.TRUE.equals(isAdvancePaid)) {
+                return "INITIATED";
+            }
+            if (Boolean.TRUE.equals(isAdvancePaid)) {
+                return "REQUESTED";
+            }
+            return "NOT_APPLICABLE";
+        }
+        return "NONE";
     }
 }
