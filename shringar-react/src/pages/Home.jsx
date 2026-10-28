@@ -252,10 +252,10 @@ export default function Home() {
         {/* Full-Bleed Dark Cinematic Wedding Imagery */}
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/hero-bride-mehndi-happiness.jpg"
-            alt="Joyful Indian Bride Celebrating Her Sacred Mehendi & Wedding Moment"
-            className="w-full h-full object-cover object-center opacity-75 sm:opacity-80 scale-100 transform duration-1000 ease-out"
-            onError={(e) => { e.target.src = '/images/hero-bride-joyful-henna.jpg'; }}
+            src="/images/mehendi-banner.jpg"
+            alt="Royal Indian Bride Celebrating with Luxury Bridal Mehendi"
+            className="w-full h-full object-cover object-center opacity-80 sm:opacity-85 scale-100 transform duration-1000 ease-out"
+            onError={(e) => { e.target.src = '/images/hero-bride-celebration.jpg'; }}
           />
           {/* Multi-Stop Cinematic Warm Atmosphere Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-stone-950/65 via-stone-900/35 to-stone-950/85" />
