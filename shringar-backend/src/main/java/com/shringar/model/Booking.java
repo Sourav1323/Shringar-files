@@ -129,6 +129,9 @@ public class Booking {
     @Column(name = "upi_transaction_ref", length = 60)
     private String upiTransactionRef;   // customer-entered UTR / reference number, optional
 
+    @Column(name = "payment_screenshot_url", length = 500)
+    private String paymentScreenshotUrl; // customer-uploaded payment receipt / screenshot
+
     @Column(name = "upi_submitted_at")
     private java.time.LocalDateTime upiSubmittedAt;
 

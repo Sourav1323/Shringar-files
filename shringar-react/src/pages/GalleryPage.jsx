@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useCart } from '../context/CartContext';
+import ImageGalleryViewer from '../components/common/ImageGalleryViewer';
 
 const InstagramIcon = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -99,6 +100,14 @@ export default function GalleryPage() {
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [items, setItems] = useState([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+
+  const openGalleryViewer = (idx) => {
+    setViewerIndex(idx);
+    setViewerOpen(true);
+  };
+
   const [likedSet, setLikedSet] = useState(() => {
     try {
       return new Set(JSON.parse(localStorage.getItem('shringar_liked_gallery') || '[]'));
@@ -251,13 +260,17 @@ export default function GalleryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredItems.map((item) => (
+            {filteredItems.map((item, itemIdx) => (
               <div
                 key={item.id}
                 className="bg-white rounded-3xl border border-stone-200/90 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
               >
                 {/* Image Container with Watermark and Floating Badges */}
-                <div className="relative aspect-[4/5] bg-stone-100 overflow-hidden">
+                <div 
+                  onClick={() => openGalleryViewer(itemIdx)}
+                  className="relative aspect-[4/5] bg-stone-100 overflow-hidden cursor-pointer select-none"
+                  title="Tap to open in Image Gallery Viewer"
+                >
                   <img
                     src={item.imageUrl}
                     alt={item.designName}
@@ -271,12 +284,20 @@ export default function GalleryPage() {
 
                   {/* Brand Watermark Pill */}
                   <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white/90 text-[10px] font-serif font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-md border border-white/20">
-                    Shringar Bridal Look
+                    Shringar Look
+                  </span>
+
+                  {/* Mobile & Desktop Tap to Open Fullscreen Indicator */}
+                  <span className="absolute bottom-3 left-3 bg-black/65 backdrop-blur-sm text-white/95 text-[10px] font-medium px-2.5 py-1 rounded-md flex items-center gap-1 border border-white/10 shadow-sm">
+                    🔍 Fullscreen
                   </span>
 
                   {/* Like Button on Image */}
                   <button
-                    onClick={() => handleLike(item.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLike(item.id);
+                    }}
                     className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition backdrop-blur-md shadow-md ${
                       likedSet.has(item.id)
                         ? 'bg-rose-500 text-white'
@@ -361,6 +382,28 @@ export default function GalleryPage() {
             ))}
           </div>
         )}
+
+        {/* Fullscreen Interactive Image Gallery Viewer */}
+        <ImageGalleryViewer
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          images={filteredItems.map((item) => ({
+            imageUrl: item.imageUrl,
+            title: item.designName,
+            category: item.designCategory,
+            caption: item.caption,
+            userName: item.userName,
+            userLocation: item.userLocation,
+            price: item.price,
+            designId: item.designId,
+          }))}
+          currentIndex={viewerIndex}
+          onIndexChange={setViewerIndex}
+          onBook={(item) => {
+            setViewerOpen(false);
+            handleBookDesign(item);
+          }}
+        />
 
       </div>
     </div>

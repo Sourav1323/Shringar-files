@@ -30,8 +30,6 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Dynamic Site & Favicon Sync from Admin Settings
 function SiteSettingsSync() {
-  const [announcement, setAnnouncement] = useState(null);
-
   useEffect(() => {
     async function syncSettings() {
       try {
@@ -45,9 +43,6 @@ function SiteSettingsSync() {
               link.href = s.logoUrl.startsWith('http') ? s.logoUrl : `${apiHost}${s.logoUrl.startsWith('/') ? '' : '/'}${s.logoUrl}`;
             }
           }
-          if (s.announcementActive && s.announcementBanner) {
-            setAnnouncement(s.announcementBanner);
-          }
         }
       } catch (e) {
         // Fallback default
@@ -56,20 +51,7 @@ function SiteSettingsSync() {
     syncSettings();
   }, []);
 
-  if (!announcement) return null;
-
-  return (
-    <div className="bg-gradient-to-r from-amber-500 via-brand-gold to-amber-600 text-stone-950 px-4 py-2 text-center text-xs font-bold tracking-wide flex items-center justify-center gap-2 border-b border-amber-600/40 shadow-sm relative z-50">
-      <span>✨ {announcement}</span>
-      <button
-        onClick={() => setAnnouncement(null)}
-        className="ml-3 text-stone-900/60 hover:text-stone-900 text-sm font-bold"
-        title="Dismiss announcement"
-      >
-        ✕
-      </button>
-    </div>
-  );
+  return null;
 }
 
 // Auto-scroll to top on route change

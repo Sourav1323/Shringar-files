@@ -27,7 +27,6 @@ public class User {
     @Column(name = "first_name", nullable = false, length = 50)
     private String firstName;
 
-    @NotBlank
     @Column(name = "last_name", length = 50)
     private String lastName;
 

@@ -27,7 +27,11 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
             @Valid @RequestBody CreateBookingRequest request) {
-        BookingResponse booking = bookingService.createBooking(currentUser.getCurrentUserId(), request);
+        Long userId = null;
+        try {
+            userId = currentUser.getCurrentUserId();
+        } catch (Exception ignored) {}
+        BookingResponse booking = bookingService.createBooking(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Booking created — pay advance to confirm", booking));
     }
@@ -93,8 +97,13 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponse>> submitUpiPayment(
             @PathVariable Long id,
             @RequestBody(required = false) java.util.Map<String, Object> body) {
+        Long userId = null;
+        try {
+            userId = currentUser.getCurrentUserId();
+        } catch (Exception ignored) {}
         String transactionRef = body != null ? (String) body.get("transactionRef") : null;
-        BookingResponse booking = bookingService.submitUpiPayment(currentUser.getCurrentUserId(), id, transactionRef);
+        String paymentScreenshotUrl = body != null ? (String) body.get("paymentScreenshotUrl") : null;
+        BookingResponse booking = bookingService.submitUpiPayment(userId, id, transactionRef, paymentScreenshotUrl);
         return ResponseEntity.ok(ApiResponse.success("Payment submitted — we'll confirm it shortly", booking));
     }
 }

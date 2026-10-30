@@ -29,14 +29,35 @@ export default function DesignsPage() {
 
   const selectedCategory = searchParams.get('category') || 'ALL';
 
-  const categories = [
-    { id: 'ALL', label: 'All Designs' },
-    { id: 'Bridal', label: 'Royal Bridal' },
-    { id: 'Arabic', label: 'Arabic Florals' },
-    { id: 'Minimal', label: 'Minimalist' },
-    { id: 'Fusion', label: 'Indo-Arabic' },
-    { id: 'Mughal', label: 'Mughal Classic' },
-  ];
+  const categories = useMemo(() => {
+    const baseCategories = [
+      { id: 'ALL', label: 'All Designs' },
+      { id: 'Bridal', label: 'Royal Bridal' },
+      { id: 'Arabic', label: 'Arabic Florals' },
+      { id: 'Minimal', label: 'Minimalist' },
+      { id: 'Fusion', label: 'Indo-Arabic' },
+      { id: 'Mughal', label: 'Mughal Classic' },
+      { id: 'Rajasthani', label: 'Rajasthani Royal' },
+    ];
+    const map = new Map();
+    baseCategories.forEach(c => map.set(c.id.toLowerCase(), c));
+
+    // Dynamically include any category added by admin in the database
+    designs.forEach(d => {
+      if (d.category) {
+        const catClean = d.category.trim();
+        const key = catClean.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            id: catClean,
+            label: catClean
+          });
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [designs]);
 
   const coverages = [
     { id: 'ALL', label: 'All Coverages' },
@@ -46,49 +67,13 @@ export default function DesignsPage() {
     { id: 'Both feet', label: 'Both Feet' },
   ];
 
-  const normalizeDesign = (d) => {
-    if (!d) return d;
-    if (d.id === 4 || (d.imageUrl && d.imageUrl.includes('peacock-feet.png'))) {
-      return {
-        ...d,
-        name: 'Royal Dulha-Dulhan Bridal',
-        coverage: 'Full hand',
-        category: 'Bridal',
-        badge: 'Signature',
-        badgeColor: '#7a2c1a',
-        description: 'Handcrafted bride & groom wedding portraits on palms with auspicious kalash and peacocks.'
-      };
-    }
-    if (d.id === 5 || (d.imageUrl && d.imageUrl.includes('indo-arabic.png'))) {
-      return {
-        ...d,
-        name: 'Lotus Mandala Bridal Feet',
-        coverage: 'Both feet',
-        category: 'Bridal',
-        badge: 'Bridal Feet',
-        badgeColor: '#ba7517',
-        description: 'Majestic blooming lotus mandala with ornate ankle payal detailing covering both feet.'
-      };
-    }
-    if (d.id === 6 || (d.name && d.name.includes('Mughal'))) {
-      return {
-        ...d,
-        name: 'Mughal Classic Arches',
-        coverage: 'Full hand',
-        category: 'Mughal',
-        badge: 'Classic'
-      };
-    }
-    return d;
-  };
-
   useEffect(() => {
     async function fetchDesigns() {
       setLoading(true);
       try {
         const data = await DesignsAPI.getAll();
         if (Array.isArray(data)) {
-          setDesigns(data.map(normalizeDesign));
+          setDesigns(data);
         }
       } catch (err) {
         console.warn('Designs catalog fetch error, loading fallback catalog:', err);
@@ -303,7 +288,7 @@ export default function DesignsPage() {
   const hasActiveFilters = selectedCategory !== 'ALL' || coverageFilter !== 'ALL' || searchQuery.trim() !== '';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
       {/* ── Page Header & Breadcrumbs ── */}
       <div className="bg-[#FFFFFF] border border-[#E6DFD3] rounded-sm p-8 sm:p-12 shadow-sm relative overflow-hidden" data-testid="designs-header">
@@ -466,13 +451,13 @@ export default function DesignsPage() {
 
       {/* ── Unified Designs Grid: Location available motifs shuffled first, followed by the rest ── */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="h-60 sm:h-80 rounded-2xl bg-stone-200 animate-pulse"></div>
           ))}
         </div>
       ) : sortedAndShuffledDesigns.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
           {sortedAndShuffledDesigns.map((design) => {
             const isLocal = isDesignAvailableInCity(design, city);
             return (

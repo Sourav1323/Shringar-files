@@ -212,11 +212,27 @@ export const BookingsAPI = {
   getByReference: (ref) =>
     request(`/bookings/reference/${ref}`),
 
-  submitUpiPayment: (id, transactionRef) => 
-    request(`/bookings/${id}/submit-upi-payment`, { method: 'PATCH', body: { transactionRef } }),
+  submitUpiPayment: (id, transactionRef, paymentScreenshotUrl = null) => 
+    request(`/bookings/${id}/submit-upi-payment`, { method: 'PATCH', body: { transactionRef, paymentScreenshotUrl } }),
 
   cancel: (id, reason = '', upiId = '') =>
     request(`/bookings/${id}/cancel`, { method: 'PATCH', body: { reason, upiId } }),
+};
+
+export const CustomRequestsAPI = {
+  create: (data) => request('/custom-requests', { method: 'POST', body: data }),
+  getAll: (email = '', phone = '') => {
+    let url = '/custom-requests';
+    const params = new URLSearchParams();
+    if (email) params.append('email', email);
+    if (phone) params.append('phone', phone);
+    const qs = params.toString();
+    return request(qs ? `${url}?${qs}` : url);
+  },
+  getById: (id) => request(`/custom-requests/${id}`),
+  getByReference: (ref) => request(`/custom-requests/reference/${ref}`),
+  quote: (id, data) => request(`/custom-requests/${id}/quote`, { method: 'PATCH', body: data }),
+  reject: (id, reason) => request(`/custom-requests/${id}/reject`, { method: 'PATCH', body: { reason } }),
 };
 
 export const ConcernsAPI = {

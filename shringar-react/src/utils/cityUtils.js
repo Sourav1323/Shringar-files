@@ -60,7 +60,19 @@ export function isDesignAvailableInCity(design, targetCity) {
   if (!targetCity) return true;
   const target = targetCity.toLowerCase().replace(/[^a-z]/g, '');
 
-  const id = Number(design?.id) || 1;
+  // 1. If availableCities is explicitly configured from Admin Portal
+  if (Array.isArray(design?.availableCities) && design.availableCities.length > 0) {
+    if (design.availableCities.includes('ALL') || design.availableCities.includes('All Cities') || design.availableCities.includes('Nationwide')) {
+      return true;
+    }
+    return design.availableCities.some((c) => {
+      const cNorm = c.toLowerCase().replace(/[^a-z]/g, '');
+      return cNorm.includes(target) || target.includes(cNorm);
+    });
+  }
+
+  // 2. Legacy fallback for seed catalog items
+  const id = Number(design?.id);
   const mapping = DESIGN_CITY_MATRIX[id];
 
   if (mapping && mapping.availableCities) {
@@ -70,16 +82,20 @@ export function isDesignAvailableInCity(design, targetCity) {
     });
   }
 
-  // By default, common bridal designs available in top metros
-  return ['delhi', 'mumbai', 'jaipur', 'bangalore'].some((c) => target.includes(c));
+  // 3. New designs created in admin portal without restrictions are available everywhere
+  return true;
 }
 
 /**
  * Gets origin city for a design.
  */
 export function getDesignOriginCity(design) {
-  const id = Number(design?.id) || 1;
-  return DESIGN_CITY_MATRIX[id]?.originCity || 'Rajasthan Heritage';
+  if (design?.originCity) return design.originCity;
+  if (Array.isArray(design?.availableCities) && design.availableCities.length > 0) {
+    return design.availableCities[0];
+  }
+  const id = Number(design?.id);
+  return DESIGN_CITY_MATRIX[id]?.originCity || 'Artisan Studio';
 }
 
 /**

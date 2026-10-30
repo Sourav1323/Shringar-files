@@ -269,10 +269,13 @@ const ShringarAdmin = (() => {
   }
 
   function resolveUploadUrl(path) {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    const apiHost = API_BASE.replace(/\/api$/, '');
-    return apiHost + path;
+    if (!path) return '/images/rajasthani-bridal.jpg';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
+    let clean = String(path).trim();
+    if (!clean.startsWith('/')) {
+      clean = '/' + clean;
+    }
+    return clean;
   }
 
   // ───────────────────────── Shared UI helpers ─────────────────────────

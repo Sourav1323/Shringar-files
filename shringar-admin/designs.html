@@ -55,33 +55,84 @@
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
         <button class="btn btn-outline" id="refresh-btn" onclick="loadDesigns(this)">↻ Refresh</button>
+        <button class="btn btn-outline" onclick="openAddCategoryModal()">+ Add Category</button>
         <button class="btn btn-primary" onclick="openCreateModal()">+ Add New Design</button>
       </div>
     </div>
 
     <div class="content">
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">All Designs</div>
-          <div class="filter-row">
-            <select class="filter-select" id="status-filter" onchange="renderTable()">
-              <option value="all">All statuses</option>
-              <option value="active">Active only</option>
-              <option value="inactive">Removed only</option>
-            </select>
+      <!-- CATEGORY TOOLBAR -->
+      <div class="category-toolbar">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;">
+          <div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--tl);">
+            Categories:
           </div>
+          <div class="category-pills-wrap" id="category-pills-container">
+            <!-- Populated dynamically via JS -->
+          </div>
+          <button class="btn btn-sm btn-outline" style="border-style:dashed;padding:5px 12px;" onclick="openAddCategoryModal()">
+            <span>+</span> Add Category
+          </button>
         </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr><th>Design</th><th>Category</th><th>Price</th><th>Clicks</th><th>Status</th><th>Featured</th><th>Actions</th></tr>
-            </thead>
-            <tbody id="designs-table-body">
-              <tr><td colspan="7" class="loading-state">Loading designs…</td></tr>
-            </tbody>
-          </table>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="view-mode-btn-group">
+            <button class="view-mode-btn active" id="btn-mode-grouped" onclick="setViewMode('grouped')">
+              📂 Grouped View
+            </button>
+            <button class="view-mode-btn" id="btn-mode-table" onclick="setViewMode('table')">
+              📋 All Table
+            </button>
+          </div>
+          <select class="filter-select" id="status-filter" onchange="renderView()">
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Removed only</option>
+          </select>
         </div>
       </div>
+
+      <!-- MAIN DYNAMIC VIEW CONTAINER -->
+      <div id="designs-view-container">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">All Designs</div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>Design</th><th>Category</th><th>Price</th><th>Clicks</th><th>Status</th><th>Featured</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="designs-table-body">
+                <tr><td colspan="7" class="loading-state">Loading designs…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD CATEGORY MODAL ══ -->
+<div class="modal-overlay" id="category-modal">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title">Create New Category</div>
+      <button class="modal-close" onclick="closeCategoryModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cat-form-error" style="display:none;color:var(--red);font-size:12.5px;background:var(--redl);border:1px solid #f0c8c8;border-radius:8px;padding:8px 12px;margin-bottom:14px;"></div>
+      <div class="form-field full">
+        <label class="form-label">Category Name *</label>
+        <input class="form-input" id="new-category-name" placeholder="e.g. Rajasthani, Indo-Western, Feet & Payal" onkeydown="if(event.key==='Enter')confirmAddCategory()"/>
+        <div class="form-hint" style="margin-top:8px;">
+          ✨ Once created, you can add designs under this category. It will automatically synchronize with the customer website filter bar and homepage motifs.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeCategoryModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAddCategory()">Create & Add Design</button>
     </div>
   </div>
 </div>
@@ -109,11 +160,13 @@
 
         <div class="form-field">
           <label class="form-label">Category *</label>
-          <input class="form-input" id="f-category" list="category-options" placeholder="e.g. Bridal"/>
-          <datalist id="category-options">
-            <option value="Bridal"><option value="Arabic"><option value="Rajasthani">
-            <option value="Mughal"><option value="Minimal"><option value="Fusion">
-          </datalist>
+          <select class="form-select" id="f-category-select" onchange="onCategorySelectChange()">
+            <!-- Populated dynamically via JS -->
+          </select>
+          <input class="form-input" id="f-category-custom" style="display:none;margin-top:6px;" placeholder="Type custom category name..."/>
+          <div class="form-hint" style="font-size:11.5px;margin-top:4px;">
+            Syncs to customer website category filters automatically.
+          </div>
         </div>
         <div class="form-field">
           <label class="form-label">Coverage *</label>
@@ -133,10 +186,82 @@
           <input class="form-input" type="number" step="0.5" id="f-cones" placeholder="e.g. 2"/>
         </div>
 
-        <div class="form-field">
-          <label class="form-label">Price (₹) *</label>
-          <input class="form-input" type="number" min="0" id="f-price" placeholder="e.g. 2500"/>
+        <!-- COVERAGE TIERS & PRICING -->
+        <div class="form-field full" style="background:#fcfbf9;border:1px solid #e7ded4;border-radius:10px;padding:14px;grid-column:1 / -1;">
+          <label class="form-label" style="font-weight:700;color:#4a2511;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span>💎 Coverage Tiers & Customer Pricing</span>
+          </label>
+          <div style="font-size:12px;color:#7a6356;margin-bottom:12px;">
+            Configure customer website coverage options: Palm only, Standard coverage (Main), and Grand Ensemble.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
+            <div>
+              <label class="form-label" style="font-size:12px;">Palm & Fingers Only (₹)</label>
+              <input class="form-input" type="number" min="0" id="f-palm-price" placeholder="Auto: ~75% of main"/>
+              <div class="form-hint" style="font-size:11px;">Tier 1: Minimal palm pattern</div>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:12px;">Standard Coverage Price (₹) *</label>
+              <input class="form-input" type="number" min="0" id="f-price" placeholder="e.g. 1500"/>
+              <div class="form-hint" style="font-size:11px;">Tier 2: Recommended (Main)</div>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:12px;">Grand Ensemble Price (₹)</label>
+              <input class="form-input" type="number" min="0" id="f-grand-price" placeholder="Auto: main + ₹1600"/>
+              <div class="form-hint" style="font-size:11px;">Tier 3: Hands & Feet complete</div>
+            </div>
+          </div>
         </div>
+
+        <!-- CITY & ARTIST ASSIGNMENT -->
+        <div class="form-field full" style="background:#f8f9fa;border:1px solid #e2e8f0;border-radius:10px;padding:14px;grid-column:1 / -1;">
+          <label class="form-label" style="font-weight:700;color:#2d3748;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span>📍 City Availability & Assigned Artists</span>
+          </label>
+          <div style="font-size:12px;color:#718096;margin-bottom:12px;">
+            Control in which cities this design is available, origin city label, and which specific artists offer it.
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:14px;margin-bottom:12px;">
+            <div>
+              <label class="form-label" style="font-size:12px;">Origin / Heritage City</label>
+              <select class="form-select" id="f-origin-city">
+                <option value="Rajasthan Heritage">Rajasthan Heritage</option>
+                <option value="Delhi NCR">Delhi NCR</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Jaipur">Jaipur</option>
+                <option value="Bangalore">Bangalore</option>
+                <option value="Hyderabad">Hyderabad</option>
+                <option value="Kolkata">Kolkata</option>
+                <option value="Pune">Pune</option>
+                <option value="Ahmedabad">Ahmedabad</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:12px;">Assigned Artists (Optional)</label>
+              <select class="form-select" id="f-assigned-artists" multiple style="min-height:75px;">
+                <!-- Populated dynamically via JS -->
+              </select>
+              <div class="form-hint" style="font-size:11px;">Hold Ctrl / Cmd to select multiple artists.</div>
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label" style="font-size:12px;margin-bottom:6px;">Available In Cities (Customer Location Filter):</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <label class="form-check" style="font-weight:600;"><input type="checkbox" id="city-all-cb" onchange="toggleAllCities(this)"/> All Cities (Nationwide)</label>
+              <label class="form-check"><input type="checkbox" class="city-cb" value="Delhi NCR" onchange="onCityCbChange()"/> Delhi NCR</label>
+              <label class="form-check"><input type="checkbox" class="city-cb" value="Mumbai" onchange="onCityCbChange()"/> Mumbai</label>
+              <label class="form-check"><input type="checkbox" class="city-cb" value="Jaipur" onchange="onCityCbChange()"/> Jaipur</label>
+              <label class="form-check"><input type="checkbox" class="city-cb" value="Bangalore" onchange="onCityCbChange()"/> Bangalore</label>
+              <label class="form-check"><input type="checkbox" class="city-cb" value="Hyderabad" onchange="onCityCbChange()"/> Hyderabad</label>
+              <label class="form-check"><input type="checkbox" class="city-cb" value="Kolkata" onchange="onCityCbChange()"/> Kolkata</label>
+              <label class="form-check"><input type="checkbox" class="city-cb" value="Pune" onchange="onCityCbChange()"/> Pune</label>
+              <label class="form-check"><input type="checkbox" class="city-cb" value="Ahmedabad" onchange="onCityCbChange()"/> Ahmedabad</label>
+            </div>
+          </div>
+        </div>
+
         <div class="form-field">
           <label class="form-label">Sort Order</label>
           <input class="form-input" type="number" id="f-sort-order" placeholder="0"/>
@@ -227,6 +352,82 @@ let editingId = null;
 let tagsList = [];
 let coverImageUrl = null;
 let galleryImageUrls = [];
+let currentViewMode = 'grouped'; // 'grouped' or 'table'
+let selectedCategory = 'ALL';
+let customCategories = new Set(['Bridal', 'Arabic', 'Minimal', 'Fusion', 'Mughal', 'Rajasthani']);
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getKnownCategories() {
+  const cats = new Set(customCategories);
+  allDesigns.forEach(d => {
+    if (d.category) cats.add(d.category.trim());
+  });
+  return Array.from(cats).sort((a, b) => a.localeCompare(b));
+}
+
+function getCategoryIcon(cat) {
+  const c = (cat || '').toLowerCase();
+  if (c.includes('bridal')) return '👰';
+  if (c.includes('arabic')) return '🌸';
+  if (c.includes('minimal')) return '🌿';
+  if (c.includes('fusion') || c.includes('indo')) return '🪷';
+  if (c.includes('mughal')) return '🏛️';
+  if (c.includes('rajasthan') || c.includes('marwari')) return '👑';
+  if (c.includes('feet') || c.includes('payal') || c.includes('leg')) return '👣';
+  if (c.includes('mandala')) return '☸️';
+  return '🎨';
+}
+
+function setViewMode(mode) {
+  currentViewMode = mode;
+  const btnGrouped = document.getElementById('btn-mode-grouped');
+  const btnTable = document.getElementById('btn-mode-table');
+  if (btnGrouped) btnGrouped.classList.toggle('active', mode === 'grouped');
+  if (btnTable) btnTable.classList.toggle('active', mode === 'table');
+  renderView();
+}
+
+function selectCategoryFilter(cat) {
+  selectedCategory = cat;
+  renderCategoryPills();
+  renderView();
+}
+
+function renderCategoryPills() {
+  const container = document.getElementById('category-pills-container');
+  if (!container) return;
+  const cats = getKnownCategories();
+  const totalCount = allDesigns.length;
+
+  let html = `
+    <button class="cat-pill ${selectedCategory === 'ALL' ? 'active' : ''}" onclick="selectCategoryFilter('ALL')">
+      <span>✨ All</span>
+      <span class="cat-pill-count">${totalCount}</span>
+    </button>
+  `;
+
+  cats.forEach(cat => {
+    const count = allDesigns.filter(d => (d.category || '').toLowerCase() === cat.toLowerCase()).length;
+    const icon = getCategoryIcon(cat);
+    html += `
+      <button class="cat-pill ${selectedCategory.toLowerCase() === cat.toLowerCase() ? 'active' : ''}" onclick="selectCategoryFilter('${escapeHtml(cat)}')">
+        <span>${icon} ${escapeHtml(cat)}</span>
+        <span class="cat-pill-count">${count}</span>
+      </button>
+    `;
+  });
+
+  container.innerHTML = html;
+}
 
 async function loadDesigns(btn) {
   const b = btn || document.getElementById('refresh-btn');
@@ -234,16 +435,19 @@ async function loadDesigns(btn) {
     b.disabled = true;
     b.innerHTML = '<span class="spin">↻</span> Refreshing…';
   }
-  const tbody = document.getElementById('designs-table-body');
   try {
     allDesigns = await ShringarAdmin.Designs.all();
     if (b) {
       b.innerHTML = '✓ Refreshed';
       setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
     }
-    renderTable();
+    renderCategoryPills();
+    renderView();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon">⚠️</div>${err.message}</td></tr>`;
+    const viewContainer = document.getElementById('designs-view-container');
+    if (viewContainer) {
+      viewContainer.innerHTML = `<div class="panel"><div class="empty-state"><div class="icon">⚠️</div>Failed to load designs: ${escapeHtml(err.message)}</div></div>`;
+    }
     if (b) {
       b.innerHTML = '↻ Refresh';
       b.disabled = false;
@@ -251,61 +455,273 @@ async function loadDesigns(btn) {
   }
 }
 
-function renderTable() {
-  const tbody = document.getElementById('designs-table-body');
-  const filter = document.getElementById('status-filter').value;
+function renderDesignRow(d) {
+  const fallbackLetters = (d.category || 'MD').slice(0, 2).toUpperCase();
+  const resolvedImg = ShringarAdmin.resolveUploadUrl(d.imageUrl);
+  const imgCell = d.imageUrl
+    ? `<img class="cell-img" src="${resolvedImg}" alt="${escapeHtml(d.name)}" onerror="this.onerror=null;this.src='/images/rajasthani-bridal.jpg'"/>`
+    : `<div class="client-avatar-badge" style="width:42px;height:42px;font-size:12px;border-radius:8px;background:var(--cream);border:1px solid var(--cd);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--m);">${fallbackLetters}</div>`;
 
-  let filtered = allDesigns;
-  if (filter === 'active') filtered = allDesigns.filter(d => d.isActive);
-  if (filter === 'inactive') filtered = allDesigns.filter(d => !d.isActive);
+  return `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:12px;">
+          ${imgCell}
+          <div>
+            <div class="cell-name">${escapeHtml(d.name)}</div>
+            <div class="cell-sub" style="font-size:12px;color:var(--tl);">${escapeHtml(d.coverage)}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge badge-gold" style="font-weight:600;">${getCategoryIcon(d.category)} ${escapeHtml(d.category)}</span></td>
+      <td><strong>${ShringarAdmin.formatINR(d.price)}</strong></td>
+      <td><span style="font-size:12.5px;color:var(--td);">${d.clickCount ?? 0} views</span></td>
+      <td>${d.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Removed</span>'}</td>
+      <td>${d.isFeatured ? '<span class="badge badge-gold">★ Featured</span>' : '<span style="color:var(--tl);">—</span>'}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-sm btn-outline" onclick="openEditModal(${d.id})">Edit</button>
+          ${d.isActive
+            ? `<button class="btn btn-sm btn-danger" onclick="deleteDesign(${d.id},'${escapeHtml(d.name).replace(/'/g,"\\'")}')">Delete</button>`
+            : `<button class="btn btn-sm btn-primary" onclick="restoreDesign(${d.id})">Restore</button>`}
+        </div>
+      </td>
+    </tr>`;
+}
 
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="icon"><svg class="icon-svg" style="width:26px;height:26px;margin:0 auto 6px;display:block;" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12c0 3.6 2 6.8 5 8.5 0-.5.1-1.1.4-1.6.5-1.1 1.5-1.9 2.6-2.4-.2-.5-.3-1.1-.3-1.7 0-2.2 1.8-4 4-4s4 1.8 4 4c0 .6-.1 1.2-.3 1.7 1.1.5 2.1 1.3 2.6 2.4.3.5.4 1.1.4 1.6 3-1.7 5-4.9 5-8.5 0-5.5-4.5-10-10-10z"/><circle cx="8" cy="9" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="16" cy="9" r="1.5"/></svg></div>No designs found.</td></tr>`;
+function renderView() {
+  renderCategoryPills();
+  const viewContainer = document.getElementById('designs-view-container');
+  if (!viewContainer) return;
+
+  const statusFilter = document.getElementById('status-filter')?.value || 'all';
+
+  if (currentViewMode === 'table') {
+    renderFlatTable(viewContainer, statusFilter);
+  } else {
+    renderGroupedView(viewContainer, statusFilter);
+  }
+}
+
+function renderGroupedView(container, statusFilter) {
+  let cats = getKnownCategories();
+  if (selectedCategory !== 'ALL') {
+    cats = cats.filter(c => c.toLowerCase() === selectedCategory.toLowerCase());
+  }
+
+  if (cats.length === 0) {
+    container.innerHTML = `
+      <div class="panel">
+        <div class="empty-state">
+          <div class="icon">🎨</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:6px;">No Categories Found</div>
+          <p style="margin-bottom:16px;">Create a new category to start organizing your designs.</p>
+          <button class="btn btn-primary" onclick="openAddCategoryModal()">+ Add New Category</button>
+        </div>
+      </div>
+    `;
     return;
   }
 
-  tbody.innerHTML = filtered.map(d => {
-    const fallbackLetters = (d.category || 'MD').slice(0, 2).toUpperCase();
-    const imgCell = d.imageUrl
-      ? `<img class="cell-img" src="${ShringarAdmin.resolveUploadUrl(d.imageUrl)}" alt="${d.name}"/>`
-      : `<div class="client-avatar-badge" style="width:36px;height:36px;font-size:11px;border-radius:8px;">${fallbackLetters}</div>`;
-    return `
-      <tr>
-        <td>
-          <div style="display:flex;align-items:center;gap:10px;">
-            ${imgCell}
-            <div>
-              <div class="cell-name">${d.name}</div>
-              <div class="cell-sub">${d.coverage}</div>
+  let html = '';
+  cats.forEach(cat => {
+    let designsInCat = allDesigns.filter(d => (d.category || '').toLowerCase() === cat.toLowerCase());
+    if (statusFilter === 'active') designsInCat = designsInCat.filter(d => d.isActive);
+    if (statusFilter === 'inactive') designsInCat = designsInCat.filter(d => !d.isActive);
+
+    const icon = getCategoryIcon(cat);
+
+    html += `
+      <div class="category-group-card">
+        <div class="category-group-header">
+          <div class="category-group-title">
+            <span style="font-size:20px;">${icon}</span>
+            <span>${escapeHtml(cat)}</span>
+            <span class="badge badge-gray" style="font-size:11.5px;padding:3px 9px;">${designsInCat.length} designs</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-sm btn-primary" onclick="openCreateModal('${escapeHtml(cat)}')">
+              <span>+</span> Add Design in ${escapeHtml(cat)}
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          ${designsInCat.length === 0 ? `
+            <div style="padding:32px 20px;text-align:center;color:var(--tl);background:#fff;">
+              <div style="font-size:24px;margin-bottom:6px;">📭</div>
+              <div style="font-size:13.5px;font-weight:600;color:var(--td);margin-bottom:4px;">No designs under "${escapeHtml(cat)}"</div>
+              <div style="font-size:12.5px;margin-bottom:12px;">Add your first design to publish it under this category on the website.</div>
+              <button class="btn btn-sm btn-primary" onclick="openCreateModal('${escapeHtml(cat)}')">+ Add First Design</button>
             </div>
+          ` : `
+            <table class="data-table">
+              <thead>
+                <tr><th>Design</th><th>Category</th><th>Price</th><th>Clicks</th><th>Status</th><th>Featured</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                ${designsInCat.map(renderDesignRow).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function renderFlatTable(container, statusFilter) {
+  let filtered = allDesigns;
+  if (selectedCategory !== 'ALL') {
+    filtered = filtered.filter(d => (d.category || '').toLowerCase() === selectedCategory.toLowerCase());
+  }
+  if (statusFilter === 'active') filtered = filtered.filter(d => d.isActive);
+  if (statusFilter === 'inactive') filtered = filtered.filter(d => !d.isActive);
+
+  container.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">All Designs (${filtered.length})</div>
+      </div>
+      <div class="table-wrap">
+        ${filtered.length === 0 ? `
+          <div class="empty-state">
+            <div class="icon">🔍</div>
+            No designs found matching the current filters.
           </div>
-        </td>
-        <td>${d.category}</td>
-        <td><strong>${ShringarAdmin.formatINR(d.price)}</strong></td>
-        <td>${d.clickCount ?? 0}</td>
-        <td>${d.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Removed</span>'}</td>
-        <td>${d.isFeatured ? '<span class="badge badge-gold">★ Featured</span>' : '—'}</td>
-        <td>
-          <div class="row-actions">
-            <button class="btn btn-sm btn-outline" onclick="openEditModal(${d.id})">Edit</button>
-            ${d.isActive
-              ? `<button class="btn btn-sm btn-danger" onclick="deleteDesign(${d.id},'${d.name.replace(/'/g,"\\'")}')">Delete</button>`
-              : `<button class="btn btn-sm btn-primary" onclick="restoreDesign(${d.id})">Restore</button>`}
-          </div>
-        </td>
-      </tr>`;
-  }).join('');
+        ` : `
+          <table class="data-table">
+            <thead>
+              <tr><th>Design</th><th>Category</th><th>Price</th><th>Clicks</th><th>Status</th><th>Featured</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              ${filtered.map(renderDesignRow).join('')}
+            </tbody>
+          </table>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+// ───────────────────────── Category Modal Open/Close ─────────────────────────
+
+function openAddCategoryModal() {
+  document.getElementById('new-category-name').value = '';
+  document.getElementById('cat-form-error').style.display = 'none';
+  document.getElementById('category-modal').classList.add('open');
+  setTimeout(() => document.getElementById('new-category-name').focus(), 100);
+}
+
+function closeCategoryModal() {
+  document.getElementById('category-modal').classList.remove('open');
+}
+
+function confirmAddCategory() {
+  const name = document.getElementById('new-category-name').value.trim();
+  const errorEl = document.getElementById('cat-form-error');
+  if (!name) {
+    errorEl.textContent = 'Please enter a category name.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  customCategories.add(name);
+  renderCategoryPills();
+  closeCategoryModal();
+  openCreateModal(name);
+  ShringarAdmin.toast(`Category "${name}" created! Add your first design in it.`, 'success');
+}
+
+// ───────────────────────── Category Select in Design Modal ─────────────────────────
+
+function populateCategorySelect(selectedCategoryValue) {
+  const select = document.getElementById('f-category-select');
+  const customInput = document.getElementById('f-category-custom');
+  if (!select) return;
+
+  const cats = getKnownCategories();
+  select.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('') +
+    `<option value="__NEW__">+ Create New Category...</option>`;
+
+  if (selectedCategoryValue) {
+    if (!cats.some(c => c.toLowerCase() === selectedCategoryValue.toLowerCase())) {
+      const opt = document.createElement('option');
+      opt.value = selectedCategoryValue;
+      opt.textContent = selectedCategoryValue;
+      select.insertBefore(opt, select.lastElementChild);
+    }
+    select.value = selectedCategoryValue;
+    if (customInput) customInput.style.display = 'none';
+  } else {
+    select.value = cats[0] || 'Bridal';
+    if (customInput) customInput.style.display = 'none';
+  }
+}
+
+function onCategorySelectChange() {
+  const select = document.getElementById('f-category-select');
+  const customInput = document.getElementById('f-category-custom');
+  if (select.value === '__NEW__') {
+    customInput.style.display = 'block';
+    customInput.value = '';
+    customInput.focus();
+  } else {
+    customInput.style.display = 'none';
+  }
 }
 
 // ───────────────────────── Modal open/close ─────────────────────────
 
-function openCreateModal() {
+function toggleAllCities(masterCb) {
+  const cbs = document.querySelectorAll('.city-cb');
+  cbs.forEach(cb => {
+    if (masterCb.checked) cb.checked = false;
+  });
+}
+
+function onCityCbChange() {
+  const masterCb = document.getElementById('city-all-cb');
+  const checked = document.querySelectorAll('.city-cb:checked');
+  if (checked.length > 0 && masterCb) masterCb.checked = false;
+  if (checked.length === 0 && masterCb) masterCb.checked = true;
+}
+
+let allArtists = [];
+async function loadArtistsList() {
+  try {
+    const list = await ShringarAdmin.Artists.all();
+    if (Array.isArray(list)) {
+      allArtists = list;
+      const select = document.getElementById('f-assigned-artists');
+      if (select) {
+        select.innerHTML = list.map(a => 
+          `<option value="${a.id}">${escapeHtml(a.name)} (${escapeHtml(a.city || 'General')})</option>`
+        ).join('');
+      }
+    }
+  } catch (err) {
+    console.warn('Could not load artists list for design modal:', err);
+  }
+}
+
+function openCreateModal(prefillCategory) {
   editingId = null;
   tagsList = [];
   coverImageUrl = null;
   galleryImageUrls = [];
   document.getElementById('modal-title').textContent = 'Add New Design';
   clearForm();
+  populateCategorySelect(prefillCategory || (selectedCategory !== 'ALL' ? selectedCategory : 'Bridal'));
+  document.getElementById('f-palm-price').value = '';
+  document.getElementById('f-grand-price').value = '';
+  document.getElementById('f-origin-city').value = 'Rajasthan Heritage';
+  document.getElementById('city-all-cb').checked = true;
+  document.querySelectorAll('.city-cb').forEach(cb => cb.checked = false);
+  const artistSelect = document.getElementById('f-assigned-artists');
+  if (artistSelect) {
+    Array.from(artistSelect.options).forEach(opt => opt.selected = false);
+  }
   document.getElementById('design-modal').classList.add('open');
 }
 
@@ -317,12 +733,31 @@ function openEditModal(id) {
 
   document.getElementById('f-name').value = d.name || '';
   document.getElementById('f-description').value = d.description || '';
-  document.getElementById('f-category').value = d.category || '';
+  populateCategorySelect(d.category || 'Bridal');
   document.getElementById('f-coverage').value = d.coverage || '';
   document.getElementById('f-duration-min').value = d.durationMinHours ?? '';
   document.getElementById('f-duration-max').value = d.durationMaxHours ?? '';
   document.getElementById('f-cones').value = d.conesNeeded ?? '';
   document.getElementById('f-price').value = d.price ?? '';
+  document.getElementById('f-palm-price').value = d.palmTierPrice ?? '';
+  document.getElementById('f-grand-price').value = d.grandTierPrice ?? '';
+  document.getElementById('f-origin-city').value = d.originCity || 'Rajasthan Heritage';
+
+  const avail = d.availableCities || [];
+  const isAll = avail.length === 0 || avail.includes('ALL') || avail.includes('All Cities') || avail.includes('Nationwide');
+  document.getElementById('city-all-cb').checked = isAll;
+  document.querySelectorAll('.city-cb').forEach(cb => {
+    cb.checked = isAll ? false : avail.includes(cb.value);
+  });
+
+  const assigned = (d.assignedArtistIds || []).map(String);
+  const artistSelect = document.getElementById('f-assigned-artists');
+  if (artistSelect) {
+    Array.from(artistSelect.options).forEach(opt => {
+      opt.selected = assigned.includes(opt.value);
+    });
+  }
+
   document.getElementById('f-sort-order').value = d.sortOrder ?? 0;
   document.getElementById('f-emoji').value = d.emojiIcon || '';
   document.getElementById('f-badge').value = d.badge || '';
@@ -352,8 +787,19 @@ function closeModal() {
 }
 
 function clearForm() {
-  ['f-name','f-description','f-category','f-coverage','f-duration-min','f-duration-max',
-   'f-cones','f-price','f-emoji','f-badge','f-youtube'].forEach(id => document.getElementById(id).value = '');
+  ['f-name','f-description','f-coverage','f-duration-min','f-duration-max',
+   'f-cones','f-price','f-palm-price','f-grand-price','f-emoji','f-badge','f-youtube'].forEach(id => {
+     const el = document.getElementById(id);
+     if (el) el.value = '';
+   });
+  const customCat = document.getElementById('f-category-custom');
+  if (customCat) { customCat.value = ''; customCat.style.display = 'none'; }
+  document.getElementById('city-all-cb').checked = true;
+  document.querySelectorAll('.city-cb').forEach(cb => cb.checked = false);
+  const artistSelect = document.getElementById('f-assigned-artists');
+  if (artistSelect) {
+    Array.from(artistSelect.options).forEach(opt => opt.selected = false);
+  }
   document.getElementById('f-sort-order').value = 0;
   document.getElementById('f-active').checked = true;
   document.getElementById('f-featured').checked = false;
@@ -415,7 +861,7 @@ function renderCoverPreview() {
   if (!coverImageUrl) { preview.innerHTML = ''; return; }
   preview.innerHTML = `
     <div class="upload-preview-item">
-      <img src="${ShringarAdmin.resolveUploadUrl(coverImageUrl)}" alt="Cover"/>
+      <img src="${ShringarAdmin.resolveUploadUrl(coverImageUrl)}" alt="Cover" onerror="this.onerror=null;this.src='/images/rajasthani-bridal.jpg'"/>
       <div class="remove-img" onclick="coverImageUrl=null;renderCoverPreview();">✕</div>
     </div>`;
 }
@@ -438,7 +884,7 @@ function renderGalleryPreview() {
   const preview = document.getElementById('gallery-preview');
   preview.innerHTML = galleryImageUrls.map((url, i) => `
     <div class="upload-preview-item">
-      <img src="${ShringarAdmin.resolveUploadUrl(url)}" alt="Gallery ${i+1}"/>
+      <img src="${ShringarAdmin.resolveUploadUrl(url)}" alt="Gallery ${i+1}" onerror="this.onerror=null;this.src='/images/rajasthani-bridal.jpg'"/>
       <div class="remove-img" onclick="removeGalleryImage(${i})">✕</div>
     </div>`).join('');
 }
@@ -455,7 +901,9 @@ async function saveDesign() {
   errorEl.style.display = 'none';
 
   const name = document.getElementById('f-name').value.trim();
-  const category = document.getElementById('f-category').value.trim();
+  const selectVal = document.getElementById('f-category-select')?.value || '';
+  const customVal = document.getElementById('f-category-custom')?.value || '';
+  const category = (selectVal === '__NEW__' ? customVal : selectVal).trim();
   const coverage = document.getElementById('f-coverage').value.trim();
   const price = parseFloat(document.getElementById('f-price').value);
 
@@ -464,6 +912,24 @@ async function saveDesign() {
     errorEl.style.display = 'block';
     return;
   }
+  customCategories.add(category);
+
+  const palmTierPrice = parseFloat(document.getElementById('f-palm-price').value);
+  const grandTierPrice = parseFloat(document.getElementById('f-grand-price').value);
+  const originCity = document.getElementById('f-origin-city')?.value || null;
+
+  let availableCities = [];
+  if (document.getElementById('city-all-cb')?.checked) {
+    availableCities = ['All Cities'];
+  } else {
+    availableCities = [...document.querySelectorAll('.city-cb:checked')].map(cb => cb.value);
+    if (availableCities.length === 0) availableCities = ['All Cities'];
+  }
+
+  const artistSelect = document.getElementById('f-assigned-artists');
+  const assignedArtistIds = artistSelect 
+    ? [...artistSelect.selectedOptions].map(o => parseInt(o.value)).filter(n => !isNaN(n))
+    : [];
 
   const recommendedSkinTones = [...document.querySelectorAll('.skin-tone-cb:checked')].map(cb => cb.value);
 
@@ -476,6 +942,11 @@ async function saveDesign() {
     durationMaxHours: parseFloatOrNull('f-duration-max'),
     conesNeeded: parseFloatOrNull('f-cones'),
     price,
+    palmTierPrice: isNaN(palmTierPrice) ? null : palmTierPrice,
+    grandTierPrice: isNaN(grandTierPrice) ? null : grandTierPrice,
+    originCity,
+    availableCities,
+    assignedArtistIds,
     imageUrl: coverImageUrl,
     galleryImageUrls,
     youtubeVideoUrl: document.getElementById('f-youtube').value.trim() || null,
@@ -495,10 +966,10 @@ async function saveDesign() {
   try {
     if (editingId) {
       await ShringarAdmin.Designs.update(editingId, payload);
-      ShringarAdmin.toast('Design updated', 'success');
+      ShringarAdmin.toast('Design updated with coverage tiers and city/artist configuration', 'success');
     } else {
       await ShringarAdmin.Designs.create(payload);
-      ShringarAdmin.toast('Design created', 'success');
+      ShringarAdmin.toast('Design created with coverage tiers and city/artist configuration', 'success');
     }
     closeModal();
     loadDesigns();
@@ -540,6 +1011,7 @@ async function restoreDesign(id) {
 // ───────────────────────── Deep link support: designs.html?edit=ID ─────────────────────────
 
 async function checkDeepLink() {
+  await loadArtistsList();
   const params = new URLSearchParams(window.location.search);
   const editId = params.get('edit');
   if (editId) {

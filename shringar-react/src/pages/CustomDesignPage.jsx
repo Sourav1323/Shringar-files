@@ -67,7 +67,7 @@ export default function CustomDesignPage() {
     return () => window.removeEventListener('shringar_custom_designs_updated', handleUpdate);
   }, [user?.id, user?.email]);
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.eventDate || !formData.userEmail) {
       showError('Please provide motif title, ceremony date, and your contact email.');
@@ -75,13 +75,13 @@ export default function CustomDesignPage() {
     }
 
     try {
-      const created = CustomDesignsService.create({
+      const created = await CustomDesignsService.create({
         ...formData,
         userId: user?.id || null,
         userName: formData.userName || user?.fullName || 'Esteemed Patron',
         userEmail: formData.userEmail || user?.email || 'patron@example.com',
       });
-      showSuccess(`Custom motif request #${created.id} submitted for master artist review!`);
+      showSuccess(`Custom motif request #${created.id} submitted! Confirmation email has been sent to ${formData.userEmail}.`);
       setActiveTab('my-requests');
       loadRequests();
     } catch (err) {

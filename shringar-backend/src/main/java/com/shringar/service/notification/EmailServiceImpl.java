@@ -192,6 +192,7 @@ public class EmailServiceImpl implements EmailService {
                     <tr><td style="padding:6px 0;color:#8a6040;">Advance Amount</td><td style="padding:6px 0;font-weight:700;color:#16a34a;font-size:15px;">%s</td></tr>
                     <tr><td style="padding:6px 0;color:#8a6040;">Balance Due</td><td style="padding:6px 0;font-weight:600;">%s</td></tr>
                     <tr><td style="padding:6px 0;color:#8a6040;">Customer UPI UTR</td><td style="padding:6px 0;font-weight:700;font-family:monospace;background:#fef3c7;padding:4px 8px;border-radius:4px;display:inline-block;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Payment Screenshot</td><td style="padding:6px 0;">%s</td></tr>
                   </table>
                 </div>
                 %s
@@ -211,6 +212,9 @@ public class EmailServiceImpl implements EmailService {
                         formatINR(booking.getBalanceAmount()),
                         booking.getUpiTransactionRef() != null && !booking.getUpiTransactionRef().isBlank()
                                 ? booking.getUpiTransactionRef() : "Awaiting customer UTR entry",
+                        booking.getPaymentScreenshotUrl() != null && !booking.getPaymentScreenshotUrl().isBlank()
+                                ? "<a href=\"" + booking.getPaymentScreenshotUrl() + "\" target=\"_blank\"><img src=\"" + booking.getPaymentScreenshotUrl() + "\" alt=\"Payment Receipt\" style=\"max-width:220px;max-height:220px;border-radius:8px;border:1px solid #d4c5a9;display:block;margin-top:4px;\" /></a>"
+                                : "<span style=\"color:#8a6040;\">No screenshot uploaded</span>",
                         designsListHtml(booking),
                         paymentSummaryHtml(booking),
                         approvalButtonHtml
@@ -800,5 +804,167 @@ public class EmailServiceImpl implements EmailService {
         );
 
         return sendSecurityEmail(toEmail, subject, plainText, body);
+    }
+
+    // ───────────────────────── Custom Design Request Notifications ─────────────────────────
+    @Override
+    @Async("notificationExecutor")
+    public void sendCustomRequestToAdmin(com.shringar.model.CustomRequest request) {
+        List<String> adminEmails = Arrays.stream(adminEmailsCsv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
+        if (!isConfigured() || adminEmails.isEmpty()) {
+            log.warn("No admin email configured — skipping custom request notification for {}", request.getRequestReference());
+            return;
+        }
+
+        String subject = "🎨 [Custom Design Order] " + request.getRequestReference() + " — " + request.getTitle() + " (" + request.getCity() + ")";
+        String imgPreview = request.getReferenceImageUrl() != null && !request.getReferenceImageUrl().isBlank()
+                ? "<div style=\"margin:14px 0;\"><a href=\"" + request.getReferenceImageUrl() + "\" target=\"_blank\"><img src=\"" + request.getReferenceImageUrl() + "\" alt=\"Custom Reference\" style=\"max-width:240px;max-height:240px;border-radius:10px;border:1px solid #d4c5a9;\" /></a></div>"
+                : "<p style=\"color:#8a6040;font-style:italic;\">No reference image provided.</p>";
+
+        String body = wrapTemplate(
+                "New Custom Mehendi Request",
+                "A patron has commissioned a custom handcrafted mehendi design. Review specifications and submit a quote below:",
+                """
+                <div style="background:#faf7f2;border:1px solid #e8dec8;border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+                  <table style="width:100%%;font-size:13px;color:#2a1a08;border-collapse:collapse;">
+                    <tr><td style="padding:6px 0;color:#8a6040;width:130px;">Request ID</td><td style="padding:6px 0;font-weight:700;font-family:monospace;font-size:14px;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Design Title</td><td style="padding:6px 0;font-weight:600;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Customer</td><td style="padding:6px 0;font-weight:600;">%s · <a href="tel:%s" style="color:#7a2c1a;">%s</a></td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Email</td><td style="padding:6px 0;"><a href="mailto:%s" style="color:#7a2c1a;">%s</a></td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Location & PIN</td><td style="padding:6px 0;">%s (PIN: %s)</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Venue Address</td><td style="padding:6px 0;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Event Date & Time</td><td style="padding:6px 0;font-weight:600;">%s · %s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Category & Coverage</td><td style="padding:6px 0;">%s · %s</td></tr>
+                  </table>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                  <h4 style="font-family:'Georgia',serif;color:#493313;margin:0 0 6px 0;">Patron Vision & Notes:</h4>
+                  <div style="background:#fff;border:1px solid #e8dec8;border-radius:8px;padding:12px 14px;font-size:13px;color:#3d240e;line-height:1.6;">
+                    %s
+                  </div>
+                </div>
+
+                <h4 style="font-family:'Georgia',serif;color:#493313;margin:14px 0 6px 0;">Reference Artwork:</h4>
+                %s
+
+                <div style="text-align:center;margin:24px 0 10px 0;">
+                  <a href="%s/admin-portal/custom-orders.html?ref=%s"
+                     style="display:inline-block;background:#7a2c1a;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 28px;border-radius:24px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+                    Review & Quote in Admin Portal →
+                  </a>
+                </div>
+                """.formatted(
+                        request.getRequestReference(),
+                        request.getTitle(),
+                        request.getCustomerName(), request.getCustomerPhone(), request.getCustomerPhone(),
+                        request.getCustomerEmail() != null ? request.getCustomerEmail() : "—",
+                        request.getCustomerEmail() != null ? request.getCustomerEmail() : "—",
+                        request.getCity(), request.getPincode() != null ? request.getPincode() : "—",
+                        request.getVenueAddress() != null ? request.getVenueAddress() : "—",
+                        request.getEventDate() != null ? request.getEventDate().toString() : "TBD",
+                        request.getPreferredTime() != null ? request.getPreferredTime() : "Flexible",
+                        request.getCategory() != null ? request.getCategory() : "Bridal",
+                        request.getCoverage() != null ? request.getCoverage() : "Custom",
+                        request.getDescription() != null ? request.getDescription() : "No detailed description entered.",
+                        imgPreview,
+                        frontendBaseUrl, request.getRequestReference()
+                ),
+                "Log into the admin portal to provide a price quotation, artist assignment, and advance deposit requirements."
+        );
+
+        for (String adminEmail : adminEmails) {
+            send(adminEmail, subject, body);
+        }
+    }
+
+    @Override
+    @Async("notificationExecutor")
+    public void sendCustomRequestConfirmationToCustomer(com.shringar.model.CustomRequest request) {
+        if (!isConfigured() || request.getCustomerEmail() == null || request.getCustomerEmail().isBlank()) {
+            return;
+        }
+
+        String subject = "✨ Custom Mehendi Request Received — #" + request.getRequestReference() + " · Shringar";
+        String body = wrapTemplate(
+                "Your Custom Vision is Under Review",
+                "Hi " + firstName(request.getCustomerName()) + ", we've received your custom mehendi commission (#" + request.getRequestReference() + ").",
+                """
+                <p style="font-size:13.5px;color:#3d240e;line-height:1.6;margin-bottom:16px;">
+                  Thank you for entrusting Shringar with your bespoke mehendi design: <strong>%s</strong>.
+                  Our senior bridal artisans are reviewing your reference imagery and ceremonial requirements.
+                </p>
+
+                <div style="background:#faf7f2;border:1px solid #e8dec8;border-radius:12px;padding:16px 18px;margin-bottom:20px;">
+                  <table style="width:100%%;font-size:13px;color:#2a1a08;border-collapse:collapse;">
+                    <tr><td style="padding:5px 0;color:#8a6040;width:120px;">Reference ID</td><td style="padding:5px 0;font-weight:700;font-family:monospace;">%s</td></tr>
+                    <tr><td style="padding:5px 0;color:#8a6040;">Design Category</td><td style="padding:5px 0;">%s (%s)</td></tr>
+                    <tr><td style="padding:5px 0;color:#8a6040;">Target City & PIN</td><td style="padding:5px 0;">%s (PIN: %s)</td></tr>
+                    <tr><td style="padding:5px 0;color:#8a6040;">Ceremony Date</td><td style="padding:5px 0;font-weight:600;">%s</td></tr>
+                    <tr><td style="padding:5px 0;color:#8a6040;">Status</td><td style="padding:5px 0;color:#c9a227;font-weight:700;">Under Master Artisan Review</td></tr>
+                  </table>
+                </div>
+
+                <div style="background:#fff;border-left:3px solid #7a2c1a;padding:12px 14px;border-radius:4px;font-size:12.5px;color:#5c3d1e;line-height:1.5;">
+                  <strong>What happens next:</strong> Within 12–24 hours, our design studio will send you a tailored price quote, estimated ceremony duration, and recommended cone blend to finalize your booking.
+                </div>
+                """.formatted(
+                        request.getTitle(),
+                        request.getRequestReference(),
+                        request.getCategory() != null ? request.getCategory() : "Bespoke",
+                        request.getCoverage() != null ? request.getCoverage() : "Hand & Feet",
+                        request.getCity(), request.getPincode() != null ? request.getPincode() : "—",
+                        request.getEventDate() != null ? request.getEventDate().toString() : "TBD"
+                ),
+                "If you have additional design inspirations or need urgent assistance, reply to this email or call our concierge."
+        );
+
+        send(request.getCustomerEmail(), subject, body);
+    }
+
+    @Override
+    @Async("notificationExecutor")
+    public void sendCustomRequestQuoteToCustomer(com.shringar.model.CustomRequest request) {
+        if (!isConfigured() || request.getCustomerEmail() == null || request.getCustomerEmail().isBlank()) {
+            return;
+        }
+
+        String subject = "🎉 Custom Mehendi Quote Ready — #" + request.getRequestReference() + " · " + formatINR(request.getQuotedPrice());
+        String body = wrapTemplate(
+                "Your Custom Mehendi Quote is Ready",
+                "Hi " + firstName(request.getCustomerName()) + ", our master artisans have reviewed your design (#" + request.getRequestReference() + ") and provided a personalized quotation.",
+                """
+                <div style="background:#faf7f2;border:1px solid #e8dec8;border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+                  <table style="width:100%%;font-size:13px;color:#2a1a08;border-collapse:collapse;">
+                    <tr><td style="padding:6px 0;color:#8a6040;width:130px;">Design Title</td><td style="padding:6px 0;font-weight:700;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Quoted Total Price</td><td style="padding:6px 0;font-weight:700;color:#7a2c1a;font-size:16px;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Advance to Reserve</td><td style="padding:6px 0;font-weight:700;color:#16a34a;font-size:15px;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Assigned Artisan</td><td style="padding:6px 0;font-weight:600;">%s</td></tr>
+                    <tr><td style="padding:6px 0;color:#8a6040;">Studio Notes</td><td style="padding:6px 0;font-style:italic;">%s</td></tr>
+                  </table>
+                </div>
+
+                <div style="text-align:center;margin:24px 0 10px 0;">
+                  <a href="%s/custom-design"
+                     style="display:inline-block;background:#7a2c1a;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 28px;border-radius:24px;box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+                    View & Lock Booking with Advance →
+                  </a>
+                </div>
+                """.formatted(
+                        request.getTitle(),
+                        formatINR(request.getQuotedPrice()),
+                        formatINR(request.getAdvanceRequired()),
+                        request.getArtistAssigned() != null ? request.getArtistAssigned() : "Master Bridal Artisan",
+                        request.getAdminNotes() != null ? request.getAdminNotes() : "Certified cones and stencils allocated.",
+                        frontendBaseUrl
+                ),
+                "Advance deposit confirms the artist's calendar slot for your auspicious date."
+        );
+
+        send(request.getCustomerEmail(), subject, body);
     }
 }

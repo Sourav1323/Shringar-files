@@ -397,3 +397,108 @@ table.data-table{width:100%;border-collapse:collapse;}
     display: none;
   }
 }
+
+/* ── CATEGORY STYLES (DESIGNS PAGE) ── */
+.category-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--white);
+  border: 1px solid var(--cd);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+.category-pills-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--cd);
+  background: var(--cream);
+  color: var(--td);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.cat-pill:hover {
+  border-color: var(--gold);
+  background: #fdf6ec;
+}
+.cat-pill.active {
+  background: var(--td);
+  color: var(--cream);
+  border-color: var(--td);
+  box-shadow: 0 4px 12px rgba(42, 26, 8, 0.15);
+}
+.cat-pill-count {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+.cat-pill.active .cat-pill-count {
+  background: var(--gold);
+  color: var(--td);
+}
+.view-mode-btn-group {
+  display: inline-flex;
+  border: 1.5px solid var(--cd);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--cream);
+}
+.view-mode-btn {
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--tl);
+  transition: all 0.15s;
+}
+.view-mode-btn.active {
+  background: var(--white);
+  color: var(--td);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.category-group-card {
+  background: var(--white);
+  border: 1px solid var(--cd);
+  border-radius: 14px;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+.category-group-header {
+  padding: 14px 20px;
+  background: #fdfbf7;
+  border-bottom: 1.5px solid var(--cd);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.category-group-title {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--td);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+

@@ -93,7 +93,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/coupons/public").permitAll()
                 .requestMatchers(HttpMethod.GET, "/testimonials").permitAll()
                 .requestMatchers(HttpMethod.GET, "/bookings/reference/**").permitAll()
-                .requestMatchers("/support/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/bookings").permitAll()
+                .requestMatchers(HttpMethod.PATCH, "/bookings/*/submit-upi-payment").permitAll()
+                .requestMatchers("/custom-requests", "/custom-requests/**").permitAll()
+                .requestMatchers("/support", "/support/**").permitAll()
                 .requestMatchers("/payments/webhook").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Admin-only

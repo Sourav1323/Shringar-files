@@ -3,6 +3,7 @@ package com.shringar.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,6 +75,16 @@ public class Artist {
 
     @Column(name = "badge_label", length = 30)
     private String badgeLabel;
+
+    @Column(name = "is_available")
+    @Builder.Default
+    private Boolean isAvailable = true;
+
+    @Column(name = "availability_locked_until")
+    private LocalDateTime availabilityLockedUntil;
+
+    @Column(name = "availability_last_changed_at")
+    private LocalDateTime availabilityLastChangedAt;
 
     @OneToOne
     @JoinColumn(name = "user_id")

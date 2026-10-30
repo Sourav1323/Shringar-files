@@ -3,7 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Calendar, Clock, MapPin, User, CheckCircle2, ArrowRight, ArrowLeft, 
   ShieldCheck, Copy, Check, QrCode, AlertCircle, Lock, Phone, Mail, Home,
-  Crown, Users, Coffee, Sparkles, Feather
+  Crown, Users, Coffee, Sparkles, Feather, Camera, Upload
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,12 @@ import { useToast } from '../context/ToastContext';
 import { useCity } from '../context/CityContext';
 import { CitiesAPI, ArtistsAPI, BookingsAPI, SettingsAPI, CartAPI } from '../services/api';
 import { optimizeArtistAssignment } from '../utils/artistOptimizer';
+import {
+  calculatePincodeDistance,
+  calculateDistancePricing,
+  isValidIndianPincode,
+  CITY_DEFAULT_PINCODES,
+} from '../utils/pincodeDistance';
 
 export default function BookingPage() {
   const { 
@@ -60,7 +66,7 @@ export default function BookingPage() {
     artistVisitFee: 200,
   });
 
-  const { city: globalCity, setCity: setGlobalCity } = useCity();
+  const { city: globalCity, pincode: globalPincode, setCity: setGlobalCity } = useCity();
 
   // Form states
   const [eventDate, setEventDate] = useState('');
@@ -83,8 +89,16 @@ export default function BookingPage() {
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [eventAddress, setEventAddress] = useState('');
-  const [pincode, setPincode] = useState('');
+  const [pincode, setPincode] = useState(globalPincode || CITY_DEFAULT_PINCODES[globalCity || 'Delhi NCR'] || '110001');
   const [upiRef, setUpiRef] = useState('');
+  const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState('');
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+
+  useEffect(() => {
+    if (globalPincode && (!pincode || pincode === '110001')) {
+      setPincode(globalPincode);
+    }
+  }, [globalPincode]);
 
   // Live City Designer Availability state
   const [cityAvailability, setCityAvailability] = useState({
@@ -238,6 +252,46 @@ export default function BookingPage() {
   const advanceAmount = Math.ceil((calculatedGrandTotal * advancePercent) / 100);
   const balanceAmount = Math.max(0, calculatedGrandTotal - advanceAmount);
 
+  // ── Distance Calculation between user pincode and assigned artist base pincode ──
+  const currentAssignedArtist = artistManifest.assignedArtists[0] || artists[0] || null;
+  const estimatedDistance = useMemo(() => {
+    return calculatePincodeDistance(pincode, currentAssignedArtist?.artistId || currentAssignedArtist?.id, selectedCity);
+  }, [pincode, currentAssignedArtist, selectedCity]);
+
+  const distancePricing = useMemo(() => {
+    return calculateDistancePricing(estimatedDistance, calculatedGrandTotal);
+  }, [estimatedDistance, calculatedGrandTotal]);
+
+  const handleScreenshotUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB.');
+      return;
+    }
+    setUploadingScreenshot(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/public/uploads', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data?.url) {
+        setPaymentScreenshotUrl(data.url);
+        toast.success('Payment screenshot uploaded successfully! ✓');
+      } else {
+        toast.error('Failed to upload screenshot. Please verify your UTR number.');
+      }
+    } catch (err) {
+      console.warn('Screenshot upload error:', err);
+      toast.error('Upload failed. Please ensure file is a valid image under 10MB.');
+    } finally {
+      setUploadingScreenshot(false);
+    }
+  };
+
   // Validation functions
   const validateField = (name, value) => {
     let error = '';
@@ -359,6 +413,11 @@ export default function BookingPage() {
         toast.error('Please fix the errors in the contact & address form before continuing.');
         return;
       }
+
+      if (distancePricing.isBeyond10Km && !distancePricing.isThresholdSatisfied) {
+        toast.error(`For a doorstep visit of ${distancePricing.distanceKm} km, minimum booking order is ₹${distancePricing.minOrderAmount} (₹350 per 10 km bracket beyond 10 km). Please add more designs.`);
+        return;
+      }
     }
 
     setStep((prev) => prev + 1);
@@ -415,6 +474,13 @@ export default function BookingPage() {
       customerName: fullName.trim(),
       customerPhone: cleanPhone,
       customerEmail: contactEmail.trim() || user?.email || '',
+      upiTransactionRef: upiRef.trim(),
+      paymentScreenshotUrl: paymentScreenshotUrl || null,
+      items: cartItems.map((item) => ({
+        designId: item.id,
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+      })),
       specialRequests: isBridalPackage
         ? `[ROYAL BRIDAL & CO-RELATIVES PACKAGE - ${artistManifest.artistCount} ARTIST(S) ALLOCATED] ${artistManifest.summaryText}. Submitted UPI UTR: ${upiRef.trim()}`
         : `[OPTIMIZED CELEBRATION PACKAGE - ${artistManifest.artistCount} ARTIST(S) ALLOCATED] ${artistManifest.summaryText}. Submitted UPI UTR: ${upiRef.trim()}`,
@@ -426,26 +492,27 @@ export default function BookingPage() {
         await CartAPI.addItem(item.id, item.quantity || 1).catch(() => {});
       }
 
-      // 2. Create the booking (Backend will set status to PENDING)
+      // 2. Create the booking (Backend will set status to PENDING and trigger real email notifications)
       const res = await BookingsAPI.create(bookingPayload);
-      const bookingId = res?.id || res?.bookingReference;
+      const bookingId = res?.id || res?.data?.id;
 
-      // 3. Submit the UPI payment reference / UTR for admin manual verification
-      if (res?.id) {
-        await BookingsAPI.submitUpiPayment(res.id, upiRef.trim()).catch((e) => {
+      // 3. Submit the UPI payment reference / UTR & screenshot for admin manual verification
+      if (bookingId) {
+        await BookingsAPI.submitUpiPayment(bookingId, upiRef.trim(), paymentScreenshotUrl || null).catch((e) => {
           console.warn('submitUpiPayment note:', e);
         });
       }
 
       clearCart();
       setBookingSuccess({
-        id: res?.id || Math.floor(1000 + Math.random() * 9000),
-        bookingReference: res?.bookingReference || `SHR-${Date.now().toString().slice(-4)}`,
+        id: bookingId,
+        bookingReference: res?.bookingReference || res?.data?.bookingReference || `SHR-${bookingId}`,
         status: 'PENDING',
         advanceAmount,
         grandTotal: calculatedGrandTotal,
         balanceAmount,
         upiRef: upiRef.trim(),
+        paymentScreenshotUrl: paymentScreenshotUrl || null,
         eventDate,
         timeSlot,
         eventAddress,
@@ -454,27 +521,10 @@ export default function BookingPage() {
         artistCount: artistManifest.artistCount,
       });
 
-      toast.success('Advance payment submitted! Booking request is pending admin verification. ⏳');
+      toast.success('Advance payment submitted! Booking confirmation email has been dispatched. ⏳');
     } catch (err) {
       console.error('Booking submission error:', err);
-      // If backend network error, still record booking in pending verification
-      clearCart();
-      setBookingSuccess({
-        id: Math.floor(1000 + Math.random() * 9000),
-        bookingReference: `SHR-${Date.now().toString().slice(-4)}`,
-        status: 'PENDING',
-        advanceAmount,
-        grandTotal: calculatedGrandTotal,
-        balanceAmount,
-        upiRef: upiRef.trim(),
-        eventDate,
-        timeSlot,
-        eventAddress,
-        selectedCity,
-        assignedArtists: artistManifest.assignedArtists,
-        artistCount: artistManifest.artistCount,
-      });
-      toast.success('Booking submitted! Our team will verify your UPI payment shortly.');
+      toast.error(err.message || 'Booking submission failed. Please check your address and details and try again.');
     } finally {
       setLoading(false);
     }
@@ -1008,6 +1058,31 @@ export default function BookingPage() {
                 ) : pincode.length === 6 && (
                   <p className="text-[11px] text-emerald-700 font-semibold mt-1">✓ Valid 6-Digit Indian Postal Code</p>
                 )}
+
+                {isValidIndianPincode(pincode) && !errors.pincode && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] space-y-1">
+                    <div className="flex items-center justify-between font-semibold text-[#4A2511]">
+                      <span>📍 Distance to Artist Base ({currentAssignedArtist?.name || 'Master Artisan'}):</span>
+                      <span className="font-mono font-bold text-amber-900">{estimatedDistance} km</span>
+                    </div>
+                    {distancePricing.isBeyond10Km ? (
+                      <div className="text-amber-900 text-[10.5px] leading-tight pt-1 border-t border-amber-200">
+                        <span className="font-bold text-red-700">⚠️ Notice (&gt;10 km zone): </span>
+                        Minimum booking order value for {estimatedDistance} km is <strong>₹{distancePricing.minOrderAmount}</strong> (₹350 per 10 km bracket beyond 10 km).
+                        {distancePricing.isThresholdSatisfied ? (
+                          <span className="text-emerald-700 font-bold block mt-0.5">✓ Order total meets minimum requirement ({formatPrice(calculatedGrandTotal)} &ge; ₹{distancePricing.minOrderAmount})</span>
+                        ) : (
+                          <span className="text-red-700 font-bold block mt-0.5">✕ Current total ({formatPrice(calculatedGrandTotal)}) is below ₹{distancePricing.minOrderAmount}. Please add more designs to continue.</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-emerald-700 text-[10.5px] pt-1 border-t border-emerald-100 flex items-center gap-1 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Local 10 km radius. Standard doorstep booking applies.</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="sm:col-span-2">
@@ -1182,6 +1257,71 @@ export default function BookingPage() {
                   <p className="text-[10px] text-stone-500 mt-1">
                     Found on your payment confirmation screen (Google Pay, PhonePe, Paytm, etc.). Used by admin to verify your deposit.
                   </p>
+                )}
+              </div>
+
+              {/* Payment Screenshot Upload with UTR */}
+              <div className="pt-3 border-t border-amber-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-800 flex items-center gap-1.5">
+                    <Upload className="w-4 h-4 text-[#B58E34]" />
+                    <span>Upload Payment Screenshot (Recommended)</span>
+                  </label>
+                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Faster Verification
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-500">
+                  Attach a screenshot or receipt of your UPI payment showing the transaction reference / UTR.
+                </p>
+
+                {paymentScreenshotUrl ? (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white border border-emerald-300">
+                    <img
+                      src={paymentScreenshotUrl}
+                      alt="Payment proof screenshot"
+                      className="w-16 h-16 object-cover rounded-lg border border-stone-200 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-emerald-800 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Receipt screenshot attached</span>
+                      </div>
+                      <div className="text-[10px] text-stone-500 truncate mt-0.5">{paymentScreenshotUrl}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentScreenshotUrl('')}
+                      className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      id="booking-payment-screenshot"
+                      accept="image/*"
+                      onChange={handleScreenshotUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('booking-payment-screenshot')?.click()}
+                      disabled={uploadingScreenshot}
+                      className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-[#B58E34]/50 bg-white hover:bg-amber-50/50 text-stone-700 font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                    >
+                      {uploadingScreenshot ? (
+                        <span className="animate-pulse">Uploading screenshot...</span>
+                      ) : (
+                        <>
+                          <Camera className="w-4 h-4 text-[#B58E34]" />
+                          <span>Click to Attach UPI Payment Screenshot / Receipt</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
 

@@ -44,6 +44,27 @@ public class Design {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "palm_tier_price", precision = 10, scale = 2)
+    private BigDecimal palmTierPrice;
+
+    @Column(name = "grand_tier_price", precision = 10, scale = 2)
+    private BigDecimal grandTierPrice;
+
+    @Column(name = "origin_city", length = 60)
+    private String originCity;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "design_cities", joinColumns = @JoinColumn(name = "design_id"))
+    @Column(name = "city_name")
+    @Builder.Default
+    private List<String> availableCities = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "design_artist_ids", joinColumns = @JoinColumn(name = "design_id"))
+    @Column(name = "artist_id")
+    @Builder.Default
+    private List<Long> assignedArtistIds = new ArrayList<>();
+
     @Column(name = "image_url")
     private String imageUrl;                // primary/cover image
 
@@ -99,8 +120,19 @@ public class Design {
     private LocalDateTime createdAt;
 
     public String getDurationLabel() {
-        if (durationMinHours == null) return "N/A";
-        if (durationMaxHours == null) return durationMinHours + " hr";
-        return durationMinHours + "–" + durationMaxHours + " hrs";
+        if (durationMinHours == null && durationMaxHours == null) return "1–2 hrs";
+        if (durationMinHours == null) return formatHour(durationMaxHours) + (durationMaxHours == 1.0 ? " hr" : " hrs");
+        if (durationMaxHours == null || durationMinHours.equals(durationMaxHours)) {
+            return formatHour(durationMinHours) + (durationMinHours == 1.0 ? " hr" : " hrs");
+        }
+        return formatHour(durationMinHours) + "–" + formatHour(durationMaxHours) + " hrs";
+    }
+
+    private String formatHour(Double h) {
+        if (h == null) return "";
+        if (h == Math.floor(h)) {
+            return String.valueOf(h.intValue());
+        }
+        return String.valueOf(h);
     }
 }

@@ -33,6 +33,12 @@ public interface EmailService {
 
     void sendArtistApplicationNotification(ArtistApplication application);
 
+    void sendCustomRequestToAdmin(com.shringar.model.CustomRequest customRequest);
+
+    void sendCustomRequestConfirmationToCustomer(com.shringar.model.CustomRequest customRequest);
+
+    void sendCustomRequestQuoteToCustomer(com.shringar.model.CustomRequest customRequest);
+
     /** Synchronous (not @Async like the notifications above) — the caller needs to
      *  know immediately whether the OTP actually went out before telling the user
      *  "check your email". Returns false on any failure rather than throwing, so

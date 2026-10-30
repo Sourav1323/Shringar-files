@@ -4,6 +4,8 @@
  * and advance payment confirmation.
  */
 
+import { CustomRequestsAPI } from './api';
+
 const STORAGE_KEY = 'shringar_custom_design_requests';
 
 // Initial demo custom requests for rich UX demonstration
@@ -91,19 +93,43 @@ export const CustomDesignsService = {
     return all.find((r) => String(r.id) === String(id));
   },
 
-  create: (requestData) => {
+  create: async (requestData) => {
     const all = getStored();
-    const newId = 'CUST-' + Math.floor(1000 + Math.random() * 9000);
+    let backendRecord = null;
+    try {
+      const cleanPhone = (requestData.userPhone || requestData.customerPhone || '').replace(/\D/g, '');
+      const payload = {
+        userId: requestData.userId || null,
+        customerName: requestData.userName || requestData.customerName || 'Valued Patron',
+        customerEmail: requestData.userEmail || requestData.customerEmail || '',
+        customerPhone: cleanPhone.slice(-10) || '9876543210',
+        title: requestData.title || 'Custom Bespoke Motif',
+        category: requestData.category || 'Bridal',
+        coverage: requestData.coverage || 'Full Hand',
+        description: requestData.description || '',
+        referenceImageUrl: requestData.referenceImageUrl || '',
+        eventDate: requestData.eventDate || null,
+        preferredTime: requestData.preferredTime || '',
+        city: requestData.city || 'Delhi NCR',
+        pincode: requestData.pincode || '',
+        venueAddress: requestData.venueAddress || '',
+      };
+      backendRecord = await CustomRequestsAPI.create(payload);
+    } catch (err) {
+      console.warn('Backend custom request submission fallback to local storage:', err);
+    }
+
+    const newId = backendRecord?.requestReference || backendRecord?.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000));
     const newRecord = {
       id: newId,
       ...requestData,
-      status: 'PENDING_APPROVAL',
-      quotedPrice: null,
-      advanceRequired: null,
+      status: backendRecord?.status || 'PENDING_APPROVAL',
+      quotedPrice: backendRecord?.quotedPrice || null,
+      advanceRequired: backendRecord?.advanceRequired || null,
       advancePaid: false,
-      artistAssigned: null,
-      adminNotes: null,
-      createdAt: new Date().toISOString(),
+      artistAssigned: backendRecord?.artistAssigned || null,
+      adminNotes: backendRecord?.adminNotes || null,
+      createdAt: backendRecord?.createdAt || new Date().toISOString(),
     };
     all.unshift(newRecord);
     saveStored(all);

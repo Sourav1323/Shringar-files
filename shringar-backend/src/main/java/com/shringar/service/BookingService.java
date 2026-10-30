@@ -34,6 +34,8 @@ public class BookingService {
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
     private final ArtistRepository artistRepository;
+    private final DesignRepository designRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
     private final BookingNotificationService bookingNotificationService;
@@ -49,14 +51,36 @@ public class BookingService {
      */
     @Transactional
     public BookingResponse createBooking(Long userId, CreateBookingRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = null;
+        if (userId != null) {
+            user = userRepository.findById(userId).orElse(null);
+        }
+        if (user == null && request.getCustomerPhone() != null && !request.getCustomerPhone().isBlank()) {
+            user = userRepository.findByPhone(request.getCustomerPhone().trim()).orElse(null);
+        }
+        if (user == null && request.getCustomerEmail() != null && !request.getCustomerEmail().isBlank()) {
+            user = userRepository.findByEmail(request.getCustomerEmail().trim()).orElse(null);
+        }
+        if (user == null) {
+            String rawName = request.getCustomerName() != null && !request.getCustomerName().isBlank()
+                    ? request.getCustomerName().trim() : "Valued Patron";
+            String[] nameParts = rawName.split("\\s+", 2);
+            String firstName = nameParts[0];
+            String lastName = nameParts.length > 1 ? nameParts[1] : "";
 
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new BadRequestException("Your cart is empty"));
-
-        if (cart.getItems().isEmpty()) {
-            throw new BadRequestException("Add at least one design to your cart before booking");
+            // Automatically create customer record for seamless checkout
+            user = User.builder()
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .phone(request.getCustomerPhone() != null ? request.getCustomerPhone().trim() : "9876543210")
+                    .email(request.getCustomerEmail() != null && !request.getCustomerEmail().isBlank()
+                            ? request.getCustomerEmail().trim()
+                            : "guest_" + (request.getCustomerPhone() != null ? request.getCustomerPhone().trim() : "user") + "@shringar.in")
+                    .passwordHash(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
+                    .role(com.shringar.model.enums.Role.CUSTOMER)
+                    .isActive(true)
+                    .build();
+            user = userRepository.save(user);
         }
 
         Artist artist = artistRepository.findById(request.getArtistId())
@@ -77,12 +101,46 @@ public class BookingService {
             throw new BadRequestException("This artist is fully booked on the selected date. Please choose another date or artist.");
         }
 
-        BigDecimal designsSubtotal = cart.getSubtotal();
+        Cart cart = cartRepository.findByUserId(user.getId()).orElse(null);
+        boolean hasDbCart = cart != null && !cart.getItems().isEmpty();
+
+        BigDecimal designsSubtotal = BigDecimal.ZERO;
+        BigDecimal discount = BigDecimal.ZERO;
+        String couponCode = null;
+
+        if (hasDbCart) {
+            designsSubtotal = cart.getSubtotal();
+            discount = cart.getDiscountAmount() != null ? cart.getDiscountAmount() : BigDecimal.ZERO;
+            couponCode = cart.getAppliedCouponCode();
+        } else if (request.getItems() != null && !request.getItems().isEmpty()) {
+            for (CreateBookingRequest.BookingItemDto itemDto : request.getItems()) {
+                Design d = designRepository.findById(itemDto.getDesignId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Design not found with id: " + itemDto.getDesignId()));
+                int qty = itemDto.getQuantity() != null && itemDto.getQuantity() > 0 ? itemDto.getQuantity() : 1;
+                BigDecimal price = d.getPrice() != null ? d.getPrice() : BigDecimal.ZERO;
+                designsSubtotal = designsSubtotal.add(price.multiply(BigDecimal.valueOf(qty)));
+            }
+        } else {
+            throw new BadRequestException("Add at least one design to your cart before booking");
+        }
+
         BigDecimal visitFee = new BigDecimal("200.00");
-        BigDecimal discount = cart.getDiscountAmount() != null ? cart.getDiscountAmount() : BigDecimal.ZERO;
         BigDecimal grandTotal = designsSubtotal.add(visitFee).subtract(discount);
         BigDecimal advance = grandTotal.multiply(ADVANCE_PERCENT).setScale(0, RoundingMode.CEILING);
         BigDecimal balance = grandTotal.subtract(advance);
+
+        // ── Pincode Distance & Minimum Booking Requirement Validation ──
+        double distanceKm = estimatePincodeDistance(request.getPincode(), artist, request.getCity());
+        if (distanceKm > 10.0) {
+            double extraKm = distanceKm - 10.0;
+            int brackets = (int) Math.ceil(extraKm / 10.0);
+            BigDecimal minOrderAmount = new BigDecimal(brackets * 350);
+            if (grandTotal.compareTo(minOrderAmount) < 0) {
+                throw new BadRequestException("Distance to your venue is " + String.format("%.1f", distanceKm)
+                        + " km (>10 km zone). Minimum booking order amount is Rs." + minOrderAmount
+                        + " (Rs.350 per 10 km bracket beyond 10 km). Please add more designs to your package.");
+            }
+        }
 
         Booking booking = Booking.builder()
                 .bookingReference(generateBookingReference())
@@ -103,27 +161,47 @@ public class BookingService {
                 .designsSubtotal(designsSubtotal)
                 .artistVisitFee(visitFee)
                 .discountAmount(discount)
-                .couponCode(cart.getAppliedCouponCode())
+                .couponCode(couponCode)
                 .grandTotal(grandTotal)
                 .advanceAmount(advance)
                 .balanceAmount(balance)
                 .status(BookingStatus.PENDING)
                 .isAdvancePaid(false)
+                .upiPaymentSubmitted(request.getUpiTransactionRef() != null && !request.getUpiTransactionRef().isBlank())
+                .upiTransactionRef(request.getUpiTransactionRef() != null && !request.getUpiTransactionRef().isBlank() ? request.getUpiTransactionRef().trim() : null)
+                .paymentScreenshotUrl(request.getPaymentScreenshotUrl() != null && !request.getPaymentScreenshotUrl().isBlank() ? request.getPaymentScreenshotUrl().trim() : null)
+                .upiSubmittedAt(request.getUpiTransactionRef() != null && !request.getUpiTransactionRef().isBlank() ? LocalDateTime.now() : null)
                 .build();
 
-        cart.getItems().forEach(cartItem -> {
-            BookingItem bi = BookingItem.builder()
-                    .booking(booking)
-                    .design(cartItem.getDesign())
-                    .quantity(cartItem.getQuantity())
-                    .priceAtBooking(cartItem.getDesign().getPrice())
-                    .build();
-            booking.getItems().add(bi);
-        });
+        if (hasDbCart) {
+            cart.getItems().forEach(cartItem -> {
+                BookingItem bi = BookingItem.builder()
+                        .booking(booking)
+                        .design(cartItem.getDesign())
+                        .quantity(cartItem.getQuantity())
+                        .priceAtBooking(cartItem.getDesign().getPrice())
+                        .build();
+                booking.getItems().add(bi);
+            });
+        } else if (request.getItems() != null) {
+            for (CreateBookingRequest.BookingItemDto itemDto : request.getItems()) {
+                Design d = designRepository.findById(itemDto.getDesignId()).orElse(null);
+                if (d != null) {
+                    int qty = itemDto.getQuantity() != null && itemDto.getQuantity() > 0 ? itemDto.getQuantity() : 1;
+                    BookingItem bi = BookingItem.builder()
+                            .booking(booking)
+                            .design(d)
+                            .quantity(qty)
+                            .priceAtBooking(d.getPrice())
+                            .build();
+                    booking.getItems().add(bi);
+                }
+            }
+        }
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        // pre-create a Payment shell — actual Razorpay order id attached in PaymentService
+        // Pre-create Payment record shell
         Payment payment = Payment.builder()
                 .booking(savedBooking)
                 .advanceAmount(advance)
@@ -399,9 +477,14 @@ public class BookingService {
      * automatic verification, which is the trade-off of the zero-fee UPI path.
      */
     @Transactional
-    public BookingResponse submitUpiPayment(Long userId, Long bookingId, String transactionRef) {
-        Booking booking = bookingRepository.findByIdAndUserId(bookingId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+    public BookingResponse submitUpiPayment(Long userId, Long bookingId, String transactionRef, String paymentScreenshotUrl) {
+        Booking booking = (userId != null)
+                ? bookingRepository.findByIdAndUserId(bookingId, userId).orElse(null)
+                : null;
+        if (booking == null) {
+            booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+        }
 
         if (Boolean.TRUE.equals(booking.getIsAdvancePaid())) {
             throw new BadRequestException("This booking's advance has already been confirmed as paid.");
@@ -415,10 +498,14 @@ public class BookingService {
             if (bookingRepository.existsByUpiTransactionRefAndIdNot(cleanRef, bookingId)) {
                 throw new BadRequestException("This UPI reference / UTR has already been submitted for another booking. Please check your transaction details.");
             }
+            booking.setUpiTransactionRef(cleanRef);
+        }
+
+        if (paymentScreenshotUrl != null && !paymentScreenshotUrl.isBlank()) {
+            booking.setPaymentScreenshotUrl(paymentScreenshotUrl.trim());
         }
 
         booking.setUpiPaymentSubmitted(true);
-        booking.setUpiTransactionRef(transactionRef != null && !transactionRef.isBlank() ? transactionRef.trim() : null);
         booking.setUpiSubmittedAt(LocalDateTime.now());
 
         Booking saved = bookingRepository.save(booking);
@@ -426,10 +513,43 @@ public class BookingService {
         // Update designer order record if needed
         designerOrderService.recordBookingOrder(saved);
 
-        // Re-notify admin and customer with updated UTR
+        // Re-notify admin and customer with updated UTR and screenshot proof
         bookingNotificationService.notifyBookingReceived(saved);
 
         return toResponse(saved);
+    }
+
+    public BookingResponse submitUpiPayment(Long userId, Long bookingId, String transactionRef) {
+        return submitUpiPayment(userId, bookingId, transactionRef, null);
+    }
+
+    private double estimatePincodeDistance(String userPin, Artist artist, String city) {
+        if (userPin == null || userPin.trim().length() < 6) return 5.0;
+        String cleanUser = userPin.trim();
+        String artistPin = "110001";
+        if (artist != null && artist.getCity() != null) {
+            String c = artist.getCity().toLowerCase();
+            if (c.contains("mumbai")) artistPin = "400001";
+            else if (c.contains("bangalore") || c.contains("bengaluru")) artistPin = "560001";
+            else if (c.contains("jaipur")) artistPin = "302001";
+            else if (c.contains("hyderabad")) artistPin = "500001";
+            else if (c.contains("kolkata")) artistPin = "700001";
+            else if (c.contains("pune")) artistPin = "411001";
+            else if (c.contains("ahmedabad")) artistPin = "380001";
+        }
+        if (cleanUser.equals(artistPin)) return 2.5;
+        if (cleanUser.length() >= 3 && artistPin.length() >= 3 && cleanUser.substring(0, 3).equals(artistPin.substring(0, 3))) {
+            try {
+                int diff = Math.abs(Integer.parseInt(cleanUser) - Integer.parseInt(artistPin));
+                return Math.max(3.0, Math.min(28.0, diff * 0.45));
+            } catch (Exception e) {
+                return 6.0;
+            }
+        }
+        if (cleanUser.length() >= 2 && artistPin.length() >= 2 && cleanUser.substring(0, 2).equals(artistPin.substring(0, 2))) {
+            return 18.5; // same metro/sub-region
+        }
+        return 32.0; // outer regional bracket
     }
 
     /**
@@ -535,6 +655,7 @@ public class BookingService {
                 .isAdvancePaid(b.getIsAdvancePaid())
                 .upiPaymentSubmitted(b.getUpiPaymentSubmitted())
                 .upiTransactionRef(b.getUpiTransactionRef())
+                .paymentScreenshotUrl(b.getPaymentScreenshotUrl())
                 .canCancelFree(b.canCancelFree())
                 .cancellationDeadline(deadline)
                 .cancellationRemainingSeconds(remainingSeconds)

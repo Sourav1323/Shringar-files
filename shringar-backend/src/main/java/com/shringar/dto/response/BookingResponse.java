@@ -39,6 +39,7 @@ public class BookingResponse {
     private Boolean isAdvancePaid;
     private Boolean upiPaymentSubmitted;
     private String upiTransactionRef;
+    private String paymentScreenshotUrl;
     private Boolean canCancelFree;
     private LocalDateTime cancellationDeadline;
     private Long cancellationRemainingSeconds;

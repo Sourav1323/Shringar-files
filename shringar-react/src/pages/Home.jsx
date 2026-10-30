@@ -4,7 +4,7 @@ import {
   Sparkles, ArrowRight, ShieldCheck, Clock, Award, Star, Heart, 
   Compass, Users, Crown, CheckCircle2, Check, MapPin, ChevronDown, Calendar
 } from 'lucide-react';
-import { DesignsAPI, ArtistsAPI, TestimonialsAPI } from '../services/api';
+import { DesignsAPI, ArtistsAPI, TestimonialsAPI, SettingsAPI } from '../services/api';
 import DesignCard from '../components/designs/DesignCard';
 import { useCity } from '../context/CityContext';
 import { isDesignAvailableInCity } from '../utils/cityUtils';
@@ -15,6 +15,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [artists, setArtists] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
+  const [announcement, setAnnouncement] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -68,55 +69,25 @@ export default function Home() {
     return Array.from(categoryMap.values());
   }, [allDesigns]);
 
-  const normalizeDesign = (d) => {
-    if (!d) return d;
-    if (d.id === 4 || (d.imageUrl && d.imageUrl.includes('peacock-feet.png'))) {
-      return {
-        ...d,
-        name: 'Royal Dulha-Dulhan Bridal',
-        coverage: 'Full hand',
-        category: 'Bridal',
-        badge: 'Signature',
-        badgeColor: '#7a2c1a',
-        description: 'Handcrafted bride & groom wedding portraits on palms with auspicious kalash and peacocks.'
-      };
-    }
-    if (d.id === 5 || (d.imageUrl && d.imageUrl.includes('indo-arabic.png'))) {
-      return {
-        ...d,
-        name: 'Lotus Mandala Bridal Feet',
-        coverage: 'Both feet',
-        category: 'Bridal',
-        badge: 'Bridal Feet',
-        badgeColor: '#ba7517',
-        description: 'Majestic blooming lotus mandala with ornate ankle payal detailing covering both feet.'
-      };
-    }
-    if (d.id === 6 || (d.name && d.name.includes('Mughal'))) {
-      return {
-        ...d,
-        name: 'Mughal Classic Arches',
-        coverage: 'Full hand',
-        category: 'Mughal',
-        badge: 'Classic',
-        badgeColor: '#1e3a47'
-      };
-    }
-    return d;
-  };
-
   useEffect(() => {
     async function loadHomeData() {
       try {
-        const [designsData, artistsData, testimonialsData] = await Promise.allSettled([
+        const [designsData, artistsData, testimonialsData, settingsData] = await Promise.allSettled([
           DesignsAPI.getAll(),
           ArtistsAPI.getAll(),
           TestimonialsAPI.getAll(),
+          SettingsAPI.get(),
         ]);
 
+        if (settingsData.status === 'fulfilled' && settingsData.value) {
+          const s = settingsData.value;
+          if (s.announcementActive && s.announcementBanner) {
+            setAnnouncement(s.announcementBanner);
+          }
+        }
+
         if (designsData.status === 'fulfilled' && Array.isArray(designsData.value) && designsData.value.length > 0) {
-          const normalized = designsData.value.map(normalizeDesign);
-          setAllDesigns(normalized);
+          setAllDesigns(designsData.value);
         } else {
           setAllDesigns([
             {
@@ -241,127 +212,76 @@ export default function Home() {
     // Shuffle location available first
     const local = list.filter(d => isDesignAvailableInCity(d, city));
     const other = list.filter(d => !isDesignAvailableInCity(d, city));
-    return [...local, ...other].slice(0, 6);
+    return [...local, ...other].slice(0, 8);
   }, [allDesigns, selectedCategory, city]);
 
   return (
     <div className="space-y-10 sm:space-y-16 pb-16">
       
       {/* ── 1. Shaadi.com Style Hero Section (Dark Romantic Imagery, Centered Headline & Selector Bar) ── */}
-      <section className="relative overflow-hidden min-h-[520px] sm:min-h-[580px] lg:min-h-[620px] flex items-center justify-center text-center px-4 sm:px-6 lg:px-8 bg-stone-950" data-testid="home-hero">
+      <section className="relative overflow-hidden min-h-[480px] lg:h-[calc(100vh-5rem)] max-h-[760px] flex items-center justify-center text-center px-4 sm:px-6 lg:px-8 bg-stone-950" data-testid="home-hero">
         {/* Full-Bleed Dark Cinematic Wedding Imagery */}
         <div className="absolute inset-0 z-0">
           <img
             src="/images/mehendi-banner.jpg"
             alt="Royal Indian Bride Celebrating with Luxury Bridal Mehendi"
-            className="w-full h-full object-cover object-center opacity-80 sm:opacity-85 scale-100 transform duration-1000 ease-out"
+            className="w-full h-full object-cover object-center opacity-90 sm:opacity-95 scale-100 transform duration-1000 ease-out"
             onError={(e) => { e.target.src = '/images/hero-bride-celebration.jpg'; }}
           />
-          {/* Multi-Stop Cinematic Warm Atmosphere Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-stone-950/65 via-stone-900/35 to-stone-950/85" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-stone-950/40 pointer-events-none" />
+          {/* Multi-Stop Cinematic Warm Atmosphere Overlay - Brightened for Clarity */}
+          <div className="absolute inset-0 bg-gradient-to-b from-stone-950/45 via-stone-900/20 to-stone-950/75" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-stone-950/15 to-stone-950/60 pointer-events-none" />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto py-12 sm:py-16 space-y-4">
+        <div className="relative z-10 max-w-5xl mx-auto py-8 sm:py-10 lg:py-6 space-y-3 sm:space-y-4">
           {/* Overline Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/15 border border-amber-300/40 text-amber-200 text-[11px] sm:text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-sm">
-            <span>👑 Handcrafted Luxury Doorstep Mehendi</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-200 text-[11px] sm:text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-sm">
+            <span>👑 Welcome to Shringar</span>
+            <span>•</span>
+            <span>Luxury Doorstep Mehendi</span>
             <span>•</span>
             <span className="text-white font-normal">{city}</span>
           </div>
 
-          {/* Shaadi.com Style Main Headline */}
-          <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.15] drop-shadow-lg">
-            Choose Your Forever Design
+          {/* Welcoming Headline */}
+          <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.15] drop-shadow-xl">
+            Adorn Your Hands in <br />
+            <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 bg-clip-text text-transparent italic">
+              Timeless Heritage
+            </span>
           </h1>
-          <p className="text-amber-100/90 text-xs sm:text-base lg:text-lg max-w-2xl mx-auto font-serif italic drop-shadow-md">
-            Find the perfect bridal mehendi artistry crafted for your sacred celebration with verified master artisans in {city}.
+
+          {/* Welcoming Message */}
+          <p className="text-amber-100/95 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto font-serif leading-relaxed drop-shadow-md">
+            Welcome to Shringar. From majestic Marwari bridal peacocks to delicate modern cuffs — book verified master mehendi artisans delivered directly to your doorstep in <strong>{city}</strong> with 100% natural organic henna.
           </p>
 
-          {/* Interactive Shaadi-Style Selector Strip */}
-          <form onSubmit={handleHeroSearch} className="mt-6 sm:mt-10 bg-white/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-2xl border border-amber-200/50 text-stone-800">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 items-end">
-              {/* Field 1: I'm looking for a */}
-              <div className="text-left">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                  I'm looking for
-                </label>
-                <select
-                  value={heroOccasion}
-                  onChange={(e) => setHeroOccasion(e.target.value)}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl border border-stone-300 bg-stone-50 text-[#4A2511] focus:outline-none focus:border-[#B58E34] focus:ring-1 focus:ring-[#B58E34] cursor-pointer"
-                >
-                  <option value="Bridal">Bridal Mehendi</option>
-                  <option value="Arabic">Arabic Trails</option>
-                  <option value="Rajasthani">Rajasthani Marwari</option>
-                  <option value="Minimal">Minimal Modern</option>
-                  <option value="Mughal">Mughal Classic</option>
-                  <option value="Fusion">Indo-Arabic Fusion</option>
-                  <option value="Feet">Bridal Feet & Payal</option>
-                  <option value="ALL">All Motifs</option>
-                </select>
-              </div>
+          {/* Luxury Action CTAs */}
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 pt-3 sm:pt-5">
+            <Link
+              to="/designs"
+              className="px-6 sm:px-8 py-3 rounded-full bg-gradient-to-r from-[#B58E34] via-amber-400 to-[#B58E34] text-stone-950 font-serif font-bold text-xs sm:text-sm uppercase tracking-wider hover:brightness-110 shadow-xl transition transform active:scale-95 flex items-center gap-2"
+            >
+              <span>Explore Royal Motifs</span>
+              <ArrowRight className="w-4 h-4 text-stone-950" />
+            </Link>
 
-              {/* Field 2: In City */}
-              <div className="text-left">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                  In City
-                </label>
-                <button
-                  type="button"
-                  onClick={openCityModal}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl border border-stone-300 bg-stone-50 text-[#4A2511] flex items-center justify-between hover:bg-stone-100 transition cursor-pointer"
-                >
-                  <span className="flex items-center gap-1.5 truncate">
-                    <MapPin className="w-3.5 h-3.5 text-[#B58E34] shrink-0" />
-                    <span>{city}</span>
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                </button>
-              </div>
+            <Link
+              to="/custom-design"
+              className="px-6 sm:px-7 py-3 rounded-full bg-white/20 hover:bg-white/30 text-white font-serif font-bold text-xs sm:text-sm uppercase tracking-wider backdrop-blur-md border border-white/40 shadow-lg transition transform active:scale-95 flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Commission Custom Design</span>
+            </Link>
 
-              {/* Field 3: Coverage */}
-              <div className="text-left">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                  Coverage
-                </label>
-                <select
-                  value={heroCoverage}
-                  onChange={(e) => setHeroCoverage(e.target.value)}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl border border-stone-300 bg-stone-50 text-[#4A2511] focus:outline-none focus:border-[#B58E34] focus:ring-1 focus:ring-[#B58E34] cursor-pointer"
-                >
-                  <option value="Full hand">Full Bridal Hands & Feet</option>
-                  <option value="Both hands">Both Hands (Elbow Length)</option>
-                  <option value="Half hand">Palms & Forearms</option>
-                  <option value="Both feet">Bridal Feet & Payal</option>
-                </select>
-              </div>
-
-              {/* Field 4: Ceremony Date */}
-              <div className="text-left">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                  Ceremony Date
-                </label>
-                <input
-                  type="date"
-                  value={heroDate}
-                  onChange={(e) => setHeroDate(e.target.value)}
-                  className="w-full text-xs font-bold p-2 rounded-xl border border-stone-300 bg-stone-50 text-[#4A2511] focus:outline-none focus:border-[#B58E34] focus:ring-1 focus:ring-[#B58E34] cursor-pointer"
-                />
-              </div>
-
-              {/* Field 5: Action Button */}
-              <div>
-                <button
-                  type="submit"
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-serif font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <span>Explore Designs</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-white" />
-                </button>
-              </div>
-            </div>
-          </form>
+            <Link
+              to="/booking"
+              className="px-5 sm:px-6 py-3 rounded-full bg-stone-900/60 hover:bg-stone-900/80 text-amber-200 font-serif font-semibold text-xs sm:text-sm uppercase tracking-wider backdrop-blur-md border border-amber-300/30 transition shadow-sm flex items-center gap-1.5"
+            >
+              <Calendar className="w-4 h-4 text-amber-300" />
+              <span>Reserve Auspicious Date</span>
+            </Link>
+          </div>
 
           {/* Quick Trust Highlights */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-6 text-[11px] sm:text-xs text-amber-200/80 font-medium">
@@ -383,16 +303,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Auspicious Festive Announcement Ribbon Strip (Admin Controlled) */}
+      {announcement && (
+        <div className="w-full bg-gradient-to-r from-[#4A2511] via-[#7a2c1a] to-[#4A2511] text-amber-100 py-3 px-4 border-y border-[#B58E34]/40 shadow-sm relative z-20">
+          <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto flex items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm font-serif tracking-wide text-center">
+            <span className="text-amber-400">✨ 🌙</span>
+            <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px] sm:text-xs">Festive Announcement:</span>
+            <span className="text-white font-medium">{announcement}</span>
+            <span className="text-amber-400">🌙 ✨</span>
+          </div>
+        </div>
+      )}
+
       {/* ── 2. Prominent Auto-Adjusting Explore Styles Row (Fills Full Width Seamlessly) ── */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 -mt-6 sm:-mt-10 relative z-20">
-        <div className="bg-[#FDFBF7] rounded-3xl p-5 sm:p-8 shadow-xl border border-[#E6DFD3]">
-          <div className="flex items-center justify-between mb-4 sm:mb-6 px-1">
+      <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 mt-6 sm:mt-8 relative z-20">
+        <div className="bg-[#FDFBF7] rounded-3xl p-4 sm:p-6 shadow-lg border border-[#E6DFD3]">
+          <div className="flex items-center justify-between mb-4 px-1">
             <div>
               <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#B58E34] flex items-center gap-1.5">
                 <span>Explore Styles</span>
                 <span>✦</span>
               </span>
-              <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#4A2511] mt-0.5">
+              <h2 className="font-serif text-lg sm:text-2xl font-bold text-[#4A2511] mt-0.5">
                 Signature Motifs & Categories
               </h2>
             </div>
@@ -402,17 +334,17 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Fully Responsive, Dynamic Row: Automatically adjusts size and spans full container width */}
-          <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-8 lg:flex lg:justify-between items-center w-full gap-3 sm:gap-6">
+          {/* Fully Responsive, Dynamic Row: Sleek & Balanced on all desktop resolutions */}
+          <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-8 lg:flex lg:justify-between items-center w-full gap-2 sm:gap-4">
             {dynamicCategories.map((cat) => {
               const isActive = selectedCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className="flex flex-col items-center gap-2 flex-1 min-w-[70px] max-w-[130px] group focus:outline-none transition-transform active:scale-95 text-center mx-auto cursor-pointer"
+                  className="flex flex-col items-center gap-1.5 flex-1 min-w-[65px] max-w-[110px] group focus:outline-none transition-transform active:scale-95 text-center mx-auto cursor-pointer"
                 >
-                  <div className={`relative w-18 h-18 sm:w-22 sm:h-22 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full p-1 transition-all shadow-md ${
+                  <div className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full p-1 transition-all shadow-md ${
                     isActive 
                       ? 'ring-3 ring-[#B58E34] ring-offset-2 ring-offset-[#FDFBF7] scale-105 shadow-amber-300/40' 
                       : 'border-2 border-[#E6DFD3] group-hover:border-[#B58E34] group-hover:scale-105'
@@ -423,12 +355,12 @@ export default function Home() {
                       className="w-full h-full rounded-full object-cover"
                       onError={(e) => { e.target.src = '/images/rajasthani-bridal.jpg'; }}
                     />
-                    <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center text-xs border border-amber-100">
+                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center text-[10px] border border-amber-100">
                       {cat.icon}
                     </span>
                   </div>
                   <div>
-                    <span className={`block text-xs sm:text-sm font-serif tracking-tight whitespace-nowrap transition-colors ${
+                    <span className={`block text-xs font-serif tracking-tight whitespace-nowrap transition-colors ${
                       isActive ? 'text-[#B58E34] font-bold' : 'text-[#4A2511] font-semibold'
                     }`}>
                       {cat.name}
@@ -443,7 +375,7 @@ export default function Home() {
       </section>
 
       {/* ── 2. FEATURED DESIGNS - VISIBLE ON FIRST SCROLL ── */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-end justify-between gap-3 mb-4 sm:mb-6 pb-2.5 border-b border-stone-200">
           <div>
             <div className="flex items-center gap-1.5">
@@ -470,19 +402,19 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* 2-Column Mobile Grid / 3-Column Desktop */}
+        {/* 2-Column Mobile Grid / 4-Column Desktop Grid */}
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <div key={n} className="rounded-xl bg-white border border-stone-200 p-3 space-y-2 animate-pulse">
-                <div className="w-full aspect-[4/5] bg-stone-200 rounded-lg"></div>
+                <div className="w-full aspect-[3/4] bg-stone-200 rounded-lg"></div>
                 <div className="h-3.5 bg-stone-200 rounded w-2/3"></div>
                 <div className="h-3 bg-stone-200 rounded w-1/3"></div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
             {displayedDesigns.map((design) => (
               <DesignCard key={design.id} design={design} currentCity={city} />
             ))}
@@ -502,7 +434,7 @@ export default function Home() {
       </section>
 
       {/* ── 3. Compact Royal Bridal Suite Spotlight ── */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8">
         <div className="p-5 sm:p-8 rounded-2xl bg-gradient-to-br from-[#4A2511] via-[#3A1D0D] to-[#241711] text-amber-50 shadow-xl border border-[#B58E34]/40 relative overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-left flex-1">
@@ -530,7 +462,7 @@ export default function Home() {
       </section>
 
       {/* ── 4. The Shringar Promise (4 Trust Pillars) ── */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8">
         <div className="p-5 sm:p-8 rounded-2xl bg-white border border-[#E6DFD3] shadow-xs">
           <div className="text-center max-w-md mx-auto mb-6">
             <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#B58E34]">
@@ -586,7 +518,7 @@ export default function Home() {
       </section>
 
       {/* ── 5. Bridal Love (Testimonials) ── */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8">
         <div className="bg-[#FDFBF7] border border-[#E6DFD3] rounded-2xl p-5 sm:p-8">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -633,7 +565,7 @@ export default function Home() {
       </section>
 
       {/* ── 6. Clean Booking CTA ── */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <section className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8">
         <div className="p-6 sm:p-10 rounded-2xl bg-[#4A2511] text-amber-100 text-center space-y-3 shadow-lg border border-[#B58E34]/40">
           <Crown className="w-8 h-8 text-[#E8C87A] mx-auto" />
           <h2 className="font-serif text-xl sm:text-3xl font-bold text-amber-100">

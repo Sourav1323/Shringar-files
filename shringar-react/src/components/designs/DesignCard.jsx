@@ -47,6 +47,24 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
     }
   };
 
+  const getDurationText = (d) => {
+    if (d?.durationMinHours != null && d?.durationMaxHours != null) {
+      const min = Number(d.durationMinHours);
+      const max = Number(d.durationMaxHours);
+      if (min === max) {
+        return `${min}h`;
+      }
+      return `${min}–${max}h`;
+    }
+    if (d?.durationMinHours != null) {
+      return `${Number(d.durationMinHours)}h`;
+    }
+    if (d?.durationLabel) {
+      return d.durationLabel.replace(/\s*hrs?/i, 'h');
+    }
+    return '1–2h';
+  };
+
   return (
     <div
       onClick={handleCardClick}
@@ -55,7 +73,7 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
     >
       
       {/* Image & Badges */}
-      <div className="relative aspect-[4/5] overflow-hidden bg-stone-100">
+      <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
         <img
           src={getImageUrl(design.imageUrl)}
           alt={design.name}
@@ -67,17 +85,17 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
         />
 
         {/* Top Badges */}
-        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-wrap gap-1 z-10">
+        <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 flex flex-wrap gap-1 z-10">
           {design.badge && (
             <span
-              className="text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider text-white shadow-md"
+              className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full uppercase tracking-wider text-white shadow-md"
               style={{ backgroundColor: design.badgeColor || '#7a2c1a' }}
             >
               {design.badge}
             </span>
           )}
           {design.category && (
-            <span className="hidden xs:inline-block text-[9px] sm:text-[11px] font-semibold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-black/60 text-amber-200 backdrop-blur-sm shadow-sm">
+            <span className="hidden xs:inline-block text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full bg-black/60 text-amber-200 backdrop-blur-sm shadow-sm">
               {design.category}
             </span>
           )}
@@ -90,7 +108,7 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
             e.stopPropagation();
             toggleFavorite(design);
           }}
-          className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm z-10 ${
+          className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm z-10 ${
             favorited
               ? 'bg-white text-rose-600 scale-105'
               : 'bg-black/40 hover:bg-black/60 text-white hover:scale-105'
@@ -98,19 +116,19 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
           title={favorited ? 'Remove from saved favorites' : 'Save to favorites'}
           aria-label={favorited ? 'Remove from favorites' : 'Save to favorites'}
         >
-          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
+          <Heart className={`w-3.5 h-3.5 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
         </button>
 
         {/* Coverage Chip Bottom Right */}
         {design.coverage && (
-          <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 rounded text-[9px] sm:text-[11px] font-semibold text-stone-800 shadow-sm border border-stone-200 z-10">
+          <div className="absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 bg-white/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded text-[9px] sm:text-[10px] font-semibold text-stone-800 shadow-sm border border-stone-200 z-10">
             {design.coverage}
           </div>
         )}
       </div>
 
       {/* Details Body */}
-      <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between">
+      <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 justify-between">
         <div>
           <Link to={`/designs/${design.id}`}>
             <h3 className="font-serif font-bold text-xs sm:text-base text-[#4A2511] group-hover:text-[#B58E34] transition line-clamp-1">
@@ -128,7 +146,7 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#B58E34]" />
               <span>
-                {design.durationMinHours || 1}–{design.durationMaxHours || 2}h
+                {getDurationText(design)}
               </span>
             </div>
             <span>•</span>

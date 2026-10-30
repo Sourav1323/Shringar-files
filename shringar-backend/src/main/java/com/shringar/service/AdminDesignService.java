@@ -39,6 +39,11 @@ public class AdminDesignService {
                 .durationMaxHours(req.getDurationMaxHours())
                 .conesNeeded(req.getConesNeeded())
                 .price(req.getPrice())
+                .palmTierPrice(req.getPalmTierPrice())
+                .grandTierPrice(req.getGrandTierPrice())
+                .originCity(req.getOriginCity())
+                .availableCities(req.getAvailableCities() != null ? new ArrayList<>(req.getAvailableCities()) : new ArrayList<>())
+                .assignedArtistIds(req.getAssignedArtistIds() != null ? new ArrayList<>(req.getAssignedArtistIds()) : new ArrayList<>())
                 .imageUrl(req.getImageUrl())
                 .galleryImageUrls(req.getGalleryImageUrls() != null ? new ArrayList<>(req.getGalleryImageUrls()) : new ArrayList<>())
                 .youtubeVideoUrl(req.getYoutubeVideoUrl())
@@ -68,6 +73,17 @@ public class AdminDesignService {
         design.setDurationMaxHours(req.getDurationMaxHours());
         design.setConesNeeded(req.getConesNeeded());
         design.setPrice(req.getPrice());
+        design.setPalmTierPrice(req.getPalmTierPrice());
+        design.setGrandTierPrice(req.getGrandTierPrice());
+        design.setOriginCity(req.getOriginCity());
+        if (req.getAvailableCities() != null) {
+            design.getAvailableCities().clear();
+            design.getAvailableCities().addAll(req.getAvailableCities());
+        }
+        if (req.getAssignedArtistIds() != null) {
+            design.getAssignedArtistIds().clear();
+            design.getAssignedArtistIds().addAll(req.getAssignedArtistIds());
+        }
         design.setImageUrl(req.getImageUrl());
         if (req.getGalleryImageUrls() != null) {
             design.getGalleryImageUrls().clear();
@@ -127,6 +143,11 @@ public class AdminDesignService {
                 .durationMaxHours(d.getDurationMaxHours())
                 .conesNeeded(d.getConesNeeded())
                 .price(d.getPrice())
+                .palmTierPrice(d.getPalmTierPrice())
+                .grandTierPrice(d.getGrandTierPrice())
+                .originCity(d.getOriginCity())
+                .availableCities(d.getAvailableCities())
+                .assignedArtistIds(d.getAssignedArtistIds())
                 .imageUrl(d.getImageUrl())
                 .galleryImageUrls(d.getGalleryImageUrls())
                 .youtubeVideoUrl(d.getYoutubeVideoUrl())

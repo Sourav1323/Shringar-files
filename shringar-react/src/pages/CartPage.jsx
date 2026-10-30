@@ -11,6 +11,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useCity } from '../context/CityContext';
 import { DesignsAPI, ArtistsAPI } from '../services/api';
 import { optimizeArtistAssignment, getRecommendedDesignsForMinimalArtists } from '../utils/artistOptimizer';
+import { calculatePincodeDistance, calculateDistancePricing } from '../utils/pincodeDistance';
 
 export default function CartPage() {
   const {
@@ -366,7 +367,11 @@ export default function CartPage() {
                     <div className="flex items-center gap-3 text-xs text-stone-500 font-medium flex-wrap">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5 text-brand-gold-dark" />
-                        {item.durationMinHours || 2}–{item.durationMaxHours || 3} hrs / hand
+                        {item.durationMinHours != null && item.durationMaxHours != null
+                          ? (Number(item.durationMinHours) === Number(item.durationMaxHours)
+                              ? `${item.durationMinHours} hrs`
+                              : `${item.durationMinHours}–${item.durationMaxHours} hrs`)
+                          : (item.durationLabel ? item.durationLabel.replace(/\s*hrs?/i, ' hrs') : `${item.durationMinHours || 2}–${item.durationMaxHours || 3} hrs`)} / hand
                       </span>
                       <span>•</span>
                       <span className="flex items-center gap-1">

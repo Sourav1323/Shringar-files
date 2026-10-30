@@ -24,6 +24,11 @@ public class AdminDesignResponse {
     private Double durationMaxHours;
     private Double conesNeeded;
     private BigDecimal price;
+    private BigDecimal palmTierPrice;
+    private BigDecimal grandTierPrice;
+    private String originCity;
+    private List<String> availableCities;
+    private List<Long> assignedArtistIds;
     private String imageUrl;
     private List<String> galleryImageUrls;
     private String youtubeVideoUrl;

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Clock, Sparkles, Check, ArrowLeft, ShoppingBag, 
   ShieldCheck, Calendar, Heart, Eye, ArrowRight, Star, Layers,
-  ChevronLeft, ChevronRight, CheckCircle2, Award, Info
+  ChevronLeft, ChevronRight, CheckCircle2, Award, Info, Maximize2
 } from 'lucide-react';
 import { DesignsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -12,6 +12,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useCity } from '../context/CityContext';
 import { getRecommendedDesignsForMinimalArtists } from '../utils/artistOptimizer';
 import DesignCard from '../components/designs/DesignCard';
+import ImageGalleryViewer from '../components/common/ImageGalleryViewer';
 
 // Master Catalog Database with 4 Distinct Angles for Every Single Design
 const ALL_DESIGNS_MASTER = [
@@ -302,102 +303,6 @@ const ALL_DESIGNS_MASTER = [
         notes: 'Clean geometric lines that flatter hands of all shapes and sizes.'
       }
     ]
-  },
-  {
-    id: 7,
-    name: 'Sawan Bel Diagonal Trail',
-    description: 'Traditional Sawan vine flowing gracefully from index finger diagonally down the forearm with shaded leaf fillers and delicate knuckle caps.',
-    category: 'Arabic',
-    coverage: 'Half hand',
-    durationMinHours: 1.5,
-    durationMaxHours: 2,
-    conesNeeded: 1,
-    price: 950,
-    badge: 'Festive',
-    badgeColor: '#2d6a4f',
-    imageUrl: '/images/arabic-mehndi-sawan.jpg',
-    angles: [
-      {
-        id: 'front',
-        title: 'Front Diagonal Trail',
-        badge: 'Palm Flow',
-        subtitle: 'Cascading leaves and floral clusters on front palm.',
-        imageUrl: '/images/arabic-mehndi-sawan.jpg',
-        notes: 'Free-flowing organic curve that elongates fingers visually.'
-      },
-      {
-        id: 'back',
-        title: 'Back Hand Vine',
-        badge: 'Back Vine',
-        subtitle: 'Continuous trailing vine running along outer edge to forearm.',
-        imageUrl: '/images/simple-arabic.jpg',
-        notes: 'Sleek single-line flow leaving spacious breathing room on the hand.'
-      },
-      {
-        id: 'wrist',
-        title: 'Fingertip Floral Caps',
-        badge: 'Fingertips',
-        subtitle: 'Shaded petal caps adorning knuckles and finger joints.',
-        imageUrl: '/images/simple-arabic-mehndi-designs-for-left-hand-henna-by-mahira-mohsin-leaf-arabic-mehndi-design.jpg',
-        notes: 'Micro leaf dots that highlight manicure and wedding rings.'
-      },
-      {
-        id: 'full',
-        title: 'Side Trail Flourish',
-        badge: 'Side Profile',
-        subtitle: 'Teardrop leaf clusters wrapping gracefully around the wrist.',
-        imageUrl: '/images/arabic-sawan.jpg',
-        notes: 'A quick 90-minute festive favorite for Karwa Chauth, Teej, and Eid.'
-      }
-    ]
-  },
-  {
-    id: 8,
-    name: 'Marwari Grand Bridal Ensemble',
-    description: 'Ultra-intricate traditional Marwari full arm wedding henna extending to elbow with auspicious Kalash, peacock mandalas, and ceremonial bride-groom doli scenes.',
-    category: 'Bridal',
-    coverage: 'Full hand (Elbow)',
-    durationMinHours: 4,
-    durationMaxHours: 5,
-    conesNeeded: 3,
-    price: 3500,
-    badge: 'Signature',
-    badgeColor: '#7a2c1a',
-    imageUrl: '/images/bridal-fullhand.jpg',
-    angles: [
-      {
-        id: 'front',
-        title: 'Full Hand Royal Jaal',
-        badge: 'Dense Palm',
-        subtitle: 'Dense Marwari heritage pattern with ceremonial wedding motifs.',
-        imageUrl: '/images/bridal-fullhand.jpg',
-        notes: 'Zero blank space — the ultimate statement of luxury Indian bridal tradition.'
-      },
-      {
-        id: 'back',
-        title: 'Back of Hand Elegance',
-        badge: 'Back Glove',
-        subtitle: 'Lace glove illusion with beaded finger accents and floral cuffs.',
-        imageUrl: '/images/Traditional-Rajasthani-Bridal-Henna-Mehendi-Design---Full-hand-Marwari-Mehendi-for-Indian-Wedding-2.jpg',
-        notes: 'Heavily detailed knuckles with negative-space lotus flower reveals.'
-      },
-      {
-        id: 'wrist',
-        title: 'Elbow-Length Extension',
-        badge: 'Elbow Jaal',
-        subtitle: 'Royal court bands extending past the elbow fold in symmetric bands.',
-        imageUrl: '/images/Bridal-Full-Hand-Mehndi-Designs-for-Wedding-Day-2.jpg',
-        notes: 'Intricate checks and paisley vines that seamlessly match wedding sleeve borders.'
-      },
-      {
-        id: 'full',
-        title: 'Complete Bridal Panorama',
-        badge: 'Full Panorama',
-        subtitle: 'Richly saturated traditional dark maroon stain look under wedding lights.',
-        imageUrl: '/images/rajasthani-bridal.jpg',
-        notes: 'Masterwork requiring senior guild artist specialization.'
-      }
-    ]
   }
 ];
 
@@ -407,6 +312,7 @@ export default function DesignDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeAngleIndex, setActiveAngleIndex] = useState(0);
   const [selectedCoverageTier, setSelectedCoverageTier] = useState('standard'); // 'palm' | 'standard' | 'grand'
+  const [galleryViewerOpen, setGalleryViewerOpen] = useState(false);
 
   const { cartItems, addToCart, updateQuantity } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -432,14 +338,55 @@ export default function DesignDetailPage() {
         const masterItem = ALL_DESIGNS_MASTER.find((d) => String(d.id) === String(id)) || ALL_DESIGNS_MASTER[0];
 
         if (data && data.name) {
-          // Merge API data with rich catalogue angles
+          // Construct real dynamic angles from the design's own uploaded images:
+          let dynamicAngles = [];
+          
+          if (data.imageUrl) {
+            dynamicAngles.push({
+              id: 'front',
+              title: `${data.name} - Front View`,
+              badge: data.coverage || 'Primary View',
+              subtitle: data.description || 'Master artisan handcrafted motif',
+              notes: 'Handcrafted master motif with traditional detailing.',
+              imageUrl: data.imageUrl,
+            });
+          }
+
+          if (Array.isArray(data.galleryImageUrls) && data.galleryImageUrls.length > 0) {
+            data.galleryImageUrls.forEach((imgUrl, idx) => {
+              dynamicAngles.push({
+                id: `angle-${idx + 1}`,
+                title: `${data.name} - Angle ${idx + 2}`,
+                badge: `Angle ${idx + 2}`,
+                subtitle: 'Close-up perspective & detail view',
+                notes: 'Fine artisan linework and shading details.',
+                imageUrl: imgUrl,
+              });
+            });
+          }
+
+          // If no custom images exist, fall back to master angles if available
+          if (dynamicAngles.length === 0) {
+            dynamicAngles = masterItem?.angles || [
+              {
+                id: 'front',
+                title: data.name,
+                badge: data.coverage || 'Full View',
+                subtitle: data.description || 'Master artisan motif',
+                notes: 'Handcrafted master motif with traditional detailing.',
+                imageUrl: data.imageUrl || '/images/rajasthani-bridal.jpg',
+              }
+            ];
+          }
+
           setDesign({
-            ...masterItem,
             ...data,
-            angles: masterItem.angles,
+            angles: dynamicAngles,
           });
-        } else {
+        } else if (masterItem) {
           setDesign(masterItem);
+        } else {
+          setDesign(ALL_DESIGNS_MASTER[0]);
         }
       } catch (err) {
         const fallback = ALL_DESIGNS_MASTER.find((d) => String(d.id) === String(id)) || ALL_DESIGNS_MASTER[0];
@@ -479,16 +426,27 @@ export default function DesignDetailPage() {
   const basePrice = Number(currentDesign?.price) || 2000;
   const cones = Number(currentDesign?.conesNeeded) || 1;
   const durMin = Number(currentDesign?.durationMinHours) || 1;
-  const durMax = Number(currentDesign?.durationMaxHours) || Math.max(durMin + 1, 2);
+  const durMax = Number(currentDesign?.durationMaxHours) || Math.max(durMin, 1);
+
+  // Exact custom tier prices configured by admin, or calculated smart defaults
+  const palmPrice = currentDesign?.palmTierPrice != null && Number(currentDesign.palmTierPrice) > 0
+    ? Number(currentDesign.palmTierPrice)
+    : Math.max(600, Math.round(basePrice * 0.75));
+
+  const grandPrice = currentDesign?.grandTierPrice != null && Number(currentDesign.grandTierPrice) > 0
+    ? Number(currentDesign.grandTierPrice)
+    : Math.round(basePrice + 1600);
 
   const coverageOptions = [
     {
       id: 'palm',
       title: 'Palm & Fingers Only',
       sub: 'Focused palm pattern with fingertip caps',
-      price: Math.max(600, Math.round(basePrice * 0.75)),
+      price: palmPrice,
       cones: Math.max(1, Number((cones * 0.7).toFixed(1))),
-      duration: `${Math.max(1, durMin - 1)}–${Math.max(1, durMax - 1)} hrs`,
+      duration: Math.max(1, durMin - 1) === Math.max(1, durMax - 1)
+        ? `${Math.max(1, durMin - 1)} hrs`
+        : `${Math.max(1, durMin - 1)}–${Math.max(1, durMax - 1)} hrs`,
     },
     {
       id: 'standard',
@@ -496,16 +454,18 @@ export default function DesignDetailPage() {
       sub: 'Standard bridal catalog density as shown in photos',
       price: basePrice,
       cones: cones,
-      duration: `${durMin}–${durMax} hrs`,
+      duration: durMin === durMax ? `${durMin} hrs` : `${durMin}–${durMax} hrs`,
       recommended: true,
     },
     {
       id: 'grand',
       title: 'Complete Hands & Feet Grand Ensemble',
       sub: 'Matching full hand and foot motifs for the main wedding ceremony',
-      price: Math.round(basePrice + 1600),
+      price: grandPrice,
       cones: Number((cones + 1.5).toFixed(1)),
-      duration: `${durMin + 2}–${durMax + 2} hrs`,
+      duration: (durMin + 2) === (durMax + 2)
+        ? `${durMin + 2} hrs`
+        : `${durMin + 2}–${durMax + 2} hrs`,
     },
   ];
 
@@ -557,7 +517,7 @@ export default function DesignDetailPage() {
     .slice(0, 4);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 pb-24">
+    <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 pb-24">
       
       {/* ── Breadcrumb Navigation ── */}
       <div className="flex items-center justify-between">
@@ -578,7 +538,11 @@ export default function DesignDetailPage() {
         <div className="lg:col-span-6 space-y-4">
           
           {/* Active Angle Main Image Viewer */}
-          <div className="relative rounded-2xl overflow-hidden bg-stone-100 aspect-[4/5] border-2 border-stone-200 shadow-lg group select-none">
+          <div 
+            onClick={() => setGalleryViewerOpen(true)}
+            className="relative rounded-2xl overflow-hidden bg-stone-100 aspect-[4/5] border-2 border-stone-200 shadow-lg group select-none cursor-pointer"
+            title="Tap to open in Image Gallery Viewer"
+          >
             
             <img
               src={getImageUrl(currentAngle.imageUrl)}
@@ -601,41 +565,72 @@ export default function DesignDetailPage() {
               )}
             </div>
 
-            {/* Heart Save to Favorites Toggle (Top Right) */}
-            <button
-              type="button"
-              onClick={() => toggleFavorite(currentDesign)}
-              className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm z-10 ${
-                favorited
-                  ? 'bg-white text-rose-600 scale-105'
-                  : 'bg-black/40 hover:bg-black/60 text-white hover:scale-105'
-              }`}
-              title={favorited ? 'Saved in favorites' : 'Save to favorites'}
-            >
-              <Heart className={`w-5 h-5 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
-            </button>
+            {/* Top Right Action Controls: Fullscreen Zoom & Favorites */}
+            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGalleryViewerOpen(true);
+                }}
+                className="w-10 h-10 rounded-full bg-black/50 hover:bg-black/75 active:scale-95 text-white flex items-center justify-center transition shadow-lg backdrop-blur-sm"
+                title="Open in Image Gallery Viewer"
+                aria-label="Fullscreen Gallery Viewer"
+              >
+                <Maximize2 className="w-4 h-4 text-amber-300" />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(currentDesign);
+                }}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm ${
+                  favorited
+                    ? 'bg-white text-rose-600 scale-105'
+                    : 'bg-black/40 hover:bg-black/60 text-white hover:scale-105'
+                }`}
+                title={favorited ? 'Saved in favorites' : 'Save to favorites'}
+              >
+                <Heart className={`w-5 h-5 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
+              </button>
+            </div>
 
             {/* Carousel Previous / Next Arrows */}
             <button
-              onClick={handlePrevAngle}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition backdrop-blur-sm z-10 opacity-80 hover:opacity-100"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePrevAngle();
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition backdrop-blur-sm z-10 opacity-80 hover:opacity-100 active:scale-95"
               title="Previous Angle"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-6 h-6" />
             </button>
 
             <button
-              onClick={handleNextAngle}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition backdrop-blur-sm z-10 opacity-80 hover:opacity-100"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNextAngle();
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition backdrop-blur-sm z-10 opacity-80 hover:opacity-100 active:scale-95"
               title="Next Angle"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-6 h-6" />
             </button>
 
-            {/* Bottom Caption Pill */}
-            <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md text-white p-2.5 rounded-xl text-xs z-10 border border-white/10">
-              <div className="font-bold text-amber-300">{currentAngle.title}</div>
-              <div className="text-[11px] text-stone-200 truncate">{currentAngle.subtitle}</div>
+            {/* Bottom Caption Pill with Tap to View Hint */}
+            <div className="absolute bottom-4 left-4 right-4 bg-black/65 backdrop-blur-md text-white p-2.5 rounded-xl text-xs z-10 border border-white/10 flex items-center justify-between gap-2">
+              <div className="truncate">
+                <div className="font-bold text-amber-300 text-xs">{currentAngle.title}</div>
+                <div className="text-[11px] text-stone-200 truncate">{currentAngle.subtitle}</div>
+              </div>
+              <span className="shrink-0 text-[10px] text-amber-200/90 font-medium bg-white/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                🔍 Tap to open
+              </span>
             </div>
 
           </div>
@@ -1065,6 +1060,27 @@ export default function DesignDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Fullscreen Interactive Image Gallery Viewer */}
+      <ImageGalleryViewer
+        isOpen={galleryViewerOpen}
+        onClose={() => setGalleryViewerOpen(false)}
+        images={angles.map((ang) => ({
+          imageUrl: getImageUrl(ang.imageUrl),
+          title: `${currentDesign.name} — ${ang.title}`,
+          category: currentDesign.category,
+          badge: ang.badge,
+          notes: ang.notes,
+          subtitle: ang.subtitle,
+          price: activePrice,
+        }))}
+        currentIndex={activeAngleIndex}
+        onIndexChange={setActiveAngleIndex}
+        onBook={() => {
+          setGalleryViewerOpen(false);
+          handleAddToCart();
+        }}
+      />
 
     </div>
   );

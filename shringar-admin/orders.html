@@ -223,6 +223,10 @@ async function loadOrders(btn) {
               ? `<span class="badge badge-amber">Awaiting verification</span>${o.upiTransactionRef ? `<div class="cell-sub">Ref: ${o.upiTransactionRef}</div>` : ''}`
               : '<span class="badge badge-gray">Not paid</span>'}
           <div class="cell-sub">${ShringarAdmin.formatINR(o.advanceAmount)}</div>
+          ${o.paymentScreenshotUrl ? `
+            <button class="btn btn-sm btn-outline" style="margin-top:6px;padding:3px 8px;font-size:11px;display:inline-flex;align-items:center;gap:4px;" onclick="viewProof('${o.bookingReference}', '${(o.paymentScreenshotUrl||'').replace(/'/g, "\\'")}', ${o.id}, ${o.isAdvancePaid})">
+              📸 Screenshot
+            </button>` : ''}
         </td>
         <td>${STATUS_BADGE[o.status] || o.status}${getRefundBadge(o)}</td>
         <td>
@@ -255,7 +259,50 @@ function changePage(delta) {
   loadOrders();
 }
 
+let currentProofBookingId = null;
+
+function viewProof(ref, url, id, isPaid) {
+  currentProofBookingId = id;
+  document.getElementById('proof-modal-title').textContent = `Payment Proof · ${ref}`;
+  document.getElementById('proof-modal-img').src = ShringarAdmin.resolveUploadUrl(url);
+  const confirmBtn = document.getElementById('proof-modal-confirm-btn');
+  if (confirmBtn) {
+    confirmBtn.style.display = isPaid ? 'none' : 'inline-flex';
+  }
+  document.getElementById('proof-modal').classList.add('open');
+}
+
+function closeProofModal() {
+  document.getElementById('proof-modal').classList.remove('open');
+  document.getElementById('proof-modal-img').src = '';
+  currentProofBookingId = null;
+}
+
+async function confirmFromModal() {
+  if (!currentProofBookingId) return;
+  const id = currentProofBookingId;
+  closeProofModal();
+  await confirmUpiPayment(id);
+}
+
 document.addEventListener('DOMContentLoaded', loadOrders);
 </script>
+
+<!-- Screenshot Proof Modal -->
+<div class="modal-overlay" id="proof-modal" onclick="if(event.target===this)closeProofModal()">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title" id="proof-modal-title">Payment Screenshot</div>
+      <button class="modal-close" onclick="closeProofModal()">×</button>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <img id="proof-modal-img" src="" alt="Payment Screenshot" style="max-width:100%;max-height:60vh;border-radius:8px;border:1px solid var(--cd);box-shadow:0 4px 12px rgba(0,0,0,0.1);object-fit:contain;" />
+    </div>
+    <div class="modal-footer" id="proof-modal-footer">
+      <button class="btn btn-outline" onclick="closeProofModal()">Close</button>
+      <button class="btn btn-primary" id="proof-modal-confirm-btn" onclick="confirmFromModal()">Confirm Payment</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
