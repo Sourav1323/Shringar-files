@@ -1,36 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Search, CheckCircle2, Sparkles, X, ArrowRight, ShieldCheck, AlertCircle, Compass } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, X, ArrowRight, ShieldCheck, AlertCircle, Compass, Loader2 } from 'lucide-react';
 import { useCity } from '../../context/CityContext';
-import {
-  isValidIndianPincode,
-  CITY_DEFAULT_PINCODES,
-} from '../../utils/pincodeDistance';
+import { isValidIndianPincode } from '../../utils/pincodeDistance';
 
 export default function CityModal() {
-  const { city, pincode, isCityModalOpen, closeCityModal, setCityAndPincode, supportedCities } = useCity();
+  const { city, pincode, isCityModalOpen, closeCityModal, setCityAndPincode, supportedCities, loadingCities } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPendingCity, setSelectedPendingCity] = useState(city || 'Delhi NCR');
+  const [selectedPendingCity, setSelectedPendingCity] = useState(city || '');
   const [inputPincode, setInputPincode] = useState(pincode || '');
   const [pincodeError, setPincodeError] = useState('');
 
   useEffect(() => {
     if (city) {
       setSelectedPendingCity(city);
+    } else if (supportedCities.length > 0 && !selectedPendingCity) {
+      const firstActive = supportedCities.find((c) => c.isActive && !c.isComingSoon) || supportedCities[0];
+      if (firstActive) {
+        setSelectedPendingCity(firstActive.name);
+      }
     }
-    if (pincode) {
-      setInputPincode(pincode);
-    }
-  }, [city, pincode]);
+  }, [city, supportedCities, selectedPendingCity]);
+
+  useEffect(() => {
+    setInputPincode(pincode || '');
+  }, [pincode]);
 
   if (!isCityModalOpen) return null;
 
   const filteredCities = supportedCities.filter((c) =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+    (c.name || '').toLowerCase().includes(searchTerm.toLowerCase().trim())
   );
 
   const handleCityPick = (cityName) => {
     setSelectedPendingCity(cityName);
-    // User selects city first, then enters pincode manually (no auto-fill)
+    // User selects city first, then enters pincode manually (strictly no pincode auto-fill)
     setPincodeError('');
   };
 
@@ -53,12 +56,18 @@ export default function CityModal() {
       return;
     }
     if (!isValidIndianPincode(cleanPin)) {
-      setPincodeError('Please enter a valid 6-digit Indian PIN code (e.g. 110001, 400001, 560001).');
+      setPincodeError('Please enter a valid 6-digit Indian PIN code (e.g. 110001, 302001, 560001).');
+      return;
+    }
+
+    const targetCity = selectedPendingCity || (supportedCities[0]?.name || '');
+    if (!targetCity) {
+      setPincodeError('Please select a service city.');
       return;
     }
 
     setPincodeError('');
-    setCityAndPincode(selectedPendingCity || 'Delhi NCR', cleanPin);
+    setCityAndPincode(targetCity, cleanPin);
   };
 
   return (
@@ -77,7 +86,7 @@ export default function CityModal() {
           <button
             onClick={closeCityModal}
             className="absolute top-4 right-4 sm:top-6 sm:right-6 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-[#FDFBF7] flex items-center justify-center transition"
-            title="Close and continue"
+            title="Close"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -124,62 +133,73 @@ export default function CityModal() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search listed cities (Delhi NCR, Mumbai, Jaipur, Bangalore, Hyderabad...)"
+              placeholder="Search listed cities (Ajmer, Bengaluru, Gurugram, Jaipur, New Delhi...)"
               className="w-full pl-11 pr-4 py-2.5 sm:py-3 rounded-xl bg-white border border-[#E6DFD3] text-sm focus:outline-none focus:ring-2 focus:ring-[#B58E34] text-[#2C160A] placeholder-stone-400 shadow-xs"
             />
           </div>
 
-          {/* Listed Cities Grid ONLY */}
+          {/* Listed Cities Grid ONLY (Live from Admin Portal) */}
           <div>
             <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-stone-500 uppercase tracking-wider mb-3">
               <span>Select Listed City</span>
-              <span className="text-[#B58E34] font-bold">Only Listed Metros</span>
+              <span className="text-[#B58E34] font-bold">Configured Service Cities</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
-              {filteredCities.map((c) => {
-                const isSelected = selectedPendingCity?.toLowerCase() === c.name.toLowerCase();
-                return (
-                  <button
-                    key={c.name}
-                    type="button"
-                    onClick={() => handleCityPick(c.name)}
-                    className={`flex flex-col justify-between p-3.5 sm:p-4 rounded-xl border transition-all text-left group ${
-                      isSelected
-                        ? 'bg-[#4A2511] text-white border-[#4A2511] shadow-md scale-[1.02]'
-                        : 'bg-white hover:bg-[#F3EFE6] border-[#E6DFD3] text-[#2C160A] hover:border-[#B58E34]/60'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between w-full mb-2">
-                      <span className="text-2xl p-1.5 bg-stone-100 rounded-lg group-hover:scale-105 transition-transform">
-                        {c.icon}
-                      </span>
-                      {isSelected && <CheckCircle2 className="w-4 h-4 text-[#E8C87A]" />}
-                    </div>
-
-                    <div>
-                      <div className="font-serif font-bold text-sm sm:text-base leading-tight">
-                        {c.name}
-                      </div>
-                      <div className={`text-xs mt-0.5 ${isSelected ? 'text-stone-300' : 'text-stone-500'}`}>
-                        {c.artistsCount}
-                      </div>
-                    </div>
-
-                    <span
-                      className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full mt-2.5 w-fit ${
-                        isSelected ? 'bg-[#B58E34] text-white' : 'bg-amber-100 text-amber-800'
+            {loadingCities && supportedCities.length === 0 ? (
+              <div className="flex items-center justify-center py-10 text-stone-500 gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-[#B58E34]" />
+                <span className="text-sm">Loading available service cities…</span>
+              </div>
+            ) : filteredCities.length === 0 ? (
+              <div className="text-center py-8 bg-amber-50/50 rounded-xl border border-amber-200 text-stone-600 text-sm">
+                No cities found matching &quot;{searchTerm}&quot;. Please check the spelling or add via Admin Portal.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
+                {filteredCities.map((c) => {
+                  const isSelected = selectedPendingCity?.toLowerCase() === c.name.toLowerCase();
+                  return (
+                    <button
+                      key={c.id || c.name}
+                      type="button"
+                      onClick={() => handleCityPick(c.name)}
+                      className={`flex flex-col justify-between p-3.5 sm:p-4 rounded-xl border transition-all text-left group ${
+                        isSelected
+                          ? 'bg-[#4A2511] text-white border-[#4A2511] shadow-md scale-[1.02]'
+                          : 'bg-white hover:bg-[#F3EFE6] border-[#E6DFD3] text-[#2C160A] hover:border-[#B58E34]/60'
                       }`}
                     >
-                      {c.tag}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                      <div className="flex items-start justify-between w-full mb-2">
+                        <span className="text-2xl p-1.5 bg-stone-100 rounded-lg group-hover:scale-105 transition-transform">
+                          {c.icon}
+                        </span>
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-[#E8C87A]" />}
+                      </div>
+
+                      <div>
+                        <div className="font-serif font-bold text-sm sm:text-base leading-tight">
+                          {c.displayName || c.name}
+                        </div>
+                        <div className={`text-xs mt-0.5 ${isSelected ? 'text-stone-300' : 'text-stone-500'}`}>
+                          {c.artistsCount}
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full mt-2.5 w-fit ${
+                          isSelected ? 'bg-[#B58E34] text-white' : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {c.tag}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* MANDATORY AREA PINCODE INPUT */}
+          {/* MANDATORY AREA PINCODE INPUT (No Auto-Fill) */}
           <div className="bg-amber-50/70 p-4 sm:p-5 rounded-2xl border-2 border-amber-300/80 space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#4A2511] flex items-center gap-1.5">
@@ -193,7 +213,7 @@ export default function CityModal() {
             </div>
 
             <p className="text-xs text-stone-600 leading-snug">
-              Enter your venue PIN code so we can assign the closest certified henna artist in <strong>{selectedPendingCity}</strong>.
+              Select your city above, then enter your 6-digit venue PIN code manually to check artist availability for <strong>{selectedPendingCity || 'your city'}</strong>.
             </p>
 
             <div className="relative">
@@ -206,7 +226,7 @@ export default function CityModal() {
                 maxLength={6}
                 value={inputPincode}
                 onChange={handlePincodeChange}
-                placeholder="Enter 6-digit PIN (e.g. 110001, 400050, 560001)"
+                placeholder="Enter 6-digit PIN (e.g. 110001, 302001, 560001)"
                 className={`w-full px-4 py-3 rounded-xl border text-base font-mono tracking-widest font-bold focus:outline-none focus:ring-2 ${
                   pincodeError
                     ? 'border-red-400 bg-red-50/50 focus:ring-red-400 text-red-900'
@@ -223,7 +243,7 @@ export default function CityModal() {
             ) : isValidIndianPincode(inputPincode) ? (
               <div className="text-emerald-700 text-xs flex items-center gap-1.5 font-medium pt-0.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Doorstep artist coverage active for {selectedPendingCity} (PIN: {inputPincode})</span>
+                <span>Coverage active for {selectedPendingCity} (PIN: {inputPincode})</span>
               </div>
             ) : null}
           </div>
@@ -234,8 +254,12 @@ export default function CityModal() {
           <div className="text-xs sm:text-sm text-stone-600 flex items-center justify-center sm:justify-start gap-1.5">
             <MapPin className="w-4 h-4 text-[#B58E34] shrink-0" />
             <span>
-              Target: <strong className="text-[#4A2511] font-serif">{selectedPendingCity}</strong> · PIN:{' '}
-              <strong className="font-mono text-[#4A2511]">{inputPincode || '—'}</strong>
+              Target: <strong className="text-[#4A2511] font-serif">{selectedPendingCity || 'None'}</strong> · PIN:{' '}
+              {inputPincode ? (
+                <strong className="font-mono text-[#4A2511]">{inputPincode}</strong>
+              ) : (
+                <span className="text-amber-800 font-semibold italic">Not entered (Required)</span>
+              )}
             </span>
           </div>
 

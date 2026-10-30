@@ -15,8 +15,16 @@
     const res = await fetch(`${API_BASE}${path}`, {
       method, headers, body: body ? JSON.stringify(body) : undefined
     });
-    const json = await res.json();
-    if (!res.ok || json.success === false) throw new Error(json.message || `HTTP ${res.status}`);
+    let json = null;
+    try {
+      json = await res.json();
+    } catch (e) {
+      json = null;
+    }
+    if (!res.ok || !json || json.success === false) {
+      const msg = json?.message || (res.status === 401 ? 'Session expired. Please log in again.' : (res.status === 403 ? 'Access denied. Administrator privileges required.' : `Request failed (${res.status})`));
+      throw new Error(msg);
+    }
     return json.data;
   }
 

@@ -1,22 +1,63 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { CITY_DEFAULT_PINCODES } from '../utils/pincodeDistance';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { CitiesAPI } from '../services/api';
+import { isValidIndianPincode } from '../utils/pincodeDistance';
 
 const CityContext = createContext(null);
 
-export const SUPPORTED_CITIES = [
-  { name: 'Delhi NCR', icon: '🏛️', tag: 'Top Availability', artistsCount: '18+ Master Artists', state: 'National Capital Region', basePincode: '110001' },
-  { name: 'Mumbai', icon: '🌊', tag: 'Fast Response', artistsCount: '24+ Master Artists', state: 'Maharashtra', basePincode: '400001' },
-  { name: 'Bangalore', icon: '💻', tag: 'Popular Hub', artistsCount: '15+ Master Artists', state: 'Karnataka', basePincode: '560001' },
-  { name: 'Jaipur', icon: '🌸', tag: 'Heritage Royalty', artistsCount: '20+ Master Artists', state: 'Rajasthan', basePincode: '302001' },
-  { name: 'Hyderabad', icon: '🕌', tag: 'Nizami Specialist', artistsCount: '12+ Master Artists', state: 'Telangana', basePincode: '500001' },
-  { name: 'Kolkata', icon: '🎨', tag: 'Traditional Bridal', artistsCount: '10+ Master Artists', state: 'West Bengal', basePincode: '700001' },
-  { name: 'Pune', icon: '⛰️', tag: 'Modern & Minimal', artistsCount: '14+ Master Artists', state: 'Maharashtra', basePincode: '411001' },
-  { name: 'Ahmedabad', icon: '🧵', tag: 'Kundan & Jaal', artistsCount: '11+ Master Artists', state: 'Gujarat', basePincode: '380001' },
-];
+const SESSION_KEY = 'shringar_city_modal_acknowledged_v8';
 
-const SESSION_KEY = 'shringar_city_modal_acknowledged_v7';
+const CITY_ICONS = {
+  mumbai: '🌊',
+  pune: '⛰️',
+  delhi: '🏛️',
+  delhi_ncr: '🏛️',
+  new_delhi: '🏛️',
+  gurugram: '🏢',
+  bangalore: '💻',
+  bengaluru: '💻',
+  jaipur: '🌸',
+  ajmer: '🕌',
+  hyderabad: '🕌',
+  kolkata: '🎨',
+  ahmedabad: '🧵',
+  nashik: '🍇',
+  udaipur: '🏰',
+  jodhpur: '🏰',
+  lucknow: '🪡',
+  chandigarh: '🌳',
+  chennai: '🪔',
+};
+
+function formatCityFromApi(c) {
+  const normKey = (c.name || '').toLowerCase().replace(/[\s-]+/g, '_');
+  const icon = CITY_ICONS[normKey] || '🏛️';
+  const displayName = c.displayName || (c.name ? c.name.charAt(0).toUpperCase() + c.name.slice(1) : 'City');
+  const artistCount = c.artistCount || 0;
+  const tag = c.isComingSoon
+    ? (c.launchQuarter || 'Coming Soon')
+    : (artistCount > 0 ? `${artistCount} Artists Available` : 'Active Hub');
+  const artistsText = c.isComingSoon
+    ? 'Launching Soon'
+    : (artistCount > 0 ? `${artistCount}+ Master Artists` : 'Verified Artists');
+
+  return {
+    id: c.id,
+    internalName: c.name,
+    name: displayName,
+    displayName: displayName,
+    icon: icon,
+    tag: tag,
+    artistsCount: artistsText,
+    isActive: c.isActive !== false,
+    isComingSoon: !!c.isComingSoon,
+    areas: c.areas || [],
+  };
+}
 
 export function CityProvider({ children }) {
+  const [supportedCities, setSupportedCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(true);
+
   const [city, setCityState] = useState(() => {
     try {
       return localStorage.getItem('shringar_selected_city') || '';
@@ -27,7 +68,8 @@ export function CityProvider({ children }) {
 
   const [pincode, setPincodeState] = useState(() => {
     try {
-      return localStorage.getItem('shringar_selected_pincode') || '';
+      const savedPin = localStorage.getItem('shringar_selected_pincode');
+      return isValidIndianPincode(savedPin) ? savedPin : '';
     } catch {
       return '';
     }
@@ -43,17 +85,51 @@ export function CityProvider({ children }) {
     }
   });
 
+  // Fetch live cities from backend (syncing with Admin Portal Locations)
+  const fetchCities = useCallback(async () => {
+    try {
+      setLoadingCities(true);
+      const data = await CitiesAPI.getAll();
+      if (Array.isArray(data) && data.length > 0) {
+        const formatted = data.map(formatCityFromApi);
+        setSupportedCities(formatted);
+      }
+    } catch (err) {
+      console.warn('Could not fetch live cities from backend, using current active state:', err);
+    } finally {
+      setLoadingCities(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCities();
+  }, [fetchCities]);
+
+  // If city is not set yet, sync with first available city once loaded
+  useEffect(() => {
+    if (supportedCities.length > 0 && !city) {
+      const firstActive = supportedCities.find((c) => c.isActive && !c.isComingSoon) || supportedCities[0];
+      if (firstActive) {
+        setCityState(firstActive.name);
+      }
+    }
+  }, [supportedCities, city]);
+
   const setCityAndPincode = (newCity, newPincode) => {
     if (!newCity) return;
     const cleanCity = newCity.trim();
-    const cleanPin = (newPincode || CITY_DEFAULT_PINCODES[cleanCity] || '110001').trim();
-    
+    const cleanPin = newPincode && isValidIndianPincode(newPincode) ? newPincode.trim() : '';
+
     setCityState(cleanCity);
     setPincodeState(cleanPin);
 
     try {
       localStorage.setItem('shringar_selected_city', cleanCity);
-      localStorage.setItem('shringar_selected_pincode', cleanPin);
+      if (cleanPin) {
+        localStorage.setItem('shringar_selected_pincode', cleanPin);
+      } else {
+        localStorage.removeItem('shringar_selected_pincode');
+      }
       sessionStorage.setItem(SESSION_KEY, 'true');
     } catch (e) {
       console.warn('Could not save selected city and pincode:', e);
@@ -68,27 +144,24 @@ export function CityProvider({ children }) {
   };
 
   const setCity = (newCity) => {
-    const defaultPin = CITY_DEFAULT_PINCODES[newCity] || pincode || '110001';
-    setCityAndPincode(newCity, defaultPin);
+    setCityAndPincode(newCity, pincode || '');
   };
 
   const setPincode = (newPin) => {
-    if (!newPin) return;
-    const clean = newPin.trim();
+    const clean = newPin ? String(newPin).trim() : '';
     setPincodeState(clean);
     try {
-      localStorage.setItem('shringar_selected_pincode', clean);
+      if (clean && isValidIndianPincode(clean)) {
+        localStorage.setItem('shringar_selected_pincode', clean);
+      } else {
+        localStorage.removeItem('shringar_selected_pincode');
+      }
     } catch {}
   };
 
   const openCityModal = () => setIsCityModalOpen(true);
 
   const closeCityModal = () => {
-    const chosen = city || 'Delhi NCR';
-    const chosenPin = pincode || CITY_DEFAULT_PINCODES[chosen] || '110001';
-    if (!city || !pincode) {
-      setCityAndPincode(chosen, chosenPin);
-    }
     try {
       sessionStorage.setItem(SESSION_KEY, 'true');
     } catch {}
@@ -101,8 +174,8 @@ export function CityProvider({ children }) {
       if (e.key === 'shringar_selected_city' && e.newValue) {
         setCityState(e.newValue);
       }
-      if (e.key === 'shringar_selected_pincode' && e.newValue) {
-        setPincodeState(e.newValue);
+      if (e.key === 'shringar_selected_pincode') {
+        setPincodeState(e.newValue || '');
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -112,8 +185,8 @@ export function CityProvider({ children }) {
   return (
     <CityContext.Provider
       value={{
-        city: city || 'Delhi NCR',
-        pincode: pincode || CITY_DEFAULT_PINCODES[city || 'Delhi NCR'] || '110001',
+        city: city || (supportedCities[0]?.name || ''),
+        pincode: pincode || '',
         hasChosenCity: !!city && !!pincode,
         isCityModalOpen,
         openCityModal,
@@ -121,7 +194,9 @@ export function CityProvider({ children }) {
         setCity,
         setPincode,
         setCityAndPincode,
-        supportedCities: SUPPORTED_CITIES,
+        supportedCities,
+        loadingCities,
+        refreshCities: fetchCities,
       }}
     >
       {children}

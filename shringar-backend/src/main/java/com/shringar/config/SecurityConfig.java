@@ -87,7 +87,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/designs/*/click").permitAll()
                 .requestMatchers(HttpMethod.GET, "/cities/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/artists/**").permitAll()
-                .requestMatchers(HttpMethod.PATCH, "/artists/**/availability").permitAll()
+                .requestMatchers(HttpMethod.PATCH, "/artists/*/availability", "/artists/me/availability").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/settings").permitAll()
                 .requestMatchers("/public/**").permitAll()
