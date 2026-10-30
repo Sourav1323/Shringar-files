@@ -4,7 +4,8 @@ import { isValidIndianPincode } from '../utils/pincodeDistance';
 
 const CityContext = createContext(null);
 
-const SESSION_KEY = 'shringar_city_modal_acknowledged_v8';
+const SESSION_KEY = 'shringar_city_modal_acknowledged_v10';
+const LEGACY_DEFAULT_PINCODES = ['110001', '302001', '400001', '560001', '500001', '700001', '411001', '380001'];
 
 const CITY_ICONS = {
   mumbai: '🌊',
@@ -69,11 +70,26 @@ export function CityProvider({ children }) {
   const [pincode, setPincodeState] = useState(() => {
     try {
       const savedPin = localStorage.getItem('shringar_selected_pincode');
+      if (savedPin && LEGACY_DEFAULT_PINCODES.includes(savedPin)) {
+        localStorage.removeItem('shringar_selected_pincode');
+        return '';
+      }
       return isValidIndianPincode(savedPin) ? savedPin : '';
     } catch {
       return '';
     }
   });
+
+  // Purge any legacy default pincode on mount
+  useEffect(() => {
+    try {
+      const savedPin = localStorage.getItem('shringar_selected_pincode');
+      if (savedPin && LEGACY_DEFAULT_PINCODES.includes(savedPin)) {
+        localStorage.removeItem('shringar_selected_pincode');
+        setPincodeState('');
+      }
+    } catch {}
+  }, []);
 
   // Always show modal upon landing if not confirmed in this session
   const [isCityModalOpen, setIsCityModalOpen] = useState(() => {

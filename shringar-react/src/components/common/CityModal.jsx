@@ -7,23 +7,31 @@ export default function CityModal() {
   const { city, pincode, isCityModalOpen, closeCityModal, setCityAndPincode, supportedCities, loadingCities } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPendingCity, setSelectedPendingCity] = useState(city || '');
-  const [inputPincode, setInputPincode] = useState(pincode || '');
+  const [inputPincode, setInputPincode] = useState('');
   const [pincodeError, setPincodeError] = useState('');
 
+  // When modal is opened, sync selectedPendingCity once from current active city, and ensure pincode input starts completely empty
   useEffect(() => {
-    if (city) {
-      setSelectedPendingCity(city);
-    } else if (supportedCities.length > 0 && !selectedPendingCity) {
-      const firstActive = supportedCities.find((c) => c.isActive && !c.isComingSoon) || supportedCities[0];
-      if (firstActive) {
-        setSelectedPendingCity(firstActive.name);
+    if (isCityModalOpen) {
+      if (city) {
+        setSelectedPendingCity(city);
+      } else if (supportedCities.length > 0) {
+        const firstActive = supportedCities.find((c) => c.isActive && !c.isComingSoon) || supportedCities[0];
+        if (firstActive) setSelectedPendingCity(firstActive.name);
       }
+      setSearchTerm('');
+      setInputPincode('');
+      setPincodeError('');
     }
-  }, [city, supportedCities, selectedPendingCity]);
+  }, [isCityModalOpen]);
 
+  // If cities were still loading when modal opened and just finished loading, pick first active city only if none selected
   useEffect(() => {
-    setInputPincode(pincode || '');
-  }, [pincode]);
+    if (!selectedPendingCity && supportedCities.length > 0) {
+      const firstActive = supportedCities.find((c) => c.isActive && !c.isComingSoon) || supportedCities[0];
+      if (firstActive) setSelectedPendingCity(firstActive.name);
+    }
+  }, [supportedCities]);
 
   if (!isCityModalOpen) return null;
 
@@ -33,7 +41,8 @@ export default function CityModal() {
 
   const handleCityPick = (cityName) => {
     setSelectedPendingCity(cityName);
-    // User selects city first, then enters pincode manually (strictly no pincode auto-fill)
+    // When changing city, always clear pincode so old city's pincode never leaks
+    setInputPincode('');
     setPincodeError('');
   };
 
