@@ -186,28 +186,50 @@
           <input class="form-input" type="number" step="0.5" id="f-cones" placeholder="e.g. 2"/>
         </div>
 
-        <!-- COVERAGE TIERS & PRICING -->
-        <div class="form-field full" style="background:#fcfbf9;border:1px solid #e7ded4;border-radius:10px;padding:14px;grid-column:1 / -1;">
-          <label class="form-label" style="font-weight:700;color:#4a2511;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span>💎 Coverage Tiers & Customer Pricing</span>
+        <!-- OFFER PRICING & DISCOUNT -->
+        <div class="form-field full" style="background:#fffdf5;border:1.5px solid #d4af37;border-radius:10px;padding:14px;grid-column:1 / -1;">
+          <label class="form-label" style="font-weight:700;color:#7a5000;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span>🏷️ Offer Pricing & Discount Display</span>
+            <span class="badge" style="background:#fff3cd;color:#856404;font-size:11px;">Offer Feature</span>
           </label>
           <div style="font-size:12px;color:#7a6356;margin-bottom:12px;">
-            Configure customer website coverage options: Palm only, Standard coverage (Main), and Grand Ensemble.
+            Set an <strong>Original MRP Price</strong> higher than the <strong>Selling Price</strong> to show the struck-through price and an automatic <strong>X% OFF</strong> discount badge across the website.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;align-items:start;">
+            <div>
+              <label class="form-label" style="font-size:12px;">Original Price / MRP (₹) <span style="color:#718096;font-weight:normal;">(Before Discount)</span></label>
+              <input class="form-input" type="number" min="0" id="f-original-price" placeholder="e.g. 2000" oninput="calculateOfferDiscount()"/>
+              <div class="form-hint" style="font-size:11px;">Struck-through price on customer site (leave blank if no discount).</div>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:12px;">Selling / Offer Price (₹) *</label>
+              <input class="form-input" type="number" min="0" id="f-price" placeholder="e.g. 1500" oninput="calculateOfferDiscount()"/>
+              <div class="form-hint" style="font-size:11px;">Actual price charged to customer.</div>
+            </div>
+            <div id="offer-discount-preview" style="background:#f7fee7;border:1.5px solid #86efac;border-radius:8px;padding:10px 14px;display:none;margin-top:22px;">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#15803d;letter-spacing:0.05em;">Offer Discount Applied</div>
+              <div id="offer-discount-text" style="font-size:14px;font-weight:800;color:#166534;margin-top:2px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COVERAGE TIERS -->
+        <div class="form-field full" style="background:#fcfbf9;border:1px solid #e7ded4;border-radius:10px;padding:14px;grid-column:1 / -1;">
+          <label class="form-label" style="font-weight:700;color:#4a2511;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span>💎 Optional Tier Prices (Only shown if set)</span>
+          </label>
+          <div style="font-size:12px;color:#7a6356;margin-bottom:12px;">
+            Optional coverage tiers. Shown on customer website only if set > 0.
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
             <div>
               <label class="form-label" style="font-size:12px;">Palm & Fingers Only (₹)</label>
-              <input class="form-input" type="number" min="0" id="f-palm-price" placeholder="Auto: ~75% of main"/>
+              <input class="form-input" type="number" min="0" id="f-palm-price" placeholder="e.g. 1100 (Optional)"/>
               <div class="form-hint" style="font-size:11px;">Tier 1: Minimal palm pattern</div>
             </div>
             <div>
-              <label class="form-label" style="font-size:12px;">Standard Coverage Price (₹) *</label>
-              <input class="form-input" type="number" min="0" id="f-price" placeholder="e.g. 1500"/>
-              <div class="form-hint" style="font-size:11px;">Tier 2: Recommended (Main)</div>
-            </div>
-            <div>
               <label class="form-label" style="font-size:12px;">Grand Ensemble Price (₹)</label>
-              <input class="form-input" type="number" min="0" id="f-grand-price" placeholder="Auto: main + ₹1600"/>
+              <input class="form-input" type="number" min="0" id="f-grand-price" placeholder="e.g. 3100 (Optional)"/>
               <div class="form-hint" style="font-size:11px;">Tier 3: Hands & Feet complete</div>
             </div>
           </div>
@@ -248,17 +270,10 @@
 
           <div>
             <label class="form-label" style="font-size:12px;margin-bottom:6px;">Available In Cities (Customer Location Filter):</label>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div id="city-checkboxes-container" style="display:flex;gap:12px;flex-wrap:wrap;">
               <label class="form-check" style="font-weight:600;"><input type="checkbox" id="city-all-cb" onchange="toggleAllCities(this)"/> All Cities (Nationwide)</label>
-              <label class="form-check"><input type="checkbox" class="city-cb" value="Delhi NCR" onchange="onCityCbChange()"/> Delhi NCR</label>
-              <label class="form-check"><input type="checkbox" class="city-cb" value="Mumbai" onchange="onCityCbChange()"/> Mumbai</label>
-              <label class="form-check"><input type="checkbox" class="city-cb" value="Jaipur" onchange="onCityCbChange()"/> Jaipur</label>
-              <label class="form-check"><input type="checkbox" class="city-cb" value="Bangalore" onchange="onCityCbChange()"/> Bangalore</label>
-              <label class="form-check"><input type="checkbox" class="city-cb" value="Hyderabad" onchange="onCityCbChange()"/> Hyderabad</label>
-              <label class="form-check"><input type="checkbox" class="city-cb" value="Kolkata" onchange="onCityCbChange()"/> Kolkata</label>
-              <label class="form-check"><input type="checkbox" class="city-cb" value="Pune" onchange="onCityCbChange()"/> Pune</label>
-              <label class="form-check"><input type="checkbox" class="city-cb" value="Ahmedabad" onchange="onCityCbChange()"/> Ahmedabad</label>
             </div>
+            <div class="form-hint" style="font-size:11px;margin-top:4px;">Cities loaded dynamically from Locations management.</div>
           </div>
         </div>
 
@@ -339,6 +354,7 @@
 </div>
 
 <script src="js/admin-api.js"></script>
+<script src="js/admin-api-extra.js"></script>
 <script>
 if (!ShringarAdmin.requireAdmin()) { throw new Error('redirecting to login'); }
 ShringarAdmin.paintAdminName();
@@ -474,7 +490,18 @@ function renderDesignRow(d) {
         </div>
       </td>
       <td><span class="badge badge-gold" style="font-weight:600;">${getCategoryIcon(d.category)} ${escapeHtml(d.category)}</span></td>
-      <td><strong>${ShringarAdmin.formatINR(d.price)}</strong></td>
+      <td>
+        ${(d.originalPrice && d.originalPrice > d.price)
+          ? `<div>
+               <strong>${ShringarAdmin.formatINR(d.price)}</strong>
+               <div style="margin-top:2px;display:flex;align-items:center;gap:4px;">
+                 <del style="color:#888;font-size:11px;">${ShringarAdmin.formatINR(d.originalPrice)}</del>
+                 <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:10px;padding:1px 5px;font-weight:700;">${Math.round(((d.originalPrice - d.price) / d.originalPrice) * 100)}% OFF</span>
+               </div>
+             </div>`
+          : `<strong>${ShringarAdmin.formatINR(d.price)}</strong>`
+        }
+      </td>
       <td><span style="font-size:12.5px;color:var(--td);">${d.clickCount ?? 0} views</span></td>
       <td>${d.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Removed</span>'}</td>
       <td>${d.isFeatured ? '<span class="badge badge-gold">★ Featured</span>' : '<span style="color:var(--tl);">—</span>'}</td>
@@ -671,7 +698,84 @@ function onCategorySelectChange() {
   }
 }
 
-// ───────────────────────── Modal open/close ─────────────────────────
+// ───────────────────────── Offer Discount Calculation ─────────────────────────
+
+function calculateOfferDiscount() {
+  const orig = parseFloat(document.getElementById('f-original-price')?.value);
+  const sell = parseFloat(document.getElementById('f-price')?.value);
+  const preview = document.getElementById('offer-discount-preview');
+  const text = document.getElementById('offer-discount-text');
+  if (!preview || !text) return;
+
+  if (!isNaN(orig) && !isNaN(sell) && orig > sell && sell > 0) {
+    const savings = Math.round(orig - sell);
+    const pct = Math.round(((orig - sell) / orig) * 100);
+    text.innerHTML = `Save ${ShringarAdmin.formatINR(savings)} <span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:12px;font-size:12px;margin-left:6px;">${pct}% OFF</span>`;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+// ───────────────────────── Dynamic Cities & Locations ─────────────────────────
+
+let allLocations = [];
+async function loadLocationsList() {
+  try {
+    let list = null;
+    if (ShringarAdmin.Locations && typeof ShringarAdmin.Locations.cities === 'function') {
+      list = await ShringarAdmin.Locations.cities();
+    } else {
+      const res = await fetch(`${ShringarAdmin.API_BASE}/cities`);
+      const json = await res.json();
+      if (json && json.success) list = json.data;
+    }
+    if (Array.isArray(list) && list.length > 0) {
+      allLocations = list;
+    } else {
+      allLocations = [
+        { displayName: 'Ajmer' },
+        { displayName: 'Bengaluru' },
+        { displayName: 'Gurugram' },
+        { displayName: 'Jaipur' },
+        { displayName: 'New Delhi' }
+      ];
+    }
+  } catch (err) {
+    console.warn('Could not load dynamic locations for design modal, using fallback:', err);
+    allLocations = [
+      { displayName: 'Ajmer' },
+      { displayName: 'Bengaluru' },
+      { displayName: 'Gurugram' },
+      { displayName: 'Jaipur' },
+      { displayName: 'New Delhi' }
+    ];
+  }
+}
+
+function renderCityCheckboxes(selectedCities = []) {
+  const container = document.getElementById('city-checkboxes-container');
+  if (!container) return;
+  const isAll = selectedCities.length === 0 || 
+                selectedCities.includes('ALL') || 
+                selectedCities.includes('All Cities') || 
+                selectedCities.includes('Nationwide');
+
+  let html = `<label class="form-check" style="font-weight:600;"><input type="checkbox" id="city-all-cb" onchange="toggleAllCities(this)" ${isAll ? 'checked' : ''}/> All Cities (Nationwide)</label>`;
+
+  allLocations.forEach(loc => {
+    const cityName = loc.displayName || loc.name;
+    if (!cityName) return;
+    const isChecked = !isAll && selectedCities.includes(cityName);
+    html += `
+      <label class="form-check">
+        <input type="checkbox" class="city-cb" value="${escapeHtml(cityName)}" onchange="onCityCbChange()" ${isChecked ? 'checked' : ''}/> ${escapeHtml(cityName)}
+      </label>
+    `;
+  });
+
+  container.innerHTML = html;
+}
 
 function toggleAllCities(masterCb) {
   const cbs = document.querySelectorAll('.city-cb');
@@ -713,11 +817,12 @@ function openCreateModal(prefillCategory) {
   document.getElementById('modal-title').textContent = 'Add New Design';
   clearForm();
   populateCategorySelect(prefillCategory || (selectedCategory !== 'ALL' ? selectedCategory : 'Bridal'));
+  document.getElementById('f-original-price').value = '';
   document.getElementById('f-palm-price').value = '';
   document.getElementById('f-grand-price').value = '';
   document.getElementById('f-origin-city').value = 'Rajasthan Heritage';
-  document.getElementById('city-all-cb').checked = true;
-  document.querySelectorAll('.city-cb').forEach(cb => cb.checked = false);
+  calculateOfferDiscount();
+  renderCityCheckboxes([]);
   const artistSelect = document.getElementById('f-assigned-artists');
   if (artistSelect) {
     Array.from(artistSelect.options).forEach(opt => opt.selected = false);
@@ -738,17 +843,15 @@ function openEditModal(id) {
   document.getElementById('f-duration-min').value = d.durationMinHours ?? '';
   document.getElementById('f-duration-max').value = d.durationMaxHours ?? '';
   document.getElementById('f-cones').value = d.conesNeeded ?? '';
+  document.getElementById('f-original-price').value = d.originalPrice ?? '';
   document.getElementById('f-price').value = d.price ?? '';
+  calculateOfferDiscount();
   document.getElementById('f-palm-price').value = d.palmTierPrice ?? '';
   document.getElementById('f-grand-price').value = d.grandTierPrice ?? '';
   document.getElementById('f-origin-city').value = d.originCity || 'Rajasthan Heritage';
 
   const avail = d.availableCities || [];
-  const isAll = avail.length === 0 || avail.includes('ALL') || avail.includes('All Cities') || avail.includes('Nationwide');
-  document.getElementById('city-all-cb').checked = isAll;
-  document.querySelectorAll('.city-cb').forEach(cb => {
-    cb.checked = isAll ? false : avail.includes(cb.value);
-  });
+  renderCityCheckboxes(avail);
 
   const assigned = (d.assignedArtistIds || []).map(String);
   const artistSelect = document.getElementById('f-assigned-artists');
@@ -788,14 +891,14 @@ function closeModal() {
 
 function clearForm() {
   ['f-name','f-description','f-coverage','f-duration-min','f-duration-max',
-   'f-cones','f-price','f-palm-price','f-grand-price','f-emoji','f-badge','f-youtube'].forEach(id => {
+   'f-cones','f-original-price','f-price','f-palm-price','f-grand-price','f-emoji','f-badge','f-youtube'].forEach(id => {
      const el = document.getElementById(id);
      if (el) el.value = '';
    });
   const customCat = document.getElementById('f-category-custom');
   if (customCat) { customCat.value = ''; customCat.style.display = 'none'; }
-  document.getElementById('city-all-cb').checked = true;
-  document.querySelectorAll('.city-cb').forEach(cb => cb.checked = false);
+  calculateOfferDiscount();
+  renderCityCheckboxes([]);
   const artistSelect = document.getElementById('f-assigned-artists');
   if (artistSelect) {
     Array.from(artistSelect.options).forEach(opt => opt.selected = false);
@@ -914,6 +1017,7 @@ async function saveDesign() {
   }
   customCategories.add(category);
 
+  const originalPrice = parseFloatOrNull('f-original-price');
   const palmTierPrice = parseFloat(document.getElementById('f-palm-price').value);
   const grandTierPrice = parseFloat(document.getElementById('f-grand-price').value);
   const originCity = document.getElementById('f-origin-city')?.value || null;
@@ -941,6 +1045,7 @@ async function saveDesign() {
     durationMinHours: parseFloatOrNull('f-duration-min'),
     durationMaxHours: parseFloatOrNull('f-duration-max'),
     conesNeeded: parseFloatOrNull('f-cones'),
+    originalPrice: (!isNaN(originalPrice) && originalPrice > 0) ? originalPrice : null,
     price,
     palmTierPrice: isNaN(palmTierPrice) ? null : palmTierPrice,
     grandTierPrice: isNaN(grandTierPrice) ? null : grandTierPrice,
@@ -1011,7 +1116,7 @@ async function restoreDesign(id) {
 // ───────────────────────── Deep link support: designs.html?edit=ID ─────────────────────────
 
 async function checkDeepLink() {
-  await loadArtistsList();
+  await Promise.all([loadLocationsList(), loadArtistsList()]);
   const params = new URLSearchParams(window.location.search);
   const editId = params.get('edit');
   if (editId) {
