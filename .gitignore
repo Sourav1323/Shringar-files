@@ -27,3 +27,5 @@ shringar-backend/uploads/
 *.tar.gz
 *.zip
 shringar-oci-production.tar.gz
+backups/
+
