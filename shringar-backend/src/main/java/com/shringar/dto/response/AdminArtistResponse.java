@@ -30,4 +30,8 @@ public class AdminArtistResponse {
     private Boolean isActive;
     private Boolean isTopArtist;
     private String badgeLabel;
+    private Boolean isAvailable;
+    private java.time.LocalDateTime availabilityLockedUntil;
+    private java.time.LocalDateTime availabilityLastChangedAt;
+    private Boolean isAvailabilityLocked;
 }

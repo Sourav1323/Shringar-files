@@ -69,7 +69,7 @@ function ScrollToTop() {
 // Guarantees predictable chronological back-stepping so users never get trapped in cyclic loops.
 // Fixed steps from deep pages: /booking -> /cart -> /designs -> / -> Exit
 function getStoryParent(pathname) {
-  if (!pathname || pathname === '/') return null; // Root level: natural exit on back
+  if (!pathname || pathname === '/' || pathname === '/profile') return null; // Natural back navigation to previous view
   if (pathname.startsWith('/booking')) return '/cart';
   if (pathname.startsWith('/cart')) return '/designs';
   if (pathname.startsWith('/designs/')) return '/designs';
@@ -87,7 +87,11 @@ function StoryNavigationManager() {
   }, [location.pathname]);
 
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (e) => {
+      // If a drawer/menu or modal handled the back press via pushState, don't hijack navigation
+      if (e?.state?.profileMenuOpen || e?.state?.drawerOpen || e?.state?.modalOpen) {
+        return;
+      }
       const currentPath = currentPathRef.current;
       const targetParent = getStoryParent(currentPath);
 
@@ -95,7 +99,7 @@ function StoryNavigationManager() {
         // Enforce website story chronology: step upward towards Home in fixed steps
         navigate(targetParent, { replace: true });
       }
-      // If currentPath is '/', targetParent is null, so browser naturally exits the website.
+      // If targetParent is null (e.g. /profile or /), browser naturally navigates back to previous view
     };
 
     window.addEventListener('popstate', handlePopState);

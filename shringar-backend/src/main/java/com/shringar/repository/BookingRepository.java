@@ -20,6 +20,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByApprovalToken(String approvalToken);
     List<Booking> findByArtistIdAndAppointmentDateAndStatusIn(
             Long artistId, java.time.LocalDate date, List<BookingStatus> statuses);
+    List<Booking> findByAppointmentDateAndStatusIn(
+            java.time.LocalDate date, List<BookingStatus> statuses);
+    List<Booking> findByAppointmentDateBetweenAndStatusIn(
+            java.time.LocalDate startDate, java.time.LocalDate endDate, List<BookingStatus> statuses);
+    List<Booking> findByArtistIdAndAppointmentDateBetweenAndStatusIn(
+            Long artistId, java.time.LocalDate startDate, java.time.LocalDate endDate, List<BookingStatus> statuses);
     Optional<Booking> findByIdAndUserId(Long id, Long userId);
     boolean existsByUpiTransactionRefAndIdNot(String upiTransactionRef, Long id);
 

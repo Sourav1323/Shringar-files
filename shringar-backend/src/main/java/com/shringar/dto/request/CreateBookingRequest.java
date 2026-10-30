@@ -59,6 +59,7 @@ public class CreateBookingRequest {
     private String upiTransactionRef;
 
     private String paymentScreenshotUrl;
+    private String couponCode;
 
     /**
      * Optional design items passed directly from frontend cart.

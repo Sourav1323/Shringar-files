@@ -55,4 +55,13 @@ public class AdminArtistController {
     public ApiResponse<AdminArtistResponse> restore(@PathVariable Long id) {
         return ApiResponse.success("Artist restored", adminArtistService.restore(id));
     }
+
+    /** Real-time availability sync for admin */
+    @PatchMapping("/{id}/availability")
+    public ApiResponse<AdminArtistResponse> toggleAvailability(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, Boolean> body) {
+        Boolean available = body.get("isAvailable");
+        return ApiResponse.success("Artist availability updated", adminArtistService.toggleAvailability(id, available));
+    }
 }

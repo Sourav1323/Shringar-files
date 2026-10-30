@@ -9,7 +9,7 @@ import {
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCity } from '../context/CityContext';
-import { DesignsAPI, ArtistsAPI } from '../services/api';
+import { DesignsAPI, ArtistsAPI, CouponsAPI } from '../services/api';
 import { optimizeArtistAssignment, getRecommendedDesignsForMinimalArtists } from '../utils/artistOptimizer';
 import { calculatePincodeDistance, calculateDistancePricing } from '../utils/pincodeDistance';
 
@@ -41,7 +41,23 @@ export default function CartPage() {
   const { openFavorites, favoriteCount } = useFavorites();
   const [couponInput, setCouponInput] = useState('');
   const [recommendedDesigns, setRecommendedDesigns] = useState([]);
+  const [couponsModalOpen, setCouponsModalOpen] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
   const navigate = useNavigate();
+
+  const handleOpenCouponsModal = async () => {
+    setCouponsModalOpen(true);
+    setLoadingCoupons(true);
+    try {
+      const data = await CouponsAPI.getPublic();
+      setAvailableCoupons(Array.isArray(data) ? data : (data?.data || []));
+    } catch (e) {
+      console.warn('Failed to load public coupons:', e);
+    } finally {
+      setLoadingCoupons(false);
+    }
+  };
 
   const { city, setCity: setGlobalCity } = useCity();
 
@@ -413,6 +429,16 @@ export default function CartPage() {
 
                       {/* Pricing Breakdown */}
                       <div className="text-right">
+                        {item.originalPrice && Number(item.originalPrice) > Number(itemPrice) && (
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            <span className="text-[11px] text-stone-400 line-through">
+                              {formatPrice(Number(item.originalPrice) * qty)}
+                            </span>
+                            <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
+                              {Math.round(((Number(item.originalPrice) - Number(itemPrice)) / Number(item.originalPrice)) * 100)}% OFF
+                            </span>
+                          </div>
+                        )}
                         <span className="text-[11px] text-stone-400 block">
                           {formatPrice(itemPrice)} × {qty}
                         </span>
@@ -634,21 +660,20 @@ export default function CartPage() {
 
             {/* Promo Code Input */}
             <div className="space-y-2 pt-1">
-              <label className="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
                   <Tag className="w-3.5 h-3.5 text-brand-gold-dark" />
                   <span>Promo Code</span>
-                </span>
-                {!coupon && (
-                  <button
-                    type="button"
-                    onClick={() => applyCouponCode('SHRINGAR20')}
-                    className="text-[10px] font-bold text-brand-maroon hover:underline tracking-normal"
-                  >
-                    Try "SHRINGAR20" (20% off)
-                  </button>
-                )}
-              </label>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleOpenCouponsModal}
+                  className="text-xs font-bold text-brand-maroon hover:text-brand-maroon-dark hover:underline flex items-center gap-1 cursor-pointer transition"
+                >
+                  <Sparkles className="w-3 h-3 text-brand-gold" />
+                  <span>View all coupons</span>
+                </button>
+              </div>
 
               {coupon ? (
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs">
@@ -776,6 +801,154 @@ export default function CartPage() {
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {/* ── ALL AVAILABLE COUPONS MODAL ── */}
+      {couponsModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setCouponsModalOpen(false)}
+        >
+          <div
+            className="bg-[#FDFBF7] text-[#2C160A] w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-[#B58E34]/40 overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#4A2511] to-[#34180A] text-white p-5 sm:p-6 flex items-center justify-between border-b border-[#B58E34]/30">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#B58E34]/20 border border-[#B58E34]/40 flex items-center justify-center">
+                  <Tag className="w-4 h-4 text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base sm:text-lg text-white">
+                    Available Special Offers & Coupons
+                  </h3>
+                  <p className="text-[11px] text-amber-200/80">
+                    Apply instant savings to your luxury ceremony package
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCouponsModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-3.5 flex-1">
+              {loadingCoupons ? (
+                <div className="text-center py-10 space-y-2">
+                  <div className="w-8 h-8 border-3 border-brand-maroon border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-xs text-stone-500 font-serif">Checking active royal offers…</p>
+                </div>
+              ) : availableCoupons.length === 0 ? (
+                <div className="text-center py-10 space-y-2 text-stone-500">
+                  <Tag className="w-10 h-10 mx-auto text-stone-300" />
+                  <p className="text-xs font-semibold">No public coupons active at this moment.</p>
+                </div>
+              ) : (
+                availableCoupons.map((c) => {
+                  const minOrder = Number(c.minOrderValue || 0);
+                  const isEligible = subtotal >= minOrder;
+                  const diff = minOrder - subtotal;
+                  const isApplied = coupon?.code?.toUpperCase() === c.code?.toUpperCase();
+
+                  return (
+                    <div
+                      key={c.id || c.code}
+                      className={`p-4 rounded-2xl border-2 transition-all ${
+                        isApplied
+                          ? 'border-emerald-500 bg-emerald-50/70 shadow-sm'
+                          : isEligible
+                          ? 'border-amber-300/80 bg-white hover:border-[#B58E34] hover:shadow-md'
+                          : 'border-stone-200 bg-stone-50/70 opacity-70'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-sm tracking-wider uppercase px-2 py-0.5 rounded bg-amber-100 text-stone-900 border border-amber-300">
+                              {c.code}
+                            </span>
+                            <span className="text-[11px] font-bold text-emerald-800">
+                              {c.type === 'PERCENT' ? `${c.value}% OFF` : `₹${c.value} FLAT OFF`}
+                              {c.maxDiscount && ` (Max ₹${c.maxDiscount})`}
+                            </span>
+                          </div>
+                          {c.description && (
+                            <p className="text-xs text-stone-600 leading-snug">
+                              {c.description}
+                            </p>
+                          )}
+                          <div className="text-[11px] pt-1">
+                            {minOrder > 0 ? (
+                              isEligible ? (
+                                <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Eligible! Order value {formatPrice(subtotal)} &ge; {formatPrice(minOrder)}</span>
+                                </span>
+                              ) : (
+                                <span className="text-rose-600 font-medium flex items-center gap-1">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Min. order of {formatPrice(minOrder)} required (Add {formatPrice(diff)} more)</span>
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-emerald-700 font-medium">No minimum order required</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action Button */}
+                        <div className="shrink-0 pt-0.5">
+                          {isApplied ? (
+                            <span className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-1 shadow-sm">
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Applied</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!isEligible}
+                              onClick={() => {
+                                applyCouponCode(c.code);
+                                setCouponsModalOpen(false);
+                              }}
+                              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
+                                isEligible
+                                  ? 'bg-[#4A2511] hover:bg-[#3A1D0D] text-amber-200 active:scale-95 cursor-pointer'
+                                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                              }`}
+                            >
+                              Apply
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-stone-100 border-t border-stone-200 text-right">
+              <button
+                type="button"
+                onClick={() => setCouponsModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-white border border-stone-300 text-stone-700 text-xs font-bold hover:bg-stone-50 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

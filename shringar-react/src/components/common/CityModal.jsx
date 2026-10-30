@@ -10,7 +10,7 @@ export default function CityModal() {
   const { city, pincode, isCityModalOpen, closeCityModal, setCityAndPincode, supportedCities } = useCity();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPendingCity, setSelectedPendingCity] = useState(city || 'Delhi NCR');
-  const [inputPincode, setInputPincode] = useState(pincode || CITY_DEFAULT_PINCODES[city || 'Delhi NCR'] || '110001');
+  const [inputPincode, setInputPincode] = useState(pincode || '');
   const [pincodeError, setPincodeError] = useState('');
 
   useEffect(() => {
@@ -30,9 +30,7 @@ export default function CityModal() {
 
   const handleCityPick = (cityName) => {
     setSelectedPendingCity(cityName);
-    // Auto-fill suggested starting PIN for selected metro if empty or changed
-    const defaultPin = CITY_DEFAULT_PINCODES[cityName] || '110001';
-    setInputPincode(defaultPin);
+    // User selects city first, then enters pincode manually (no auto-fill)
     setPincodeError('');
   };
 
@@ -40,13 +38,11 @@ export default function CityModal() {
     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
     setInputPincode(val);
     if (!val) {
-      setPincodeError('Area PIN code is mandatory for doorstep artist assignment.');
-    } else if (val.startsWith('0')) {
-      setPincodeError('Indian postal PIN codes cannot start with 0.');
-    } else if (val.length === 6) {
-      setPincodeError('');
+      setPincodeError('Area PIN code is mandatory.');
+    } else if (val.length < 6) {
+      setPincodeError(`PIN code must be exactly 6 numeric digits (${val.length}/6 entered).`);
     } else {
-      setPincodeError(`PIN code must be 6 digits (${val.length}/6 entered).`);
+      setPincodeError('');
     }
   };
 
@@ -203,6 +199,10 @@ export default function CityModal() {
             <div className="relative">
               <input
                 type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
                 maxLength={6}
                 value={inputPincode}
                 onChange={handlePincodeChange}

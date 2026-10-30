@@ -40,6 +40,7 @@ public class BookingService {
     private final PaymentService paymentService;
     private final BookingNotificationService bookingNotificationService;
     private final DesignerOrderService designerOrderService;
+    private final CouponRepository couponRepository;
 
     private static final BigDecimal ADVANCE_PERCENT = new BigDecimal("0.30");
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -93,15 +94,23 @@ public class BookingService {
         // ── Strict Designer Availability Check: No Ambiguity for Date & Slot ──
         designerOrderService.validateDesignerAvailability(artist.getId(), request.getAppointmentDate(), request.getPreferredTime());
 
-        // ── Confirm artist is free that day (basic same-day-slot guard) ──
+        // ── Appointment Date Validation ──
+        if (request.getAppointmentDate() == null) {
+            throw new BadRequestException("Appointment date is required");
+        }
+        if (request.getAppointmentDate().isBefore(LocalDate.now())) {
+            throw new BadRequestException("Appointment date cannot be in the past");
+        }
+
+        // ── Confirm artist is free that day (strict 3-slot cap per day) ──
         List<Booking> conflicting = bookingRepository.findByArtistIdAndAppointmentDateAndStatusIn(
                 artist.getId(), request.getAppointmentDate(),
                 List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING));
-        if (conflicting.size() >= 3) {  // simple cap: max 3 bookings/artist/day
-            throw new BadRequestException("This artist is fully booked on the selected date. Please choose another date or artist.");
+        if (conflicting.size() >= 3) {
+            throw new BadRequestException("Booking is full for this day");
         }
 
-        Cart cart = cartRepository.findByUserId(user.getId()).orElse(null);
+        Cart cart = (user != null) ? cartRepository.findByUserId(user.getId()).orElse(null) : null;
         boolean hasDbCart = cart != null && !cart.getItems().isEmpty();
 
         BigDecimal designsSubtotal = BigDecimal.ZERO;
@@ -125,7 +134,41 @@ public class BookingService {
         }
 
         BigDecimal visitFee = new BigDecimal("200.00");
-        BigDecimal grandTotal = designsSubtotal.add(visitFee).subtract(discount);
+        BigDecimal preDiscountTotal = designsSubtotal.add(visitFee);
+
+        // ── Server-Side Coupon Validation & Execution ──
+        String requestedCoupon = (request.getCouponCode() != null && !request.getCouponCode().isBlank())
+                ? request.getCouponCode().trim().toUpperCase()
+                : couponCode;
+
+        if (requestedCoupon != null && !requestedCoupon.isBlank()) {
+            Coupon coupon = couponRepository.findByCodeIgnoreCase(requestedCoupon)
+                    .orElseThrow(() -> new BadRequestException("Invalid coupon code: " + requestedCoupon));
+
+            if (!coupon.isCurrentlyValid()) {
+                throw new BadRequestException("Coupon " + requestedCoupon + " has expired or reached its usage limit");
+            }
+
+            if (coupon.getMinOrderValue() != null && preDiscountTotal.compareTo(coupon.getMinOrderValue()) < 0) {
+                throw new BadRequestException("Minimum order of ₹" + coupon.getMinOrderValue() + " required for coupon " + requestedCoupon);
+            }
+
+            if (coupon.getType() == com.shringar.model.enums.CouponType.PERCENT) {
+                discount = preDiscountTotal.multiply(coupon.getValue()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                if (coupon.getMaxDiscount() != null && discount.compareTo(coupon.getMaxDiscount()) > 0) {
+                    discount = coupon.getMaxDiscount();
+                }
+            } else {
+                discount = coupon.getValue();
+            }
+
+            couponCode = coupon.getCode();
+            coupon.setTimesUsed(coupon.getTimesUsed() + 1);
+            couponRepository.save(coupon);
+        }
+
+        BigDecimal grandTotal = preDiscountTotal.subtract(discount);
+        if (grandTotal.compareTo(BigDecimal.ZERO) < 0) grandTotal = BigDecimal.ZERO;
         BigDecimal advance = grandTotal.multiply(ADVANCE_PERCENT).setScale(0, RoundingMode.CEILING);
         BigDecimal balance = grandTotal.subtract(advance);
 
@@ -614,6 +657,85 @@ public class BookingService {
         bookingNotificationService.notifyBookingConfirmed(saved);
 
         return saved;
+    }
+
+    public List<String> getFullyBookedDates(Long artistId, String city, String startDateStr, String endDateStr) {
+        LocalDate start = (startDateStr != null && !startDateStr.isBlank()) 
+                ? LocalDate.parse(startDateStr) 
+                : LocalDate.now();
+        LocalDate end = (endDateStr != null && !endDateStr.isBlank()) 
+                ? LocalDate.parse(endDateStr) 
+                : start.plusDays(60);
+
+        List<BookingStatus> activeStatuses = List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING);
+        List<String> busyDates = new java.util.ArrayList<>();
+
+        if (artistId != null) {
+            List<Booking> bookings = bookingRepository.findByArtistIdAndAppointmentDateBetweenAndStatusIn(artistId, start, end, activeStatuses);
+            java.util.Map<LocalDate, Long> countsByDate = bookings.stream()
+                    .collect(java.util.stream.Collectors.groupingBy(Booking::getAppointmentDate, java.util.stream.Collectors.counting()));
+            for (java.util.Map.Entry<LocalDate, Long> entry : countsByDate.entrySet()) {
+                if (entry.getValue() >= 3) {
+                    busyDates.add(entry.getKey().toString());
+                }
+            }
+        } else if (city != null && !city.isBlank()) {
+            List<Artist> artists = artistRepository.findByCityFlexible(city);
+            List<Artist> availableArtists = artists.stream()
+                    .filter(a -> Boolean.TRUE.equals(a.getIsActive()) && (a.getIsAvailable() == null || Boolean.TRUE.equals(a.getIsAvailable())))
+                    .toList();
+            if (availableArtists.isEmpty()) {
+                for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+                    busyDates.add(d.toString());
+                }
+                return busyDates;
+            }
+            List<Booking> bookings = bookingRepository.findByAppointmentDateBetweenAndStatusIn(start, end, activeStatuses);
+            java.util.Map<LocalDate, java.util.Map<Long, Long>> artistCountsByDate = bookings.stream()
+                    .filter(b -> b.getArtist() != null)
+                    .collect(java.util.stream.Collectors.groupingBy(Booking::getAppointmentDate,
+                            java.util.stream.Collectors.groupingBy(b -> b.getArtist().getId(), java.util.stream.Collectors.counting())));
+
+            for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+                java.util.Map<Long, Long> counts = artistCountsByDate.getOrDefault(d, java.util.Map.of());
+                boolean anyArtistAvailable = false;
+                for (Artist a : availableArtists) {
+                    if (counts.getOrDefault(a.getId(), 0L) < 3) {
+                        anyArtistAvailable = true;
+                        break;
+                    }
+                }
+                if (!anyArtistAvailable) {
+                    busyDates.add(d.toString());
+                }
+            }
+        } else {
+            List<Artist> allArtists = artistRepository.findAll().stream()
+                    .filter(a -> Boolean.TRUE.equals(a.getIsActive()) && (a.getIsAvailable() == null || Boolean.TRUE.equals(a.getIsAvailable())))
+                    .toList();
+            if (!allArtists.isEmpty()) {
+                List<Booking> bookings = bookingRepository.findByAppointmentDateBetweenAndStatusIn(start, end, activeStatuses);
+                java.util.Map<LocalDate, java.util.Map<Long, Long>> artistCountsByDate = bookings.stream()
+                        .filter(b -> b.getArtist() != null)
+                        .collect(java.util.stream.Collectors.groupingBy(Booking::getAppointmentDate,
+                                java.util.stream.Collectors.groupingBy(b -> b.getArtist().getId(), java.util.stream.Collectors.counting())));
+
+                for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+                    java.util.Map<Long, Long> counts = artistCountsByDate.getOrDefault(d, java.util.Map.of());
+                    boolean anyArtistAvailable = false;
+                    for (Artist a : allArtists) {
+                        if (counts.getOrDefault(a.getId(), 0L) < 3) {
+                            anyArtistAvailable = true;
+                            break;
+                        }
+                    }
+                    if (!anyArtistAvailable) {
+                        busyDates.add(d.toString());
+                    }
+                }
+            }
+        }
+        return busyDates;
     }
 
     private BookingResponse toResponse(Booking b) {

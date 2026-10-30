@@ -22,6 +22,14 @@ public class AdminCouponController {
         return ApiResponse.success(adminCouponService.getPublicCoupons());
     }
 
+    /** Public — validate coupon eligibility and calculate discount amount */
+    @GetMapping("/coupons/validate")
+    public ApiResponse<Map<String, Object>> validateCoupon(
+            @RequestParam String code,
+            @RequestParam(required = false, defaultValue = "0") java.math.BigDecimal amount) {
+        return ApiResponse.success("Coupon is valid", adminCouponService.validateCoupon(code, amount));
+    }
+
     /** Admin — full list including inactive/expired ones */
     @GetMapping("/admin/coupons")
     public ApiResponse<List<Coupon>> getAllCoupons() {

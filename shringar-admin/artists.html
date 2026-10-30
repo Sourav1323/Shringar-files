@@ -63,7 +63,8 @@
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">All Artists</div>
-          <div class="filter-row">
+          <div class="filter-row" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="search-input" placeholder="🔍 Search artist, city, specialization..." oninput="onSearchChange()" style="padding:6px 12px;border:1px solid var(--cd);border-radius:6px;font-size:12px;min-width:240px;background:var(--white);color:var(--td);"/>
             <select class="filter-select" id="status-filter" onchange="renderTable()">
               <option value="all">All statuses</option>
               <option value="active">Active only</option>
@@ -74,12 +75,20 @@
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Artist</th><th>City</th><th>Orders</th><th>Earnings</th><th>Rating</th><th>Status</th><th>Actions</th></tr>
+              <tr><th>Artist</th><th>City</th><th>Orders</th><th>Earnings</th><th>Rating</th><th>Status</th><th>Availability</th><th>Actions</th></tr>
             </thead>
             <tbody id="artists-table-body">
-              <tr><td colspan="7" class="loading-state">Loading artists…</td></tr>
+              <tr><td colspan="8" class="loading-state">Loading artists…</td></tr>
             </tbody>
           </table>
+        </div>
+        <div class="pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--cb);background:var(--cream-light);">
+          <div style="font-size:12px;color:var(--tl);" id="pagination-info">Showing artists</div>
+          <div style="display:flex;gap:6px;" id="pagination-controls">
+            <button class="btn btn-sm btn-outline" id="prev-page-btn" onclick="changePage(-1)">← Previous</button>
+            <span id="page-indicator" style="font-size:12px;display:flex;align-items:center;padding:0 8px;font-weight:600;">Page 1</span>
+            <button class="btn btn-sm btn-outline" id="next-page-btn" onclick="changePage(1)">Next →</button>
+          </div>
         </div>
       </div>
     </div>
@@ -302,32 +311,100 @@ async function loadArtists(btn) {
   }
 }
 
+let searchQuery = '';
+let currentPage = 1;
+const pageSize = 10;
+
+function onSearchChange() {
+  searchQuery = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+  currentPage = 1;
+  renderTable();
+}
+
+function changePage(delta) {
+  currentPage += delta;
+  renderTable();
+}
+
+async function toggleArtistAvailability(id, isAvailable) {
+  try {
+    await ShringarAdmin.Artists.toggleAvailability(id, isAvailable);
+    ShringarAdmin.toast(isAvailable ? 'Artist marked Available (15-day commitment locked)' : 'Artist marked Unavailable', 'success');
+    loadArtists();
+  } catch (err) {
+    ShringarAdmin.toast(err.message || 'Could not update availability', 'error');
+  }
+}
+
 function renderTable() {
   const tbody = document.getElementById('artists-table-body');
   const filter = document.getElementById('status-filter').value;
 
   let filtered = allArtists;
-  if (filter === 'active') filtered = allArtists.filter(a => a.isActive);
-  if (filter === 'inactive') filtered = allArtists.filter(a => !a.isActive);
+  if (filter === 'active') filtered = filtered.filter(a => a.isActive);
+  if (filter === 'inactive') filtered = filtered.filter(a => !a.isActive);
+
+  if (searchQuery) {
+    filtered = filtered.filter(a => {
+      const areasStr = (a.serviceAreas || []).join(' ');
+      const str = `${a.name || ''} ${a.city || ''} ${a.specialization || ''} ${a.email || ''} ${areasStr}`.toLowerCase();
+      return str.includes(searchQuery);
+    });
+  }
+
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const startIdx = (currentPage - 1) * pageSize;
+  const pageItems = filtered.slice(startIdx, startIdx + pageSize);
+
+  const prevBtn = document.getElementById('prev-page-btn');
+  const nextBtn = document.getElementById('next-page-btn');
+  const pageInd = document.getElementById('page-indicator');
+  const pageInfo = document.getElementById('pagination-info');
+
+  if (prevBtn) prevBtn.disabled = (currentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (currentPage >= totalPages);
+  if (pageInd) pageInd.textContent = `Page ${currentPage} of ${totalPages}`;
+  if (pageInfo) pageInfo.textContent = totalItems > 0 
+    ? `Showing ${startIdx + 1}–${Math.min(startIdx + pageSize, totalItems)} of ${totalItems} artists`
+    : 'No artists to show';
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="icon"><svg class="icon-svg" style="width:26px;height:26px;margin:0 auto 6px;display:block;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></div>No artists found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="icon"><svg class="icon-svg" style="width:26px;height:26px;margin:0 auto 6px;display:block;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></div>No artists found.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = filtered.map(a => {
+  tbody.innerHTML = pageItems.map(a => {
     const initials = (a.name || 'Artist').split(' ').map(w => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase();
     const summary = designerSummaries[a.id] || { totalOrders: 0, totalEarnings: 0 };
     const imgCell = a.profileImageUrl
       ? '<img class="cell-img" src="' + ShringarAdmin.resolveUploadUrl(a.profileImageUrl) + '" alt="' + a.name + '"/>'
       : '<div class="client-avatar-badge" style="width:36px;height:36px;font-size:12px;">' + initials + '</div>';
+
+    // Availability display (Task 9)
+    const isAvail = a.isAvailable !== false;
+    let availHtml = isAvail
+      ? '<span class="badge badge-green" style="display:inline-flex;align-items:center;gap:4px;">● Available</span>'
+      : '<span class="badge badge-amber" style="display:inline-flex;align-items:center;gap:4px;">○ Unavailable</span>';
+    if (a.availabilityLockedUntil) {
+      const lockDate = new Date(a.availabilityLockedUntil);
+      if (lockDate > new Date()) {
+        availHtml += '<div style="font-size:10px;color:var(--amber);margin-top:2px;">🔒 Locked: ' + lockDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + '</div>';
+      }
+    }
+
+    const safeName = (a.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
     return '<tr>' +
       '<td>' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
           imgCell +
           '<div>' +
             '<div class="cell-name">' + a.name + (a.isTopArtist ? ' ★' : '') + '</div>' +
-            '<div class="cell-sub">' + (a.specialization || '') + '</div>' +
+            '<div class="cell-sub">' + (a.specialization || '') + (a.email ? ' • ' + a.email : '') + '</div>' +
           '</div>' +
         '</div>' +
       '</td>' +
@@ -336,12 +413,14 @@ function renderTable() {
       '<td><strong style="color:var(--m);font-weight:700;">' + ShringarAdmin.formatINR(summary.totalEarnings || 0) + '</strong></td>' +
       '<td>' + (a.rating ? '★ ' + a.rating : '—') + ' <span class="cell-sub">(' + (a.reviewCount ?? 0) + ')</span></td>' +
       '<td>' + (a.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Removed</span>') + '</td>' +
+      '<td>' + availHtml + '</td>' +
       '<td>' +
-        '<div class="row-actions" style="flex-wrap:wrap;">' +
-          '<button class="btn btn-sm btn-outline" onclick="openLedgerModal(' + a.id + ','' + a.name.replace(/'/g, "\'") + '')">📖 Orders</button>' +
+        '<div class="row-actions" style="flex-wrap:wrap;gap:4px;">' +
+          '<button class="btn btn-sm btn-outline" onclick="openLedgerModal(' + a.id + ', \'' + safeName + '\')">📖 Orders</button>' +
           '<button class="btn btn-sm btn-outline" onclick="openEditModal(' + a.id + ')">Edit</button>' +
+          '<button class="btn btn-sm btn-outline" onclick="toggleArtistAvailability(' + a.id + ', ' + !isAvail + ')">' + (isAvail ? 'Unavailable' : 'Available') + '</button>' +
           (a.isActive
-            ? '<button class="btn btn-sm btn-danger" onclick="deleteArtist(' + a.id + ','' + a.name.replace(/'/g, "\'") + '')">Delete</button>'
+            ? '<button class="btn btn-sm btn-danger" onclick="deleteArtist(' + a.id + ', \'' + safeName + '\')">Delete</button>'
             : '<button class="btn btn-sm btn-primary" onclick="restoreArtist(' + a.id + ')">Restore</button>') +
         '</div>' +
       '</td>' +
@@ -366,7 +445,7 @@ async function openLedgerModal(id, name) {
     if (!orders || orders.length === 0) {
       body.innerHTML = '<div class="empty-state" style="padding:40px 20px;">' +
         '<div class="icon" style="font-size:36px;margin-bottom:8px;">📦</div>' +
-        '<h3 style="font-family:'Cinzel',serif;font-size:16px;">No Orders Recorded Yet</h3>' +
+        '<h3 style="font-family:\'Cinzel\',serif;font-size:16px;">No Orders Recorded Yet</h3>' +
         '<p style="font-size:12.5px;color:var(--tl);margin-top:4px;">No appointments have been booked for ' + name + ' so far.</p>' +
       '</div>';
       return;
@@ -606,6 +685,19 @@ async function saveArtist() {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     errorEl.textContent = 'Please enter a valid email address (e.g. artist@shringar.in).';
+    errorEl.style.display = 'block';
+    return;
+  }
+  // Duplicate check (Task 6)
+  const dupEmail = allArtists.find(x => x.id !== editingId && x.email && x.email.trim().toLowerCase() === email.toLowerCase());
+  if (dupEmail) {
+    errorEl.textContent = `An artist with the email "${email}" already exists (${dupEmail.name}). Please use a unique email.`;
+    errorEl.style.display = 'block';
+    return;
+  }
+  const dupName = allArtists.find(x => x.id !== editingId && x.name && x.name.trim().toLowerCase() === name.toLowerCase() && x.city && x.city.trim().toLowerCase() === city.toLowerCase());
+  if (dupName) {
+    errorEl.textContent = `An artist named "${name}" already exists in ${city}. Please distinguish the name (e.g. add an initial or area).`;
     errorEl.style.display = 'block';
     return;
   }

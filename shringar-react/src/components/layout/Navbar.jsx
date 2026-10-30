@@ -62,6 +62,57 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Push history state when opening mobile menu/drawer or profile dropdown, pop on back (Task 5)
+  const openMobileMenu = () => {
+    window.history.pushState({ profileMenuOpen: true }, '');
+    setMobileMenuOpen(true);
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    if (window.history.state?.profileMenuOpen) {
+      window.history.back();
+    }
+  };
+
+  const toggleMobileMenu = () => {
+    if (!mobileMenuOpen) {
+      openMobileMenu();
+    } else {
+      closeMobileMenu();
+    }
+  };
+
+  const openProfileDropdown = () => {
+    window.history.pushState({ profileMenuOpen: true }, '');
+    setProfileDropdownOpen(true);
+  };
+
+  const closeProfileDropdown = () => {
+    setProfileDropdownOpen(false);
+    if (window.history.state?.profileMenuOpen) {
+      window.history.back();
+    }
+  };
+
+  const toggleProfileDropdown = () => {
+    if (!profileDropdownOpen) {
+      openProfileDropdown();
+    } else {
+      closeProfileDropdown();
+    }
+  };
+
+  // Listen for browser/device back button when profile drawer/menu is open (Task 5)
+  useEffect(() => {
+    const handlePopState = () => {
+      if (mobileMenuOpen) setMobileMenuOpen(false);
+      if (profileDropdownOpen) setProfileDropdownOpen(false);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [mobileMenuOpen, profileDropdownOpen]);
+
   // Close mobile menu & suggestions on route change
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -346,7 +397,7 @@ export default function Navbar() {
             {isAuthenticated ? (
               <>
                 <button
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  onClick={toggleProfileDropdown}
                   className="w-10 h-10 rounded-full bg-[#4A2511] text-[#FDFBF7] flex items-center justify-center font-serif font-bold text-sm shadow-sm border border-[#B58E34] hover:scale-105 transition-all focus:outline-none"
                   title="Account Menu"
                   data-testid="nav-profile-btn"
@@ -449,7 +500,7 @@ export default function Navbar() {
               Only ONE button here: toggles the unified menu containing profile + all navigation!
           */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={toggleMobileMenu}
             className="lg:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#B58E34] bg-[#4A2511] text-[#FDFBF7] shadow-xs active:scale-95 transition"
             title={isAuthenticated ? 'Account & Navigation Menu' : 'Menu & Sign In'}
             aria-label="Toggle Navigation & Profile Menu"

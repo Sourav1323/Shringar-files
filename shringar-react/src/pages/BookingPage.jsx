@@ -3,13 +3,13 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Calendar, Clock, MapPin, User, CheckCircle2, ArrowRight, ArrowLeft, 
   ShieldCheck, Copy, Check, QrCode, AlertCircle, Lock, Phone, Mail, Home,
-  Crown, Users, Coffee, Sparkles, Feather, Camera, Upload
+  Crown, Users, Coffee, Sparkles, Feather, Camera, Upload, Tag, X
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCity } from '../context/CityContext';
-import { CitiesAPI, ArtistsAPI, BookingsAPI, SettingsAPI, CartAPI } from '../services/api';
+import { CitiesAPI, ArtistsAPI, BookingsAPI, SettingsAPI, CartAPI, CouponsAPI } from '../services/api';
 import { optimizeArtistAssignment } from '../utils/artistOptimizer';
 import {
   calculatePincodeDistance,
@@ -30,6 +30,9 @@ export default function BookingPage() {
     isBridalPackage,
     requiredArtists,
     bridalPackageDetails,
+    coupon,
+    applyCouponCode,
+    removeCoupon,
   } = useCart();
   const { user, isAuthenticated } = useAuth();
   const toast = useToast();
@@ -89,16 +92,52 @@ export default function BookingPage() {
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [eventAddress, setEventAddress] = useState('');
-  const [pincode, setPincode] = useState(globalPincode || CITY_DEFAULT_PINCODES[globalCity || 'Delhi NCR'] || '110001');
+  const [pincode, setPincode] = useState(globalPincode || '');
   const [upiRef, setUpiRef] = useState('');
   const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState('');
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
 
+  // Coupon & Busy Dates states (Tasks 3, 4, 7)
+  const [couponInput, setCouponInput] = useState('');
+  const [couponsModalOpen, setCouponsModalOpen] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [busyDates, setBusyDates] = useState([]);
+  const [fullyBookedModalOpen, setFullyBookedModalOpen] = useState(false);
+
   useEffect(() => {
-    if (globalPincode && (!pincode || pincode === '110001')) {
+    if (globalPincode && !pincode) {
       setPincode(globalPincode);
     }
   }, [globalPincode]);
+
+  // Load upcoming busy dates for selected artist & city
+  useEffect(() => {
+    let active = true;
+    const today = new Date().toISOString().split('T')[0];
+    const future = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const artistIdToQuery = selectedArtistId || artistManifest.assignedArtists[0]?.artistId || null;
+    BookingsAPI.getBusyDates(artistIdToQuery, selectedCity || null, today, future)
+      .then((dates) => {
+        if (active && Array.isArray(dates)) setBusyDates(dates);
+      })
+      .catch((err) => console.warn('Could not load busy dates:', err));
+    return () => { active = false; };
+  }, [selectedArtistId, selectedCity, artistManifest]);
+
+  const handleOpenCouponsModal = async () => {
+    setCouponsModalOpen(true);
+    setLoadingCoupons(true);
+    try {
+      const data = await CouponsAPI.getAll();
+      setAvailableCoupons(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn('Failed to load coupons:', err);
+      setAvailableCoupons([]);
+    } finally {
+      setLoadingCoupons(false);
+    }
+  };
 
   // Live City Designer Availability state
   const [cityAvailability, setCityAvailability] = useState({
@@ -389,6 +428,11 @@ export default function BookingPage() {
         toast.error('Please select an event date.');
         return;
       }
+      if (busyDates.includes(eventDate)) {
+        setFullyBookedModalOpen(true);
+        toast.error('Booking is full for this day');
+        return;
+      }
       const selected = new Date(eventDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -476,6 +520,7 @@ export default function BookingPage() {
       customerEmail: contactEmail.trim() || user?.email || '',
       upiTransactionRef: upiRef.trim(),
       paymentScreenshotUrl: paymentScreenshotUrl || null,
+      couponCode: coupon?.code || null,
       items: cartItems.map((item) => ({
         designId: item.id,
         quantity: item.quantity || 1,
@@ -743,26 +788,108 @@ export default function BookingPage() {
 
             {cartItems.length > 0 ? (
               <div className="space-y-3">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 sm:p-3.5 rounded-xl bg-stone-50 border border-stone-200 gap-3">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                      <img 
-                        src={item.imageUrl || '/images/rajasthani-bridal.jpg'} 
-                        alt={item.name} 
-                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover border border-stone-200 shrink-0" 
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-stone-900 truncate">{item.name}</div>
-                        <div className="text-[10px] sm:text-[11px] text-stone-500 truncate">
-                          {item.coverage} • Qty: {item.quantity || 1} • {item.conesNeeded || 2} cones
+                {cartItems.map((item) => {
+                  const linePrice = (item.price || 0) * (item.quantity || 1);
+                  const lineOriginal = item.originalPrice ? item.originalPrice * (item.quantity || 1) : null;
+                  const hasOffer = lineOriginal && lineOriginal > linePrice;
+                  const savings = hasOffer ? lineOriginal - linePrice : 0;
+                  return (
+                    <div key={item.id} className="flex items-center justify-between p-3 sm:p-3.5 rounded-xl bg-stone-50 border border-stone-200 gap-3">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <img 
+                          src={item.imageUrl || '/images/rajasthani-bridal.jpg'} 
+                          alt={item.name} 
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover border border-stone-200 shrink-0" 
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-stone-900 truncate">{item.name}</div>
+                          <div className="text-[10px] sm:text-[11px] text-stone-500 truncate">
+                            {item.coverage} • Qty: {item.quantity || 1} • {item.conesNeeded || 2} cones
+                          </div>
+                          {hasOffer && (
+                            <div className="text-[10px] text-emerald-700 font-semibold mt-0.5">
+                              Save {formatPrice(savings)} ({Math.round((savings / lineOriginal) * 100)}% off)
+                            </div>
+                          )}
                         </div>
                       </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-xs font-bold text-brand-maroon font-serif">
+                          {formatPrice(linePrice)}
+                        </div>
+                        {hasOffer && (
+                          <div className="text-[10px] text-stone-400 line-through">
+                            {formatPrice(lineOriginal)}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-xs font-bold text-brand-maroon font-serif text-right shrink-0">
-                      {formatPrice((item.price || 0) * (item.quantity || 1))}
-                    </div>
+                  );
+                })}
+
+                {/* Promo Code on Checkout (Task 7) */}
+                <div className="p-3.5 rounded-xl bg-white border border-stone-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-brand-maroon" />
+                      <span>Promo Code</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleOpenCouponsModal}
+                      className="text-xs font-bold text-brand-maroon hover:text-brand-maroon-dark hover:underline flex items-center gap-1 cursor-pointer transition"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      <span>View all coupons</span>
+                    </button>
                   </div>
-                ))}
+
+                  {coupon ? (
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-emerald-800 tracking-wider">
+                            {coupon.code}
+                          </span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-200/70 text-emerald-900">
+                            Applied
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-700">
+                          Savings of {formatPrice(discountAmount)} applied
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeCoupon}
+                        className="p-1 rounded-lg text-stone-400 hover:text-stone-700 transition"
+                        title="Remove coupon"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. SHRINGAR20"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        className="flex-1 px-3 py-2 rounded-xl border border-stone-200 text-xs uppercase font-mono tracking-wider focus:outline-none focus:border-brand-maroon"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          applyCouponCode(couponInput);
+                          setCouponInput('');
+                        }}
+                        className="px-4 py-2 rounded-xl bg-brand-maroon text-white text-xs font-bold hover:bg-brand-maroon-dark transition shadow-xs"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {/* Subtotal preview */}
                 <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-200 text-xs space-y-1.5">
@@ -817,12 +944,43 @@ export default function BookingPage() {
                   required
                   min={new Date().toISOString().split('T')[0]}
                   value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (busyDates.includes(val)) {
+                      setFullyBookedModalOpen(true);
+                      setEventDate('');
+                      toast.error('Booking is full for this day');
+                      return;
+                    }
+                    setEventDate(val);
+                  }}
                   className="w-full px-3 py-2.5 rounded-xl border border-stone-200 text-xs text-stone-800 focus:outline-none focus:border-brand-maroon"
                 />
                 <span className="text-[10px] text-stone-400 mt-1 block">
                   Select the ceremony date (booking is confirmed on advance verification)
                 </span>
+
+                {/* Unavailable Fully Booked Dates Badge (Task 4) */}
+                {busyDates.length > 0 && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-rose-50/80 border border-rose-200 text-[11px] text-rose-800 space-y-1">
+                    <span className="font-bold flex items-center gap-1 text-rose-900">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <span>Dates with Full Capacity (Unavailable):</span>
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {busyDates.slice(0, 8).map((d) => (
+                        <span key={d} className="px-2 py-0.5 rounded-md bg-rose-200/70 font-mono text-[10px] text-rose-900 line-through">
+                          {d}
+                        </span>
+                      ))}
+                      {busyDates.length > 8 && (
+                        <span className="text-[10px] text-rose-700 self-center">
+                          +{busyDates.length - 8} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1034,14 +1192,21 @@ export default function BookingPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1">
-                  Pin Code (6 Digits) <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-600">
+                    City & PIN Code (6 Digits) <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[11px] font-semibold text-brand-maroon">
+                    City: {selectedCity}
+                  </span>
+                </div>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
                   required
                   maxLength={6}
-                  placeholder="e.g. 110001"
+                  placeholder="Enter 6-digit Pincode (e.g. 110001)"
                   value={pincode}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -1365,6 +1530,160 @@ export default function BookingPage() {
         </div>
 
       </div>
+
+      {/* Fully Booked Date Alert Modal (Task 4) */}
+      {fullyBookedModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-rose-200 space-y-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="font-cinzel text-xl font-bold text-rose-900">
+                Booking is full for this day
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                All certified senior henna artists are fully committed for this ceremony date in <strong>{selectedCity}</strong>. To guarantee our high standards of artistry, capacity is strictly limited.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setFullyBookedModalOpen(false)}
+                className="w-full py-3 rounded-full bg-brand-maroon text-white font-bold text-xs uppercase tracking-wider hover:brightness-110 transition shadow-md"
+              >
+                Choose Another Date
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Available Coupons Modal (Task 7) */}
+      {couponsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden border border-amber-200 animate-in zoom-in-95">
+            <div className="p-5 bg-gradient-to-r from-amber-50 to-orange-50/50 border-b border-stone-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tag className="w-5 h-5 text-brand-maroon" />
+                <h3 className="font-cinzel font-bold text-base text-brand-dark">Available Promo Coupons</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCouponsModalOpen(false)}
+                className="p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200/50 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 max-h-[60vh] overflow-y-auto space-y-3">
+              {loadingCoupons ? (
+                <div className="text-center py-10 space-y-2 text-stone-500">
+                  <Sparkles className="w-6 h-6 animate-spin mx-auto text-amber-500" />
+                  <p className="text-xs">Loading active offers...</p>
+                </div>
+              ) : availableCoupons.length === 0 ? (
+                <div className="text-center py-10 space-y-2 text-stone-500">
+                  <Tag className="w-10 h-10 mx-auto text-stone-300" />
+                  <p className="text-xs font-semibold">No public coupons active at this moment.</p>
+                </div>
+              ) : (
+                availableCoupons.map((c) => {
+                  const minOrder = Number(c.minOrderValue || 0);
+                  const isEligible = subtotal >= minOrder;
+                  const diff = minOrder - subtotal;
+                  const isApplied = coupon?.code?.toUpperCase() === c.code?.toUpperCase();
+
+                  return (
+                    <div
+                      key={c.id || c.code}
+                      className={`p-4 rounded-2xl border-2 transition-all ${
+                        isApplied
+                          ? 'border-emerald-500 bg-emerald-50/70 shadow-sm'
+                          : isEligible
+                          ? 'border-amber-300/80 bg-white hover:border-[#B58E34] hover:shadow-md'
+                          : 'border-stone-200 bg-stone-50/70 opacity-70'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-sm tracking-wider uppercase px-2 py-0.5 rounded bg-amber-100 text-stone-900 border border-amber-300">
+                              {c.code}
+                            </span>
+                            <span className="text-[11px] font-bold text-emerald-800">
+                              {c.type === 'PERCENT' ? `${c.value}% OFF` : `₹${c.value} FLAT OFF`}
+                              {c.maxDiscount && ` (Max ₹${c.maxDiscount})`}
+                            </span>
+                          </div>
+                          {c.description && (
+                            <p className="text-xs text-stone-600 leading-snug">
+                              {c.description}
+                            </p>
+                          )}
+                          <div className="text-[11px] pt-1">
+                            {minOrder > 0 ? (
+                              isEligible ? (
+                                <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Eligible! Order value {formatPrice(subtotal)} &ge; {formatPrice(minOrder)}</span>
+                                </span>
+                              ) : (
+                                <span className="text-rose-600 font-medium flex items-center gap-1">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Min. order of {formatPrice(minOrder)} required (Add {formatPrice(diff)} more)</span>
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-emerald-700 font-medium">No minimum order required</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 pt-0.5">
+                          {isApplied ? (
+                            <span className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-1 shadow-sm">
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Applied</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!isEligible}
+                              onClick={() => {
+                                applyCouponCode(c.code);
+                                setCouponsModalOpen(false);
+                              }}
+                              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
+                                isEligible
+                                  ? 'bg-[#4A2511] hover:bg-[#3A1D0D] text-amber-200 active:scale-95 cursor-pointer'
+                                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                              }`}
+                            >
+                              Apply
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="p-4 bg-stone-100 border-t border-stone-200 text-right">
+              <button
+                type="button"
+                onClick={() => setCouponsModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-white border border-stone-300 text-stone-700 text-xs font-bold hover:bg-stone-50 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

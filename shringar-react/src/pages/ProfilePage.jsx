@@ -5,9 +5,9 @@ import { useToast } from '../context/ToastContext';
 import { 
   User, Mail, Phone, MapPin, Shield, Calendar, 
   ShoppingBag, LogOut, Heart, Clock, CheckCircle2,
-  Sparkles, Search, ArrowRight, AlertCircle, RefreshCw, X
+  Sparkles, Search, ArrowRight, AlertCircle, RefreshCw, X, Lock
 } from 'lucide-react';
-import { BookingsAPI } from '../services/api';
+import { BookingsAPI, ArtistsAPI } from '../services/api';
 
 export default function ProfilePage() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -28,6 +28,11 @@ export default function ProfilePage() {
     return localStorage.getItem(getNotesKey(user?.id)) || 'Prefer store-available standard henna cone.';
   });
   const [isEditing, setIsEditing] = useState(false);
+
+  // Artist Profile & Availability State (Task 9)
+  const [artistProfile, setArtistProfile] = useState(null);
+  const [loadingArtist, setLoadingArtist] = useState(false);
+  const [togglingAvailability, setTogglingAvailability] = useState(false);
 
   // Live Bookings State
   const [bookings, setBookings] = useState([]);
@@ -82,6 +87,38 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchBookings();
   }, [isAuthenticated]);
+
+  // Fetch linked Artist Profile if user is an artist (Task 9)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setLoadingArtist(true);
+    ArtistsAPI.getMyProfile()
+      .then((res) => {
+        if (res && res.id) setArtistProfile(res);
+      })
+      .catch(() => {
+        setArtistProfile(null);
+      })
+      .finally(() => setLoadingArtist(false));
+  }, [isAuthenticated]);
+
+  const handleToggleArtistAvailability = async (targetState) => {
+    if (!artistProfile) return;
+    setTogglingAvailability(true);
+    try {
+      const updated = await ArtistsAPI.toggleMyAvailability(targetState);
+      setArtistProfile(updated);
+      showSuccess(
+        targetState
+          ? 'You are now marked Available! 15-day commitment locked for booking dispatch.'
+          : 'You are now marked Not Available.'
+      );
+    } catch (err) {
+      showError(err.message || 'Could not update availability.');
+    } finally {
+      setTogglingAvailability(false);
+    }
+  };
 
   const handleConfirmCancellation = async () => {
     if (!cancelModalBooking) return;
@@ -538,6 +575,102 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* ── ARTIST AVAILABILITY CARD (Task 9) ── */}
+        {artistProfile && (
+          <div className="rounded-3xl border-2 border-brand-gold/60 bg-gradient-to-r from-[#FDFBF7] via-amber-50/50 to-[#FDFBF7] p-5 sm:p-6 shadow-md space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6DFD3] pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-brand-gold-dark" />
+                  <h3 className="font-serif font-bold text-base sm:text-lg text-[#4A2511]">
+                    Henna Artist Service & Dispatch Availability
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#B58E34]/20 text-[#4A2511] border border-[#B58E34]/30">
+                    {artistProfile.city}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Manage your live booking availability. When set to <strong>Available</strong>, you commit to accepting bridal & event bookings in your operating city for a <strong>15-day commitment period</strong>.
+                </p>
+              </div>
+
+              {/* Live Availability Badge */}
+              <div className="shrink-0">
+                {artistProfile.isAvailable ? (
+                  <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                    <span>Currently Available</span>
+                  </span>
+                ) : (
+                  <span className="px-3.5 py-1.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center gap-1.5 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+                    <span>Not Available</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Lock info & Toggle Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+              <div className="space-y-1">
+                {artistProfile.isAvailabilityLocked && artistProfile.availabilityLockedUntil ? (
+                  <div className="flex items-center gap-2 text-xs text-amber-900 font-semibold bg-amber-100/70 border border-amber-300/80 px-3 py-2 rounded-xl">
+                    <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>
+                      🔒 15-Day Commitment Active: Availability locked until{' '}
+                      <strong>
+                        {new Date(artistProfile.availabilityLockedUntil).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </strong>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-emerald-800 font-medium bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>
+                      {artistProfile.isAvailable
+                        ? 'Your profile is visible to customers in location searches.'
+                        : 'Your profile is currently hidden from booking location searches.'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="shrink-0 flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={togglingAvailability || (artistProfile.isAvailabilityLocked && artistProfile.isAvailable)}
+                  onClick={() => handleToggleArtistAvailability(!artistProfile.isAvailable)}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-sm flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
+                    artistProfile.isAvailable
+                      ? 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100'
+                      : 'bg-emerald-700 text-white hover:bg-emerald-800 shadow'
+                  }`}
+                >
+                  {togglingAvailability ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Updating...</span>
+                    </>
+                  ) : artistProfile.isAvailable ? (
+                    <>
+                      <span>Mark Not Available</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Set Available (15-Day Lock)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Active Bookings & Appointments Section (Item 3 Fix) ── */}
         <div className="space-y-4">

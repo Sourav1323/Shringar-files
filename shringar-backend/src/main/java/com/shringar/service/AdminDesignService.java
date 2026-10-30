@@ -39,6 +39,7 @@ public class AdminDesignService {
                 .durationMaxHours(req.getDurationMaxHours())
                 .conesNeeded(req.getConesNeeded())
                 .price(req.getPrice())
+                .originalPrice(req.getOriginalPrice())
                 .palmTierPrice(req.getPalmTierPrice())
                 .grandTierPrice(req.getGrandTierPrice())
                 .originCity(req.getOriginCity())
@@ -73,6 +74,7 @@ public class AdminDesignService {
         design.setDurationMaxHours(req.getDurationMaxHours());
         design.setConesNeeded(req.getConesNeeded());
         design.setPrice(req.getPrice());
+        design.setOriginalPrice(req.getOriginalPrice());
         design.setPalmTierPrice(req.getPalmTierPrice());
         design.setGrandTierPrice(req.getGrandTierPrice());
         design.setOriginCity(req.getOriginCity());
@@ -143,6 +145,7 @@ public class AdminDesignService {
                 .durationMaxHours(d.getDurationMaxHours())
                 .conesNeeded(d.getConesNeeded())
                 .price(d.getPrice())
+                .originalPrice(d.getOriginalPrice())
                 .palmTierPrice(d.getPalmTierPrice())
                 .grandTierPrice(d.getGrandTierPrice())
                 .originCity(d.getOriginCity())

@@ -54,6 +54,16 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success(bookingService.getByReference(ref)));
     }
 
+    /** GET /api/bookings/busy-dates — fully booked dates for calendar visual lockout */
+    @GetMapping("/busy-dates")
+    public ResponseEntity<ApiResponse<List<String>>> getBusyDates(
+            @RequestParam(required = false) Long artistId,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        return ResponseEntity.ok(ApiResponse.success(bookingService.getFullyBookedDates(artistId, city, startDate, endDate)));
+    }
+
     /** PATCH /api/bookings/{id}/cancel — free if >48hrs out, else advance is forfeited */
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(

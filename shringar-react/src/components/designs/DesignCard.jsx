@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Clock, Sparkles, Plus, Check, Heart, MapPin, CheckCircle2 } from 'lucide-react';
+import { Clock, Sparkles, Plus, Check, Heart, MapPin, CheckCircle2, ZoomIn } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
 import { useCity } from '../../context/CityContext';
 import { isDesignAvailableInCity, getDesignOriginCity } from '../../utils/cityUtils';
 import { getArtistCompatibility } from '../../utils/artistOptimizer';
+import ImageGalleryViewer from '../common/ImageGalleryViewer';
 
 export default function DesignCard({ design, isLocalAvailable, currentCity }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const { cartItems, addToCart, updateQuantity } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { city } = useCity();
@@ -26,6 +28,10 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
   const quantity = cartItem?.quantity || 0;
   const isInCart = quantity > 0;
   const favorited = isFavorite(design.id);
+
+  const hasOffer = Boolean(design?.originalPrice && Number(design.originalPrice) > Number(design.price));
+  const savingsAmount = hasOffer ? Number(design.originalPrice) - Number(design.price) : 0;
+  const savingsPct = hasOffer ? Math.round((savingsAmount / Number(design.originalPrice)) * 100) : 0;
 
   const formatPrice = (val) => {
     return new Intl.NumberFormat('en-IN', {
@@ -94,6 +100,11 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
               {design.badge}
             </span>
           )}
+          {hasOffer && (
+            <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full uppercase tracking-wider bg-rose-700 text-amber-200 shadow-md">
+              {savingsPct}% OFF
+            </span>
+          )}
           {design.category && (
             <span className="hidden xs:inline-block text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full bg-black/60 text-amber-200 backdrop-blur-sm shadow-sm">
               {design.category}
@@ -101,23 +112,38 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
           )}
         </div>
 
-        {/* Favorites Heart Toggle Top-Right */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFavorite(design);
-          }}
-          className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm z-10 ${
-            favorited
-              ? 'bg-white text-rose-600 scale-105'
-              : 'bg-black/40 hover:bg-black/60 text-white hover:scale-105'
-          }`}
-          title={favorited ? 'Remove from saved favorites' : 'Save to favorites'}
-          aria-label={favorited ? 'Remove from favorites' : 'Save to favorites'}
-        >
-          <Heart className={`w-3.5 h-3.5 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
-        </button>
+        {/* Top-Right Action Controls: Zoom Preview & Favorite */}
+        <div className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 flex items-center gap-1 z-10">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxOpen(true);
+            }}
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all bg-black/50 hover:bg-black/75 text-white shadow-md backdrop-blur-sm active:scale-95"
+            title="Zoom pattern photo"
+            aria-label="Zoom pattern photo"
+          >
+            <ZoomIn className="w-3.5 h-3.5 text-amber-300" />
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(design);
+            }}
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm ${
+              favorited
+                ? 'bg-white text-rose-600 scale-105'
+                : 'bg-black/40 hover:bg-black/60 text-white hover:scale-105'
+            }`}
+            title={favorited ? 'Remove from saved favorites' : 'Save to favorites'}
+            aria-label={favorited ? 'Remove from favorites' : 'Save to favorites'}
+          >
+            <Heart className={`w-3.5 h-3.5 transition ${favorited ? 'fill-rose-600 text-rose-600' : 'text-white'}`} />
+          </button>
+        </div>
 
         {/* Coverage Chip Bottom Right */}
         {design.coverage && (
@@ -174,9 +200,21 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
             <span className="text-[9px] uppercase font-bold tracking-wider text-[#7A6356] block">
               Starts at
             </span>
-            <span className="text-xs sm:text-base font-serif font-bold text-[#4A2511]">
-              {formatPrice(design.price)}
-            </span>
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-xs sm:text-base font-serif font-bold text-[#4A2511]">
+                {formatPrice(design.price)}
+              </span>
+              {hasOffer && (
+                <span className="text-[10px] sm:text-xs text-stone-400 line-through">
+                  {formatPrice(design.originalPrice)}
+                </span>
+              )}
+            </div>
+            {hasOffer && (
+              <span className="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 mt-0.5">
+                Save {formatPrice(savingsAmount)}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -238,6 +276,21 @@ export default function DesignCard({ design, isLocalAvailable, currentCity }) {
         </div>
 
       </div>
+
+      {/* Lightbox Image Zoom Modal for Pattern Inspection */}
+      <ImageGalleryViewer
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        images={[{
+          imageUrl: getImageUrl(design.imageUrl),
+          title: design.name,
+          category: design.category,
+          badge: design.badge,
+          notes: design.description,
+          price: design.price,
+        }]}
+        currentIndex={0}
+      />
 
     </div>
   );

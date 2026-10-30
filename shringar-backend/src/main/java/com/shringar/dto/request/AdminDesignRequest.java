@@ -31,6 +31,7 @@ public class AdminDesignRequest {
     @PositiveOrZero(message = "Price cannot be negative")
     private BigDecimal price;
 
+    private BigDecimal originalPrice;
     private BigDecimal palmTierPrice;
     private BigDecimal grandTierPrice;
     private String originCity;

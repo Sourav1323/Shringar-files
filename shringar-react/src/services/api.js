@@ -129,6 +129,9 @@ export const ArtistsAPI = {
   getByCity: (city = '') => request(`/artists${city ? '?city=' + encodeURIComponent(city) : ''}`),
   search: (city, area) => request(`/artists/search?city=${encodeURIComponent(city)}&area=${encodeURIComponent(area)}`),
   getById: (id) => request(`/artists/${id}`),
+  getMyProfile: () => request('/artists/me'),
+  toggleMyAvailability: (isAvailable) => request('/artists/me/availability', { method: 'PATCH', body: { isAvailable } }),
+  toggleAvailability: (id, isAvailable) => request(`/artists/${id}/availability`, { method: 'PATCH', body: { isAvailable } }),
 };
 
 export const ArtistApplicationsAPI = {
@@ -211,6 +214,16 @@ export const BookingsAPI = {
 
   getByReference: (ref) =>
     request(`/bookings/reference/${ref}`),
+
+  getBusyDates: (artistId = null, city = null, startDate = null, endDate = null) => {
+    const params = new URLSearchParams();
+    if (artistId) params.append('artistId', artistId);
+    if (city) params.append('city', city);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const qs = params.toString();
+    return request(qs ? `/bookings/busy-dates?${qs}` : '/bookings/busy-dates');
+  },
 
   submitUpiPayment: (id, transactionRef, paymentScreenshotUrl = null) => 
     request(`/bookings/${id}/submit-upi-payment`, { method: 'PATCH', body: { transactionRef, paymentScreenshotUrl } }),

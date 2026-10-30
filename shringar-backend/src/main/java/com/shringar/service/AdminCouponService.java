@@ -85,6 +85,46 @@ public class AdminCouponService {
         couponRepository.deleteById(id);
     }
 
+    public Map<String, Object> validateCoupon(String code, BigDecimal amount) {
+        if (code == null || code.isBlank()) {
+            throw new BadRequestException("Coupon code is required");
+        }
+        Coupon coupon = couponRepository.findByCodeIgnoreCase(code.trim())
+                .orElseThrow(() -> new BadRequestException("Invalid coupon code: " + code));
+
+        if (!coupon.isCurrentlyValid()) {
+            throw new BadRequestException("Coupon " + coupon.getCode() + " has expired or is no longer active");
+        }
+
+        if (coupon.getMinOrderValue() != null && amount != null && amount.compareTo(coupon.getMinOrderValue()) < 0) {
+            throw new BadRequestException("Minimum order of ₹" + coupon.getMinOrderValue() + " required for this coupon");
+        }
+
+        BigDecimal discount = BigDecimal.ZERO;
+        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+            if (coupon.getType() == CouponType.PERCENT) {
+                discount = amount.multiply(coupon.getValue()).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                if (coupon.getMaxDiscount() != null && discount.compareTo(coupon.getMaxDiscount()) > 0) {
+                    discount = coupon.getMaxDiscount();
+                }
+            } else {
+                discount = coupon.getValue().min(amount);
+            }
+        }
+
+        return Map.of(
+                "code", coupon.getCode(),
+                "type", coupon.getType().name(),
+                "value", coupon.getValue(),
+                "discountValue", coupon.getType() == CouponType.FLAT ? coupon.getValue() : discount,
+                "discountPercent", coupon.getType() == CouponType.PERCENT ? coupon.getValue() : BigDecimal.ZERO,
+                "discountAmount", discount,
+                "minOrderValue", coupon.getMinOrderValue() != null ? coupon.getMinOrderValue() : BigDecimal.ZERO,
+                "maxDiscount", coupon.getMaxDiscount() != null ? coupon.getMaxDiscount() : BigDecimal.ZERO,
+                "description", coupon.getDescription() != null ? coupon.getDescription() : ""
+        );
+    }
+
     private String generateCode() {
         String[] prefixes = {"SHRINGAR", "BRIDAL", "MEHENDI", "HENNA", "FESTIVE", "SAVE"};
         String prefix = prefixes[RANDOM.nextInt(prefixes.length)];

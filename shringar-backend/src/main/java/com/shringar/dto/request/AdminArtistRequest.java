@@ -32,6 +32,7 @@ public class AdminArtistRequest {
 
     private Integer experienceYears;
     private Boolean isActive;
+    private Boolean isAvailable;
     private Boolean isTopArtist;
     private String badgeLabel;
 }

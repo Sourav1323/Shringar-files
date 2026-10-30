@@ -428,49 +428,50 @@ export default function DesignDetailPage() {
   const durMin = Number(currentDesign?.durationMinHours) || 1;
   const durMax = Number(currentDesign?.durationMaxHours) || Math.max(durMin, 1);
 
-  // Exact custom tier prices configured by admin, or calculated smart defaults
-  const palmPrice = currentDesign?.palmTierPrice != null && Number(currentDesign.palmTierPrice) > 0
-    ? Number(currentDesign.palmTierPrice)
-    : Math.max(600, Math.round(basePrice * 0.75));
+  // Only include palm / grand tiers if admin explicitly configured them (> 0).
+  // No hardcoded or calculated fallback prices will ever leak through.
+  const coverageOptions = [];
 
-  const grandPrice = currentDesign?.grandTierPrice != null && Number(currentDesign.grandTierPrice) > 0
-    ? Number(currentDesign.grandTierPrice)
-    : Math.round(basePrice + 1600);
-
-  const coverageOptions = [
-    {
+  if (currentDesign?.palmTierPrice != null && Number(currentDesign.palmTierPrice) > 0) {
+    coverageOptions.push({
       id: 'palm',
       title: 'Palm & Fingers Only',
       sub: 'Focused palm pattern with fingertip caps',
-      price: palmPrice,
+      price: Number(currentDesign.palmTierPrice),
       cones: Math.max(1, Number((cones * 0.7).toFixed(1))),
       duration: Math.max(1, durMin - 1) === Math.max(1, durMax - 1)
         ? `${Math.max(1, durMin - 1)} hrs`
         : `${Math.max(1, durMin - 1)}–${Math.max(1, durMax - 1)} hrs`,
-    },
-    {
-      id: 'standard',
-      title: `${currentDesign?.coverage || 'Full Hand to Elbow'}`,
-      sub: 'Standard bridal catalog density as shown in photos',
-      price: basePrice,
-      cones: cones,
-      duration: durMin === durMax ? `${durMin} hrs` : `${durMin}–${durMax} hrs`,
-      recommended: true,
-    },
-    {
+    });
+  }
+
+  coverageOptions.push({
+    id: 'standard',
+    title: `${currentDesign?.coverage || 'Full Hand to Elbow'}`,
+    sub: 'Standard bridal catalog density as shown in photos',
+    price: basePrice,
+    cones: cones,
+    duration: durMin === durMax ? `${durMin} hrs` : `${durMin}–${durMax} hrs`,
+    recommended: true,
+  });
+
+  if (currentDesign?.grandTierPrice != null && Number(currentDesign.grandTierPrice) > 0) {
+    coverageOptions.push({
       id: 'grand',
       title: 'Complete Hands & Feet Grand Ensemble',
       sub: 'Matching full hand and foot motifs for the main wedding ceremony',
-      price: grandPrice,
+      price: Number(currentDesign.grandTierPrice),
       cones: Number((cones + 1.5).toFixed(1)),
       duration: (durMin + 2) === (durMax + 2)
         ? `${durMin + 2} hrs`
         : `${durMin + 2}–${durMax + 2} hrs`,
-    },
-  ];
+    });
+  }
 
-  const selectedTierData = coverageOptions.find((o) => o.id === selectedCoverageTier) || coverageOptions[1];
-  const activePrice = selectedTierData.price;
+  const selectedTierData = coverageOptions.find((o) => o.id === selectedCoverageTier) 
+    || coverageOptions.find((o) => o.id === 'standard') 
+    || coverageOptions[0];
+  const activePrice = selectedTierData ? selectedTierData.price : basePrice;
 
   const formatPrice = (val) => {
     return new Intl.NumberFormat('en-IN', {
@@ -704,11 +705,21 @@ export default function DesignDetailPage() {
             </h1>
 
             {/* Live Pricing */}
-            <div className="flex items-baseline gap-3 border-b border-stone-100 pb-4">
+            <div className="flex items-baseline gap-3 border-b border-stone-100 pb-4 flex-wrap">
               <span className="text-3xl sm:text-4xl font-black text-brand-maroon">
                 {formatPrice(activePrice)}
               </span>
-              <span className="text-xs text-stone-500">
+              {currentDesign?.originalPrice && Number(currentDesign.originalPrice) > Number(activePrice) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-lg sm:text-xl line-through text-stone-400 font-medium">
+                    {formatPrice(currentDesign.originalPrice)}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
+                    Save {formatPrice(Number(currentDesign.originalPrice) - Number(activePrice))} ({Math.round(((Number(currentDesign.originalPrice) - Number(activePrice)) / Number(currentDesign.originalPrice)) * 100)}% OFF)
+                  </span>
+                </div>
+              )}
+              <span className="text-xs text-stone-500 w-full sm:w-auto">
                 All-inclusive of mehendi cones as per preference, artist home visit, and sugar-lemon glaze
               </span>
             </div>
@@ -719,54 +730,56 @@ export default function DesignDetailPage() {
             </p>
 
             {/* ── INTERACTIVE COVERAGE OPTIONS (Dynamic Price Calculator) ── */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-brand-maroon flex items-center gap-1.5">
-                  <span>Choose Coverage Tier</span>
-                  <span className="text-[10px] text-stone-400 lowercase font-normal">(price updates automatically)</span>
-                </label>
-              </div>
+            {coverageOptions.length > 1 && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-brand-maroon flex items-center gap-1.5">
+                    <span>Choose Coverage Tier</span>
+                    <span className="text-[10px] text-stone-400 lowercase font-normal">(price updates automatically)</span>
+                  </label>
+                </div>
 
-              <div className="space-y-2">
-                {coverageOptions.map((opt) => (
-                  <div
-                    key={opt.id}
-                    onClick={() => setSelectedCoverageTier(opt.id)}
-                    className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-center justify-between gap-3 ${
-                      selectedCoverageTier === opt.id
-                        ? 'border-brand-maroon bg-brand-maroon/5 shadow-sm'
-                        : 'border-stone-200 hover:border-stone-300 bg-stone-50/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                <div className="space-y-2">
+                  {coverageOptions.map((opt) => (
+                    <div
+                      key={opt.id}
+                      onClick={() => setSelectedCoverageTier(opt.id)}
+                      className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-center justify-between gap-3 ${
                         selectedCoverageTier === opt.id
-                          ? 'border-brand-maroon bg-brand-maroon text-white'
-                          : 'border-stone-300'
-                      }`}>
-                        {selectedCoverageTier === opt.id && <Check className="w-3 h-3" />}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-stone-900 flex items-center gap-2">
-                          <span>{opt.title}</span>
-                          {opt.recommended && (
-                            <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand-gold text-stone-950">
-                              Recommended Bridal
-                            </span>
-                          )}
+                          ? 'border-brand-maroon bg-brand-maroon/5 shadow-sm'
+                          : 'border-stone-200 hover:border-stone-300 bg-stone-50/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedCoverageTier === opt.id
+                            ? 'border-brand-maroon bg-brand-maroon text-white'
+                            : 'border-stone-300'
+                        }`}>
+                          {selectedCoverageTier === opt.id && <Check className="w-3 h-3" />}
                         </div>
-                        <div className="text-[11px] text-stone-500 mt-0.5">{opt.sub}</div>
+                        <div>
+                          <div className="text-xs font-bold text-stone-900 flex items-center gap-2">
+                            <span>{opt.title}</span>
+                            {opt.recommended && (
+                              <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand-gold text-stone-950">
+                                Recommended Bridal
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-stone-500 mt-0.5">{opt.sub}</div>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="text-sm font-bold text-brand-maroon">{formatPrice(opt.price)}</div>
+                        <div className="text-[10px] text-stone-400">{opt.duration}</div>
                       </div>
                     </div>
-
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-bold text-brand-maroon">{formatPrice(opt.price)}</div>
-                      <div className="text-[10px] text-stone-400">{opt.duration}</div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Application Highlights Grid */}
             <div className="grid grid-cols-2 gap-3 pt-3">

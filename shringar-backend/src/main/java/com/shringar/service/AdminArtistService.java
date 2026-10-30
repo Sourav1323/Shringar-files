@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.shringar.exception.BadRequestException;
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AdminArtistService {
@@ -30,10 +33,20 @@ public class AdminArtistService {
 
     @Transactional
     public AdminArtistResponse create(AdminArtistRequest req) {
+        if (req.getName() != null && artistRepository.existsByNameIgnoreCase(req.getName().trim())) {
+            throw new BadRequestException("An artist with this name already exists.");
+        }
+        if (req.getEmail() != null && !req.getEmail().isBlank() && artistRepository.existsByEmailIgnoreCase(req.getEmail().trim())) {
+            throw new BadRequestException("An artist with this email already exists.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        boolean available = req.getIsAvailable() != null ? req.getIsAvailable() : true;
+
         Artist artist = Artist.builder()
-                .name(req.getName())
+                .name(req.getName().trim())
                 .specialization(req.getSpecialization())
-                .city(req.getCity())
+                .city(req.getCity().trim())
                 .serviceAreas(req.getServiceAreas() != null ? new ArrayList<>(req.getServiceAreas()) : new ArrayList<>())
                 .rating(req.getRating() != null ? req.getRating() : 5.0)
                 .reviewCount(req.getReviewCount() != null ? req.getReviewCount() : 0)
@@ -42,9 +55,12 @@ public class AdminArtistService {
                 .portfolioImageUrls(req.getPortfolioImageUrls() != null ? new ArrayList<>(req.getPortfolioImageUrls()) : new ArrayList<>())
                 .instagramHandle(req.getInstagramHandle())
                 .youtubeChannelUrl(req.getYoutubeChannelUrl())
-                .email(req.getEmail())
+                .email(req.getEmail() != null ? req.getEmail().trim() : null)
                 .experienceYears(req.getExperienceYears())
                 .isActive(req.getIsActive() != null ? req.getIsActive() : true)
+                .isAvailable(available)
+                .availabilityLastChangedAt(now)
+                .availabilityLockedUntil(available ? now.plusDays(15) : null)
                 .isTopArtist(req.getIsTopArtist() != null ? req.getIsTopArtist() : false)
                 .badgeLabel(req.getBadgeLabel())
                 .build();
@@ -56,9 +72,20 @@ public class AdminArtistService {
     public AdminArtistResponse update(Long id, AdminArtistRequest req) {
         Artist artist = findOrThrow(id);
 
-        artist.setName(req.getName());
+        if (req.getName() != null && !req.getName().trim().equalsIgnoreCase(artist.getName())) {
+            if (artistRepository.existsByNameIgnoreCase(req.getName().trim())) {
+                throw new BadRequestException("Another artist already uses this name.");
+            }
+        }
+        if (req.getEmail() != null && !req.getEmail().isBlank() && (artist.getEmail() == null || !req.getEmail().trim().equalsIgnoreCase(artist.getEmail()))) {
+            if (artistRepository.existsByEmailIgnoreCase(req.getEmail().trim())) {
+                throw new BadRequestException("Another artist already uses this email.");
+            }
+        }
+
+        artist.setName(req.getName().trim());
         artist.setSpecialization(req.getSpecialization());
-        artist.setCity(req.getCity());
+        artist.setCity(req.getCity().trim());
         if (req.getServiceAreas() != null) {
             artist.getServiceAreas().clear();
             artist.getServiceAreas().addAll(req.getServiceAreas());
@@ -73,12 +100,36 @@ public class AdminArtistService {
         }
         artist.setInstagramHandle(req.getInstagramHandle());
         artist.setYoutubeChannelUrl(req.getYoutubeChannelUrl());
-        artist.setEmail(req.getEmail());
+        artist.setEmail(req.getEmail() != null ? req.getEmail().trim() : null);
         artist.setExperienceYears(req.getExperienceYears());
         if (req.getIsActive() != null) artist.setIsActive(req.getIsActive());
+        if (req.getIsAvailable() != null && !req.getIsAvailable().equals(artist.getIsAvailable())) {
+            artist.setIsAvailable(req.getIsAvailable());
+            artist.setAvailabilityLastChangedAt(LocalDateTime.now());
+            if (req.getIsAvailable()) {
+                artist.setAvailabilityLockedUntil(LocalDateTime.now().plusDays(15));
+            } else {
+                artist.setAvailabilityLockedUntil(null);
+            }
+        }
         if (req.getIsTopArtist() != null) artist.setIsTopArtist(req.getIsTopArtist());
         artist.setBadgeLabel(req.getBadgeLabel());
 
+        return toAdminResponse(artistRepository.save(artist));
+    }
+
+    @Transactional
+    public AdminArtistResponse toggleAvailability(Long id, Boolean isAvailable) {
+        Artist artist = findOrThrow(id);
+        boolean target = isAvailable != null && isAvailable;
+        artist.setIsAvailable(target);
+        LocalDateTime now = LocalDateTime.now();
+        artist.setAvailabilityLastChangedAt(now);
+        if (target) {
+            artist.setAvailabilityLockedUntil(now.plusDays(15));
+        } else {
+            artist.setAvailabilityLockedUntil(null);
+        }
         return toAdminResponse(artistRepository.save(artist));
     }
 
@@ -107,6 +158,7 @@ public class AdminArtistService {
     }
 
     private AdminArtistResponse toAdminResponse(Artist a) {
+        boolean isLocked = a.getAvailabilityLockedUntil() != null && LocalDateTime.now().isBefore(a.getAvailabilityLockedUntil());
         return AdminArtistResponse.builder()
                 .id(a.getId())
                 .name(a.getName())
@@ -123,6 +175,10 @@ public class AdminArtistService {
                 .email(a.getEmail())
                 .experienceYears(a.getExperienceYears())
                 .isActive(a.getIsActive())
+                .isAvailable(a.getIsAvailable() == null || a.getIsAvailable())
+                .availabilityLockedUntil(a.getAvailabilityLockedUntil())
+                .availabilityLastChangedAt(a.getAvailabilityLastChangedAt())
+                .isAvailabilityLocked(isLocked)
                 .isTopArtist(a.getIsTopArtist())
                 .badgeLabel(a.getBadgeLabel())
                 .build();

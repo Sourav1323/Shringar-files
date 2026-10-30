@@ -23,6 +23,7 @@ public class DesignResponse {
     private Double durationMaxHours;
     private Double conesNeeded;
     private BigDecimal price;
+    private BigDecimal originalPrice;
     private BigDecimal palmTierPrice;
     private BigDecimal grandTierPrice;
     private String originCity;

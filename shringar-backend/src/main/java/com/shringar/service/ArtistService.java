@@ -7,6 +7,10 @@ import com.shringar.repository.ArtistRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.shringar.exception.BadRequestException;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -18,7 +22,7 @@ public class ArtistService {
     public List<ArtistResponse> getByCity(String city) {
         if (city == null || city.isBlank() || city.equalsIgnoreCase("all")) {
             return artistRepository.findAll().stream()
-                    .filter(a -> Boolean.TRUE.equals(a.getIsActive()))
+                    .filter(a -> Boolean.TRUE.equals(a.getIsActive()) && (a.getIsAvailable() == null || Boolean.TRUE.equals(a.getIsAvailable())))
                     .map(this::toResponse).toList();
         }
         return artistRepository.findByCityFlexible(city.trim())
@@ -27,7 +31,9 @@ public class ArtistService {
 
     public List<ArtistResponse> getByCityAndArea(String city, String area) {
         return artistRepository.findByCityAndServiceAreasContainingAndIsActiveTrue(city, area)
-                .stream().map(this::toResponse).toList();
+                .stream()
+                .filter(a -> a.getIsAvailable() == null || Boolean.TRUE.equals(a.getIsAvailable()))
+                .map(this::toResponse).toList();
     }
 
     public ArtistResponse getById(Long id) {
@@ -36,7 +42,48 @@ public class ArtistService {
         return toResponse(artist);
     }
 
-    private ArtistResponse toResponse(Artist a) {
+    @Transactional
+    public ArtistResponse toggleAvailability(Long artistId, Boolean isAvailable, boolean isAdminOverride) {
+        Artist artist = artistRepository.findById(artistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Artist not found"));
+
+        boolean targetAvailable = isAvailable != null && isAvailable;
+        boolean currentlyAvailable = artist.getIsAvailable() == null || Boolean.TRUE.equals(artist.getIsAvailable());
+
+        if (targetAvailable == currentlyAvailable) {
+            return toResponse(artist);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // If artist is currently Available and wants to turn it OFF:
+        if (!targetAvailable && currentlyAvailable) {
+            if (!isAdminOverride && artist.getAvailabilityLockedUntil() != null && now.isBefore(artist.getAvailabilityLockedUntil())) {
+                throw new BadRequestException("Status is locked as Available until " 
+                        + artist.getAvailabilityLockedUntil().toLocalDate() 
+                        + ". You cannot change your status until the 15-day commitment period expires.");
+            }
+            artist.setIsAvailable(false);
+            artist.setAvailabilityLastChangedAt(now);
+            artist.setAvailabilityLockedUntil(null);
+        } else if (targetAvailable) {
+            // Turning Available ON: locks for 15 days
+            artist.setIsAvailable(true);
+            artist.setAvailabilityLastChangedAt(now);
+            artist.setAvailabilityLockedUntil(now.plusDays(15));
+        }
+
+        return toResponse(artistRepository.save(artist));
+    }
+
+    public ArtistResponse getByUserId(Long userId) {
+        Artist artist = artistRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("No artist profile found linked to your account"));
+        return toResponse(artist);
+    }
+
+    public ArtistResponse toResponse(Artist a) {
+        boolean isLocked = a.getAvailabilityLockedUntil() != null && LocalDateTime.now().isBefore(a.getAvailabilityLockedUntil());
         return ArtistResponse.builder()
                 .id(a.getId())
                 .name(a.getName())
@@ -52,6 +99,10 @@ public class ArtistService {
                 .instagramUrl(a.getInstagramHandle() != null ? "https://instagram.com/" + a.getInstagramHandle() : null)
                 .youtubeChannelUrl(a.getYoutubeChannelUrl())
                 .badgeLabel(a.getBadgeLabel())
+                .isAvailable(a.getIsAvailable() == null || a.getIsAvailable())
+                .availabilityLockedUntil(a.getAvailabilityLockedUntil())
+                .availabilityLastChangedAt(a.getAvailabilityLastChangedAt())
+                .isAvailabilityLocked(isLocked)
                 .build();
     }
 }

@@ -95,6 +95,7 @@ public class DesignService {
                 .durationMaxHours(d.getDurationMaxHours())
                 .conesNeeded(d.getConesNeeded())
                 .price(d.getPrice())
+                .originalPrice(d.getOriginalPrice())
                 .palmTierPrice(d.getPalmTierPrice())
                 .grandTierPrice(d.getGrandTierPrice())
                 .originCity(d.getOriginCity())

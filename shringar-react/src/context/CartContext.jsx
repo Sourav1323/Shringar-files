@@ -174,14 +174,16 @@ export function CartProvider({ children }) {
 
   let discountAmount = 0;
   if (coupon && subtotal > 0) {
-    if (coupon.discountType === 'PERCENT' || coupon.discountPercent) {
-      const pct = coupon.discountPercent || coupon.discountValue || 10;
+    if (coupon.discountAmount != null && Number(coupon.discountAmount) > 0) {
+      discountAmount = Math.min(Number(coupon.discountAmount), subtotal);
+    } else if (coupon.discountType === 'PERCENT' || coupon.type === 'PERCENT' || coupon.discountPercent) {
+      const pct = Number(coupon.discountPercent || coupon.value || coupon.discountValue || 10);
       discountAmount = Math.round((subtotal * pct) / 100);
-      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-        discountAmount = coupon.maxDiscount;
+      if (coupon.maxDiscount && Number(coupon.maxDiscount) > 0 && discountAmount > Number(coupon.maxDiscount)) {
+        discountAmount = Number(coupon.maxDiscount);
       }
-    } else if (coupon.discountValue) {
-      discountAmount = Math.min(coupon.discountValue, subtotal);
+    } else if (coupon.discountValue || coupon.value) {
+      discountAmount = Math.min(Number(coupon.discountValue || coupon.value), subtotal);
     }
   }
 
@@ -190,23 +192,20 @@ export function CartProvider({ children }) {
   const applyCouponCode = async (code) => {
     if (!code || !code.trim()) {
       toast.error('Please enter a coupon code.');
-      return;
+      return false;
     }
     const cleanCode = code.trim().toUpperCase();
     try {
-      const validated = await CouponsAPI.validate(cleanCode, subtotal);
+      const res = await CouponsAPI.validate(cleanCode, subtotal);
+      const validated = res?.data || res;
       if (validated) {
         setCoupon(validated);
         toast.success(`Coupon "${cleanCode}" applied successfully!`);
+        return true;
       }
     } catch (err) {
-      if (cleanCode === 'SHRINGAR20') {
-        const fakeCoupon = { code: 'SHRINGAR20', discountPercent: 20, description: '20% Welcome Discount' };
-        setCoupon(fakeCoupon);
-        toast.success('Coupon "SHRINGAR20" applied! (20% off)');
-      } else {
-        toast.error(err.message || 'Invalid or expired coupon code.');
-      }
+      toast.error(err.message || 'Invalid or expired coupon code.');
+      return false;
     }
   };
 

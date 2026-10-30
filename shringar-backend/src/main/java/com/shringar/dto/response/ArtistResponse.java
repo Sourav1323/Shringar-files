@@ -25,4 +25,8 @@ public class ArtistResponse {
     private String instagramUrl;
     private String youtubeChannelUrl;
     private String badgeLabel;
+    private Boolean isAvailable;
+    private java.time.LocalDateTime availabilityLockedUntil;
+    private java.time.LocalDateTime availabilityLastChangedAt;
+    private Boolean isAvailabilityLocked;
 }

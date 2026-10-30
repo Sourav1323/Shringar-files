@@ -44,6 +44,9 @@ public class Design {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "original_price", precision = 10, scale = 2)
+    private BigDecimal originalPrice;
+
     @Column(name = "palm_tier_price", precision = 10, scale = 2)
     private BigDecimal palmTierPrice;
 

@@ -213,6 +213,7 @@ const ShringarAdmin = (() => {
     update: (id, payload) => put(`/admin/artists/${id}`, payload),
     delete: (id) => del(`/admin/artists/${id}`),
     restore: (id) => patch(`/admin/artists/${id}/restore`, {}),
+    toggleAvailability: (id, isAvailable) => patch(`/admin/artists/${id}/availability`, { isAvailable }),
   };
 
   // ───────────────────────── Settings ─────────────────────────
