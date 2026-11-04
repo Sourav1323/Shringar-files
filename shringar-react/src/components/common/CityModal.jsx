@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Search, CheckCircle2, X, ArrowRight, ShieldCheck, AlertCircle, Compass, Loader2 } from 'lucide-react';
 import { useCity } from '../../context/CityContext';
-import { isValidIndianPincode } from '../../utils/pincodeDistance';
+import { isValidIndianPincode, CITY_DEFAULT_PINCODES } from '../../utils/pincodeDistance';
 
 export default function CityModal() {
   const { city, pincode, isCityModalOpen, closeCityModal, setCityAndPincode, supportedCities, loadingCities } = useCity();
@@ -243,6 +243,24 @@ export default function CityModal() {
                 }`}
               />
             </div>
+
+            {CITY_DEFAULT_PINCODES[selectedPendingCity] && !inputPincode && (
+              <div className="flex items-center gap-2 pt-1 text-xs text-stone-600 flex-wrap">
+                <span>Quick suggestion for {selectedPendingCity}:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const pin = CITY_DEFAULT_PINCODES[selectedPendingCity];
+                    setInputPincode(pin);
+                    setPincodeError('');
+                  }}
+                  className="px-2.5 py-1 bg-[#4A2511]/10 hover:bg-[#4A2511] text-[#4A2511] hover:text-white rounded-lg font-mono font-bold transition flex items-center gap-1 cursor-pointer"
+                >
+                  <span>📍 {CITY_DEFAULT_PINCODES[selectedPendingCity]}</span>
+                  <span className="text-[10px] font-sans font-normal opacity-80">(Tap to use)</span>
+                </button>
+              </div>
+            )}
 
             {pincodeError ? (
               <div className="text-xs font-semibold text-red-600 flex items-center gap-1">

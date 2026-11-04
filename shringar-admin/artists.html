@@ -51,7 +51,7 @@
     <div class="topbar">
       <div>
         <div class="topbar-title">Artists</div>
-        <div class="topbar-sub">Add, edit, or remove mehendi artists available for booking</div>
+        <div class="topbar-sub">Add, edit, or remove mehendi artists and review artist join applications</div>
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-outline" id="refresh-btn" onclick="loadArtists(this)">↻ Refresh</button>
@@ -60,11 +60,24 @@
     </div>
 
     <div class="content">
-      <div class="panel">
+      <!-- VIEW TABS -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;border-bottom:1px solid var(--cb);padding-bottom:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="view-artists-btn" onclick="switchView('artists')" style="font-weight:700;display:flex;align-items:center;gap:8px;">
+          <span>👩‍🎨 All Artists</span>
+          <span class="badge badge-gold" id="badge-artist-count" style="font-size:11px;">0</span>
+        </button>
+        <button class="btn btn-outline" id="view-applications-btn" onclick="switchView('applications')" style="font-weight:700;display:flex;align-items:center;gap:8px;">
+          <span>📋 Artist Applications</span>
+          <span class="badge badge-amber" id="badge-app-count" style="font-size:11px;">0 Pending</span>
+        </button>
+      </div>
+
+      <!-- PANEL 1: ARTISTS -->
+      <div class="panel" id="artists-panel">
         <div class="panel-header">
           <div class="panel-title">All Artists</div>
           <div class="filter-row" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <input type="text" id="search-input" placeholder="🔍 Search artist, city, specialization..." oninput="onSearchChange()" style="padding:6px 12px;border:1px solid var(--cd);border-radius:6px;font-size:12px;min-width:240px;background:var(--white);color:var(--td);"/>
+            <input type="text" id="search-input" placeholder="🔍 Search artist, city, specialization, PIN..." oninput="onSearchChange()" style="padding:6px 12px;border:1px solid var(--cd);border-radius:6px;font-size:12px;min-width:240px;background:var(--white);color:var(--td);"/>
             <select class="filter-select" id="status-filter" onchange="renderTable()">
               <option value="all">All statuses</option>
               <option value="active">Active only</option>
@@ -75,7 +88,7 @@
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Artist</th><th>City</th><th>Orders</th><th>Earnings</th><th>Rating</th><th>Status</th><th>Availability</th><th>Actions</th></tr>
+              <tr><th>Artist</th><th>City & Base PIN</th><th>Orders</th><th>Earnings</th><th>Rating</th><th>Status</th><th>Availability</th><th>Actions</th></tr>
             </thead>
             <tbody id="artists-table-body">
               <tr><td colspan="8" class="loading-state">Loading artists…</td></tr>
@@ -89,6 +102,42 @@
             <span id="page-indicator" style="font-size:12px;display:flex;align-items:center;padding:0 8px;font-weight:600;">Page 1</span>
             <button class="btn btn-sm btn-outline" id="next-page-btn" onclick="changePage(1)">Next →</button>
           </div>
+        </div>
+      </div>
+
+      <!-- PANEL 2: APPLICATIONS -->
+      <div class="panel" id="applications-panel" style="display:none;">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Artist Applications</div>
+            <div style="font-size:12px;color:var(--tl);margin-top:2px;">Submitted by mehendi artisans via the &quot;Become an Artist&quot; page</div>
+          </div>
+          <div class="filter-row" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="app-search-input" placeholder="🔍 Search applicant, phone, email, city..." oninput="onAppSearchChange()" style="padding:6px 12px;border:1px solid var(--cd);border-radius:6px;font-size:12px;min-width:240px;background:var(--white);color:var(--td);"/>
+            <select class="filter-select" id="app-status-filter" onchange="renderApplicationsTable()">
+              <option value="all">All statuses</option>
+              <option value="PENDING" selected>Pending only</option>
+              <option value="APPROVED">Approved only</option>
+              <option value="REJECTED">Rejected only</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Applicant</th>
+                <th>Location & Experience</th>
+                <th>Specialization & Portfolio</th>
+                <th>Message / Details</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="applications-table-body">
+              <tr><td colspan="6" class="loading-state">Loading applications…</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -117,19 +166,25 @@
         </div>
         <div class="form-field">
           <label class="form-label">City *</label>
-          <input class="form-input" id="f-city" list="city-options" placeholder="e.g. Mumbai" onchange="loadAreaSuggestions()" onblur="loadAreaSuggestions()"/>
+          <input class="form-input" id="f-city" list="city-options" placeholder="e.g. Jaipur" onchange="loadAreaSuggestions()" onblur="loadAreaSuggestions()"/>
           <datalist id="city-options">
-            <option value="Mumbai"><option value="Pune"><option value="Nashik">
+            <option value="Jaipur"><option value="Bengaluru"><option value="New Delhi"><option value="Gurugram"><option value="Ajmer"><option value="Mumbai"><option value="Pune"><option value="Hyderabad">
           </datalist>
         </div>
 
+        <div class="form-field">
+          <label class="form-label">Base Studio / Home PIN Code * (6 digits)</label>
+          <input class="form-input" id="f-home-pincode" maxlength="6" placeholder="e.g. 302001" oninput="this.value=this.value.replace(/\D/g,'')"/>
+          <div class="form-hint">Mandatory: 6-digit base PIN code used to check distance from customer location at booking time.</div>
+        </div>
+
         <div class="form-field full">
-          <label class="form-label">Service Areas</label>
+          <label class="form-label">Serviceable Areas & Specific PIN Codes</label>
           <div class="chip-input-wrap" id="areas-wrap">
-            <input class="chip-input" id="areas-input" list="area-suggestions" placeholder="Type an area and press Enter (e.g. Andheri)" onkeydown="handleChipInput(event)"/>
+            <input class="chip-input" id="areas-input" list="area-suggestions" placeholder="Type area or 6-digit PIN code and press Enter (e.g. 302001, Malviya Nagar)" onkeydown="handleChipInput(event)"/>
           </div>
           <datalist id="area-suggestions"></datalist>
-          <div class="form-hint" id="areas-hint">Set the city first — real area names for that city will be suggested here, so booking-page filtering matches exactly.</div>
+          <div class="form-hint" id="areas-hint">Enter specific neighborhoods or 6-digit PIN codes this artist is available to travel to.</div>
         </div>
 
         <div class="form-field">
@@ -247,12 +302,25 @@ const admin = ShringarAdmin.getAdmin();
 if (admin) document.getElementById('admin-avatar').textContent = (admin.firstName?.[0] || 'A').toUpperCase();
 
 let allArtists = [];
+let allApplications = [];
 let designerSummaries = {};
 let editingId = null;
+let linkedApplicationId = null;
 let areasList = [];
 let profileImageUrl = null;
 let portfolioImageUrls = [];
 let citiesCache = null;
+let currentView = 'artists';
+let appSearchQuery = '';
+
+function switchView(view) {
+  currentView = view;
+  const isArtists = (view === 'artists');
+  document.getElementById('artists-panel').style.display = isArtists ? 'block' : 'none';
+  document.getElementById('applications-panel').style.display = isArtists ? 'none' : 'block';
+  document.getElementById('view-artists-btn').className = isArtists ? 'btn btn-primary' : 'btn btn-outline';
+  document.getElementById('view-applications-btn').className = isArtists ? 'btn btn-outline' : 'btn btn-primary';
+}
 
 async function loadAreaSuggestions() {
   const cityInput = document.getElementById('f-city').value.trim();
@@ -286,24 +354,41 @@ async function loadArtists(btn) {
   }
   const tbody = document.getElementById('artists-table-body');
   try {
-    const [artistsData, summariesData] = await Promise.all([
+    const [artistsData, summariesData, applicationsData] = await Promise.all([
       ShringarAdmin.Artists.all(),
-      (ShringarAdmin.Designers && ShringarAdmin.Designers.summary) ? ShringarAdmin.Designers.summary().catch(() => []) : Promise.resolve([])
+      (ShringarAdmin.Designers && ShringarAdmin.Designers.summary) ? ShringarAdmin.Designers.summary().catch(() => []) : Promise.resolve([]),
+      (ShringarAdmin.ArtistApplications && ShringarAdmin.ArtistApplications.all) ? ShringarAdmin.ArtistApplications.all().catch(() => []) : Promise.resolve([])
     ]);
     allArtists = artistsData || [];
+    allApplications = applicationsData || [];
     designerSummaries = {};
     if (Array.isArray(summariesData)) {
       summariesData.forEach(s => {
         if (s && s.designerId) designerSummaries[s.designerId] = s;
       });
     }
+
+    // Update counts on tab badges
+    const activeArtistsCount = allArtists.filter(a => a.isActive).length;
+    const pendingAppsCount = allApplications.filter(a => a.status === 'PENDING').length;
+
+    const artistBadge = document.getElementById('badge-artist-count');
+    if (artistBadge) artistBadge.textContent = activeArtistsCount;
+
+    const appBadge = document.getElementById('badge-app-count');
+    if (appBadge) {
+      appBadge.textContent = `${pendingAppsCount} Pending`;
+      appBadge.className = pendingAppsCount > 0 ? 'badge badge-amber' : 'badge badge-green';
+    }
+
     renderTable();
+    renderApplicationsTable();
     if (b) {
       b.innerHTML = '✓ Refreshed';
       setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1200);
     }
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="icon">⚠️</div>' + err.message + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="icon">⚠️</div>' + err.message + '</td></tr>';
     if (b) {
       b.innerHTML = '⚠️ Failed';
       setTimeout(() => { b.innerHTML = '↻ Refresh'; b.disabled = false; }, 1500);
@@ -408,7 +493,12 @@ function renderTable() {
           '</div>' +
         '</div>' +
       '</td>' +
-      '<td>' + a.city + '</td>' +
+      '<td>' +
+        '<div class="cell-name">' + (a.city || '—') + '</div>' +
+        (a.homePincode
+          ? '<div class="cell-sub" style="font-family:monospace;font-size:11px;color:var(--tl);font-weight:600;">📍 PIN: ' + a.homePincode + '</div>'
+          : '<div class="cell-sub" style="color:var(--amber);font-size:10.5px;">⚠️ No base PIN</div>') +
+      '</td>' +
       '<td><span class="badge badge-gold" style="font-weight:700;">' + (summary.totalOrders || 0) + ' orders</span></td>' +
       '<td><strong style="color:var(--m);font-weight:700;">' + ShringarAdmin.formatINR(summary.totalEarnings || 0) + '</strong></td>' +
       '<td>' + (a.rating ? '★ ' + a.rating : '—') + ' <span class="cell-sub">(' + (a.reviewCount ?? 0) + ')</span></td>' +
@@ -426,6 +516,157 @@ function renderTable() {
       '</td>' +
     '</tr>';
   }).join('');
+}
+
+// ───────────────────────── Artist Applications Management ─────────────────────────
+
+function onAppSearchChange() {
+  appSearchQuery = (document.getElementById('app-search-input')?.value || '').trim().toLowerCase();
+  renderApplicationsTable();
+}
+
+function renderApplicationsTable() {
+  const tbody = document.getElementById('applications-table-body');
+  if (!tbody) return;
+  const filter = document.getElementById('app-status-filter')?.value || 'all';
+
+  let filtered = allApplications;
+  if (filter !== 'all') {
+    filtered = filtered.filter(a => a.status === filter);
+  }
+
+  if (appSearchQuery) {
+    filtered = filtered.filter(a => {
+      const str = `${a.fullName || ''} ${a.phone || ''} ${a.email || ''} ${a.city || ''} ${a.specialization || ''} ${a.message || ''}`.toLowerCase();
+      return str.includes(appSearchQuery);
+    });
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="icon">📋</div>No applications found matching your criteria.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(app => {
+    const statusBadge = app.status === 'APPROVED'
+      ? '<span class="badge badge-green">✓ Approved</span>'
+      : (app.status === 'REJECTED'
+        ? '<span class="badge badge-red">✕ Rejected</span>'
+        : '<span class="badge badge-amber">● Pending Review</span>');
+
+    const createdStr = app.createdAt ? new Date(app.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+    let portfolioHtml = '<span style="color:var(--tl);font-size:11px;">None provided</span>';
+    if (app.portfolioLink) {
+      portfolioHtml = '<a href="' + app.portfolioLink + '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;">🔗 View Portfolio / Drive</a>';
+    }
+
+    const safeName = (app.fullName || 'Applicant').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+    return '<tr>' +
+      '<td>' +
+        '<div class="cell-name">' + (app.fullName || 'Unnamed Applicant') + '</div>' +
+        '<div class="cell-sub"><a href="tel:' + (app.phone || '') + '" style="color:var(--m);font-weight:600;">📞 ' + (app.phone || '—') + '</a></div>' +
+        '<div class="cell-sub"><a href="mailto:' + (app.email || '') + '" style="color:var(--tl);">✉️ ' + (app.email || '—') + '</a></div>' +
+        '<div class="cell-sub" style="font-size:10.5px;color:var(--tl);margin-top:3px;">Applied: ' + createdStr + '</div>' +
+      '</td>' +
+      '<td>' +
+        '<div class="cell-name">' + (app.city || '—') + '</div>' +
+        '<div class="cell-sub" style="font-weight:600;color:var(--green);">' + (app.yearsExperience ?? 0) + ' yrs experience</div>' +
+      '</td>' +
+      '<td>' +
+        '<div style="font-weight:600;font-size:12px;">' + (app.specialization || 'General Henna / Bridal') + '</div>' +
+        '<div style="margin-top:6px;">' + portfolioHtml + '</div>' +
+      '</td>' +
+      '<td style="max-width:220px;">' +
+        '<div style="font-size:11.5px;color:var(--td);white-space:pre-wrap;max-height:80px;overflow-y:auto;background:var(--cream-light);padding:6px 8px;border-radius:6px;border:1px solid var(--cb);line-height:1.4;">' +
+          (app.message || '(No notes attached)') +
+        '</div>' +
+        (app.adminNotes ? '<div style="font-size:11px;color:var(--tl);margin-top:4px;"><strong>Admin note:</strong> ' + app.adminNotes + '</div>' : '') +
+      '</td>' +
+      '<td>' + statusBadge + '</td>' +
+      '<td>' +
+        '<div class="row-actions" style="flex-wrap:wrap;gap:4px;">' +
+          (app.status === 'PENDING'
+            ? '<button class="btn btn-sm btn-primary" onclick="approveAndAddArtist(' + app.id + ')">✓ Approve & Add</button>' +
+              '<button class="btn btn-sm btn-outline" onclick="quickApproveApplication(' + app.id + ')">Quick Approve</button>' +
+              '<button class="btn btn-sm btn-danger" onclick="rejectApplication(' + app.id + ')">Reject</button>'
+            : (app.status === 'APPROVED'
+              ? '<button class="btn btn-sm btn-primary" onclick="approveAndAddArtist(' + app.id + ')">+ Add as Artist</button>'
+              : '<button class="btn btn-sm btn-outline" onclick="reopenApplication(' + app.id + ')">Re-open</button>')) +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function approveAndAddArtist(appId) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+  linkedApplicationId = appId;
+
+  openCreateModal();
+  document.getElementById('modal-title').textContent = 'Add Artist (Approving Application #' + appId + ' — ' + (app.fullName || '') + ')';
+  document.getElementById('f-name').value = app.fullName || '';
+  document.getElementById('f-email').value = app.email || '';
+  document.getElementById('f-city').value = app.city || '';
+  loadAreaSuggestions();
+  document.getElementById('f-specialization').value = app.specialization || 'Bridal & Traditional Marwari Specialist';
+  document.getElementById('f-experience').value = app.yearsExperience ?? 3;
+
+  // Suggested city hub base PIN code
+  const cityPinMap = {
+    'jaipur': '302001',
+    'bengaluru': '560001',
+    'bangalore': '560001',
+    'ajmer': '305001',
+    'gurugram': '122001',
+    'gurgaon': '122001',
+    'new delhi': '110001',
+    'delhi': '110001',
+    'mumbai': '400050',
+    'pune': '411001',
+    'hyderabad': '500001',
+    'kolkata': '700001',
+    'ahmedabad': '380001'
+  };
+  const normCity = (app.city || '').toLowerCase().trim();
+  if (cityPinMap[normCity]) {
+    document.getElementById('f-home-pincode').value = cityPinMap[normCity];
+  }
+}
+
+async function quickApproveApplication(appId) {
+  if (!confirm('Mark Application #' + appId + ' as APPROVED?')) return;
+  try {
+    await ShringarAdmin.ArtistApplications.updateStatus(appId, 'APPROVED', 'Approved by admin');
+    ShringarAdmin.toast('Application #' + appId + ' marked as APPROVED', 'success');
+    loadArtists();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+async function rejectApplication(appId) {
+  const reason = prompt('Optional rejection note (e.g. "Outside serviceable radius" or "Incomplete portfolio"):', 'Portfolio requirements not met');
+  if (reason === null) return;
+  try {
+    await ShringarAdmin.ArtistApplications.updateStatus(appId, 'REJECTED', reason || 'Rejected by admin');
+    ShringarAdmin.toast('Application #' + appId + ' rejected', 'success');
+    loadArtists();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
+}
+
+async function reopenApplication(appId) {
+  try {
+    await ShringarAdmin.ArtistApplications.updateStatus(appId, 'PENDING', 'Re-opened for review');
+    ShringarAdmin.toast('Application #' + appId + ' moved back to PENDING', 'success');
+    loadArtists();
+  } catch (err) {
+    ShringarAdmin.toast(err.message, 'error');
+  }
 }
 
 async function openLedgerModal(id, name) {
@@ -521,8 +762,10 @@ function openCreateModal() {
   areasList = [];
   profileImageUrl = null;
   portfolioImageUrls = [];
-  document.getElementById('modal-title').textContent = 'Add New Artist';
-  clearForm();
+  if (!linkedApplicationId) {
+    document.getElementById('modal-title').textContent = 'Add New Artist';
+    clearForm();
+  }
   document.getElementById('artist-modal').classList.add('open');
 }
 
@@ -530,11 +773,13 @@ function openEditModal(id) {
   const a = allArtists.find(x => x.id === id);
   if (!a) return;
   editingId = id;
+  linkedApplicationId = null;
   document.getElementById('modal-title').textContent = 'Edit Artist';
 
   document.getElementById('f-name').value = a.name || '';
   document.getElementById('f-specialization').value = a.specialization || '';
   document.getElementById('f-city').value = a.city || '';
+  document.getElementById('f-home-pincode').value = a.homePincode || '';
   loadAreaSuggestions();
   document.getElementById('f-rating').value = a.rating ?? '';
   document.getElementById('f-review-count').value = a.reviewCount ?? '';
@@ -562,15 +807,19 @@ function openEditModal(id) {
 function closeModal() {
   document.getElementById('artist-modal').classList.remove('open');
   document.getElementById('form-error').style.display = 'none';
+  linkedApplicationId = null;
 }
 
 function clearForm() {
-  ['f-name','f-specialization','f-city','f-rating','f-review-count','f-experience',
-   'f-avatar-emoji','f-badge','f-instagram','f-youtube','f-email'].forEach(id => document.getElementById(id).value = '');
+  ['f-name','f-specialization','f-city','f-home-pincode','f-rating','f-review-count','f-experience',
+   'f-avatar-emoji','f-badge','f-instagram','f-youtube','f-email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   document.getElementById('f-active').checked = true;
   document.getElementById('f-top-artist').checked = false;
   document.getElementById('area-suggestions').innerHTML = '';
-  document.getElementById('areas-hint').textContent = 'Set the city first — real area names for that city will be suggested here, so booking-page filtering matches exactly.';
+  document.getElementById('areas-hint').textContent = 'Enter specific neighborhoods or 6-digit PIN codes this artist is available to travel to.';
   document.getElementById('areas-hint').style.color = 'var(--tl)';
   renderChips([]);
   renderProfilePreview();
@@ -672,9 +921,15 @@ async function saveArtist() {
   const city = document.getElementById('f-city').value.trim();
   const email = document.getElementById('f-email').value.trim();
   const specialization = document.getElementById('f-specialization').value.trim();
+  const homePincode = document.getElementById('f-home-pincode').value.trim();
 
   if (!name || !city || !email) {
     errorEl.textContent = 'Please fill in Name, City and Email.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (!homePincode || !/^[1-9][0-9]{5}$/.test(homePincode)) {
+    errorEl.textContent = 'Please enter a valid 6-digit Base PIN Code (e.g. 302001, 560001, 110001). This is required to check distance from customer location at time of booking.';
     errorEl.style.display = 'block';
     return;
   }
@@ -729,6 +984,7 @@ async function saveArtist() {
     name,
     specialization,
     city,
+    homePincode,
     serviceAreas: areasList,
     rating: ratingVal,
     reviewCount: reviewCountVal,
@@ -754,7 +1010,15 @@ async function saveArtist() {
       ShringarAdmin.toast('Artist updated', 'success');
     } else {
       await ShringarAdmin.Artists.create(payload);
-      ShringarAdmin.toast('Artist added', 'success');
+      if (linkedApplicationId) {
+        try {
+          await ShringarAdmin.ArtistApplications.updateStatus(linkedApplicationId, 'APPROVED', 'Approved and converted to active artist');
+        } catch (appErr) {
+          console.warn('Could not update application status:', appErr);
+        }
+        linkedApplicationId = null;
+      }
+      ShringarAdmin.toast('Artist added to website', 'success');
     }
     closeModal();
     loadArtists();

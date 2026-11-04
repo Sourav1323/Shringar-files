@@ -89,6 +89,7 @@ public class ArtistService {
                 .name(a.getName())
                 .specialization(a.getSpecialization())
                 .city(a.getCity())
+                .homePincode(a.getHomePincode())
                 .serviceAreas(a.getServiceAreas())
                 .rating(a.getRating())
                 .reviewCount(a.getReviewCount())

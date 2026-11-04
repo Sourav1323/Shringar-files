@@ -29,9 +29,10 @@ const PINCODE_COORDINATES = {
   '560': { lat: 12.9716, lng: 77.5946, city: 'Bangalore' },
   '562': { lat: 13.1500, lng: 77.5000, city: 'Bangalore Rural' },
 
-  // Jaipur
+  // Jaipur & Ajmer
   '302': { lat: 26.9124, lng: 75.7873, city: 'Jaipur' },
   '303': { lat: 26.9800, lng: 75.9000, city: 'Jaipur Outer' },
+  '305': { lat: 26.4499, lng: 74.6399, city: 'Ajmer' },
 
   // Hyderabad
   '500': { lat: 17.3850, lng: 78.4867, city: 'Hyderabad' },
@@ -100,13 +101,23 @@ export const ARTIST_HOME_PINCODES = {
 // Default city center pincodes
 export const CITY_DEFAULT_PINCODES = {
   'Delhi NCR': '110001',
-  'Mumbai': '400001',
+  'New Delhi': '110001',
+  'Mumbai': '400050',
   'Bangalore': '560001',
+  'Bengaluru': '560001',
   'Jaipur': '302001',
+  'Ajmer': '305001',
+  'Gurugram': '122001',
   'Hyderabad': '500001',
   'Kolkata': '700001',
   'Pune': '411001',
   'Ahmedabad': '380001',
+  'Nashik': '422001',
+  'Udaipur': '313001',
+  'Jodhpur': '342001',
+  'Lucknow': '226001',
+  'Chandigarh': '160017',
+  'Chennai': '600001',
 };
 
 /**
@@ -150,8 +161,8 @@ export function calculatePincodeDistance(userPin, artistOrPin, selectedCity = 'D
   if (!cleanUserPin || cleanUserPin.length < 6) return 5; // default 5km if pending
 
   let artistHome = null;
-  if (typeof artistOrPin === 'object' && artistOrPin?.homePincode) {
-    artistHome = { pincode: String(artistOrPin.homePincode) };
+  if (typeof artistOrPin === 'object' && (artistOrPin?.homePincode || artistOrPin?.pincode)) {
+    artistHome = { pincode: String(artistOrPin.homePincode || artistOrPin.pincode) };
   } else if (typeof artistOrPin === 'number' || (typeof artistOrPin === 'string' && ARTIST_HOME_PINCODES[artistOrPin])) {
     artistHome = ARTIST_HOME_PINCODES[artistOrPin];
   } else if (typeof artistOrPin === 'string' && isValidIndianPincode(artistOrPin)) {

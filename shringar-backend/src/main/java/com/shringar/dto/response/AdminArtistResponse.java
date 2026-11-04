@@ -17,6 +17,7 @@ public class AdminArtistResponse {
     private String name;
     private String specialization;
     private String city;
+    private String homePincode;
     private List<String> serviceAreas;
     private Double rating;
     private Integer reviewCount;

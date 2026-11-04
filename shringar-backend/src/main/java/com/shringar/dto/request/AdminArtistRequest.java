@@ -18,6 +18,8 @@ public class AdminArtistRequest {
     @NotBlank(message = "City is required")
     private String city;
 
+    private String homePincode;
+
     private List<String> serviceAreas;
     private Double rating;
     private Integer reviewCount;

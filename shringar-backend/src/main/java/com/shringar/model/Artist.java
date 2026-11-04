@@ -27,6 +27,9 @@ public class Artist {
     @Column(length = 50)
     private String city;
 
+    @Column(name = "home_pincode", length = 10)
+    private String homePincode;
+
     @Column(length = 100)
     private String email;                    // used to send booking-notification emails — not exposed via public ArtistResponse DTO
 

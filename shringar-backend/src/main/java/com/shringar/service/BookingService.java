@@ -569,16 +569,23 @@ public class BookingService {
     private double estimatePincodeDistance(String userPin, Artist artist, String city) {
         if (userPin == null || userPin.trim().length() < 6) return 5.0;
         String cleanUser = userPin.trim();
-        String artistPin = "110001";
-        if (artist != null && artist.getCity() != null) {
-            String c = artist.getCity().toLowerCase();
-            if (c.contains("mumbai")) artistPin = "400001";
-            else if (c.contains("bangalore") || c.contains("bengaluru")) artistPin = "560001";
-            else if (c.contains("jaipur")) artistPin = "302001";
-            else if (c.contains("hyderabad")) artistPin = "500001";
-            else if (c.contains("kolkata")) artistPin = "700001";
-            else if (c.contains("pune")) artistPin = "411001";
-            else if (c.contains("ahmedabad")) artistPin = "380001";
+        String artistPin = (artist != null && artist.getHomePincode() != null && !artist.getHomePincode().isBlank())
+                ? artist.getHomePincode().trim()
+                : null;
+        if (artistPin == null) {
+            artistPin = "110001";
+            if (artist != null && artist.getCity() != null) {
+                String c = artist.getCity().toLowerCase();
+                if (c.contains("mumbai")) artistPin = "400001";
+                else if (c.contains("bangalore") || c.contains("bengaluru")) artistPin = "560001";
+                else if (c.contains("jaipur")) artistPin = "302001";
+                else if (c.contains("ajmer")) artistPin = "305001";
+                else if (c.contains("gurugram") || c.contains("gurgaon")) artistPin = "122001";
+                else if (c.contains("hyderabad")) artistPin = "500001";
+                else if (c.contains("kolkata")) artistPin = "700001";
+                else if (c.contains("pune")) artistPin = "411001";
+                else if (c.contains("ahmedabad")) artistPin = "380001";
+            }
         }
         if (cleanUser.equals(artistPin)) return 2.5;
         if (cleanUser.length() >= 3 && artistPin.length() >= 3 && cleanUser.substring(0, 3).equals(artistPin.substring(0, 3))) {

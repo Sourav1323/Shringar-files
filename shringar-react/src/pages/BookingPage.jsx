@@ -294,7 +294,7 @@ export default function BookingPage() {
   // ── Distance Calculation between user pincode and assigned artist base pincode ──
   const currentAssignedArtist = artistManifest.assignedArtists[0] || artists[0] || null;
   const estimatedDistance = useMemo(() => {
-    return calculatePincodeDistance(pincode, currentAssignedArtist?.artistId || currentAssignedArtist?.id, selectedCity);
+    return calculatePincodeDistance(pincode, currentAssignedArtist || currentAssignedArtist?.artistId || currentAssignedArtist?.id, selectedCity);
   }, [pincode, currentAssignedArtist, selectedCity]);
 
   const distancePricing = useMemo(() => {

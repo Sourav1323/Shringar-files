@@ -216,6 +216,11 @@ const ShringarAdmin = (() => {
     toggleAvailability: (id, isAvailable) => patch(`/admin/artists/${id}/availability`, { isAvailable }),
   };
 
+  const ArtistApplications = {
+    all: () => get('/admin/artist-applications'),
+    updateStatus: (id, status, adminNotes) => patch(`/admin/artist-applications/${id}/status`, { status, adminNotes }),
+  };
+
   // ───────────────────────── Settings ─────────────────────────
   const Settings = {
     get: () => get('/admin/settings'),
@@ -554,7 +559,7 @@ const ShringarAdmin = (() => {
 
   return {
     API_BASE, getToken, setSession, getAdmin, clearSession, isLoggedIn, logout, requireAdmin,
-    Auth, Dashboard, Cities, Designs, Artists, Concerns, Feedback, Locations, Testimonials, Settings, Admins,
+    Auth, Dashboard, Cities, Designs, Artists, ArtistApplications, Concerns, Feedback, Locations, Testimonials, Settings, Admins,
     uploadImage, resolveUploadUrl, toast, formatINR, formatDate,
     paintAdminName, paintActiveNav, paintSidebarIcons, paintAdminLogo, paintTopbarAdmin, togglePassword
   };

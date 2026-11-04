@@ -47,6 +47,7 @@ public class AdminArtistService {
                 .name(req.getName().trim())
                 .specialization(req.getSpecialization())
                 .city(req.getCity().trim())
+                .homePincode(req.getHomePincode() != null ? req.getHomePincode().trim() : null)
                 .serviceAreas(req.getServiceAreas() != null ? new ArrayList<>(req.getServiceAreas()) : new ArrayList<>())
                 .rating(req.getRating() != null ? req.getRating() : 5.0)
                 .reviewCount(req.getReviewCount() != null ? req.getReviewCount() : 0)
@@ -86,6 +87,9 @@ public class AdminArtistService {
         artist.setName(req.getName().trim());
         artist.setSpecialization(req.getSpecialization());
         artist.setCity(req.getCity().trim());
+        if (req.getHomePincode() != null) {
+            artist.setHomePincode(req.getHomePincode().trim());
+        }
         if (req.getServiceAreas() != null) {
             artist.getServiceAreas().clear();
             artist.getServiceAreas().addAll(req.getServiceAreas());
@@ -164,6 +168,7 @@ public class AdminArtistService {
                 .name(a.getName())
                 .specialization(a.getSpecialization())
                 .city(a.getCity())
+                .homePincode(a.getHomePincode())
                 .serviceAreas(a.getServiceAreas())
                 .rating(a.getRating())
                 .reviewCount(a.getReviewCount())
