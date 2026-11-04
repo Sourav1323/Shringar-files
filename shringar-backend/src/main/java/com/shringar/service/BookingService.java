@@ -459,6 +459,12 @@ public class BookingService {
             throw new BadRequestException("This booking cannot be rescheduled in its current status.");
         }
 
+        // Reschedule blocked within 24 hours of appointment
+        LocalDateTime slotDateTime = booking.getSlotDateTime();
+        if (slotDateTime != null && java.time.Duration.between(LocalDateTime.now(), slotDateTime).toHours() < 24) {
+            throw new BadRequestException("Rescheduling is not allowed within 24 hours of the appointment time.");
+        }
+
         // Enforce the dynamic modification window
         if (!booking.canCancelFree()) {
             throw new BadRequestException("The rescheduling window has expired (0 hours left). Rescheduling can only be made while the timer is active.");

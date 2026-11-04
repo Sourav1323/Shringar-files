@@ -233,6 +233,11 @@ public class Booking {
         LocalDateTime now = LocalDateTime.now();
         if (now.isAfter(slotDateTime)) return false;
 
+        // Cancellations >48 hours before the appointment are always free per policy
+        if (java.time.Duration.between(now, slotDateTime).toHours() >= 48) {
+            return true;
+        }
+
         LocalDateTime deadline = getCancellationDeadline();
         return deadline != null && now.isBefore(deadline);
     }

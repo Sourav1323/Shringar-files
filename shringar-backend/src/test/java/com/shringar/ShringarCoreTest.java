@@ -347,4 +347,29 @@ public class ShringarCoreTest {
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("Valid email is required")));
     }
+
+    // ─────────────────────── Booking Lifecycle (TC-BL-01 to TC-BL-05) ───────────────────────
+
+    @Test
+    @DisplayName("TC-BL-01: Booking >48h before appointment qualifies for free cancellation")
+    void testCanCancelFreeMoreThan48Hours() {
+        Booking booking = new Booking();
+        booking.setCreatedAt(java.time.LocalDateTime.now().minusDays(10));
+        booking.setAppointmentDate(LocalDate.now().plusDays(5)); // 5 days in future (>48h)
+        booking.setPreferredTime(PreferredTime.MORNING);
+
+        assertTrue(booking.canCancelFree(), "Booking 5 days in advance should be eligible for free cancellation");
+    }
+
+    @Test
+    @DisplayName("TC-BL-02: Booking <48h before appointment forfeits free cancellation when modification window passed")
+    void testCannotCancelFreeLessThan48Hours() {
+        Booking booking = new Booking();
+        // Created 10 days ago, appointment is tomorrow (<48h)
+        booking.setCreatedAt(java.time.LocalDateTime.now().minusDays(10));
+        booking.setAppointmentDate(LocalDate.now().plusDays(1)); // tomorrow (<48h)
+        booking.setPreferredTime(PreferredTime.MORNING);
+
+        assertFalse(booking.canCancelFree(), "Booking <48h with expired window should forfeit advance");
+    }
 }
