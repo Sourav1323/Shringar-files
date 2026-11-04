@@ -407,12 +407,28 @@ const ShringarAdmin = (() => {
     }
   }
 
-  /** Highlights the current page's nav link based on the file name */
+  /** Highlights the current page's nav link based on file name and URL hash */
   function paintActiveNav() {
     const current = window.location.pathname.split('/').pop() || 'dashboard.html';
+    const hash = window.location.hash || '';
+
     document.querySelectorAll('[data-nav-link]').forEach(el => {
       const href = el.getAttribute('href') || '';
-      if (href === current || (current === '' && href === 'dashboard.html')) {
+      let isMatch = false;
+
+      if (current === 'artists.html') {
+        if (hash === '#applications') {
+          isMatch = href.includes('#applications');
+        } else {
+          isMatch = (href === 'artists.html');
+        }
+      } else {
+        if (href === current || (current === '' && href === 'dashboard.html')) {
+          isMatch = true;
+        }
+      }
+
+      if (isMatch) {
         el.classList.add('active');
       } else {
         el.classList.remove('active');

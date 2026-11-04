@@ -321,6 +321,20 @@ function switchView(view) {
   document.getElementById('applications-panel').style.display = isArtists ? 'none' : 'block';
   document.getElementById('view-artists-btn').className = isArtists ? 'btn btn-primary' : 'btn btn-outline';
   document.getElementById('view-applications-btn').className = isArtists ? 'btn btn-outline' : 'btn btn-primary';
+
+  // Synchronize sidebar active selection
+  const artistNav = document.querySelector('.sidebar-nav a[href="artists.html"]');
+  const appNav = document.getElementById('nav-applications-link') || document.querySelector('.sidebar-nav a[href*="#applications"]');
+  if (artistNav && appNav) {
+    if (isArtists) {
+      artistNav.classList.add('active');
+      appNav.classList.remove('active');
+    } else {
+      artistNav.classList.remove('active');
+      appNav.classList.add('active');
+    }
+  }
+
   try {
     history.replaceState(null, null, isArtists ? '#artists' : '#applications');
   } catch (e) {}
@@ -329,7 +343,7 @@ function switchView(view) {
 function checkHashRouting() {
   if (window.location.hash === '#applications') {
     switchView('applications');
-  } else if (window.location.hash === '#artists') {
+  } else {
     switchView('artists');
   }
 }
@@ -595,6 +609,94 @@ function switchLightboxIndex(idx) {
   }
 }
 
+
+function openApplicationDetailsModal(appId) {
+  const app = allApplications.find(a => a.id === appId);
+  if (!app) return;
+
+  const safeName = (app.fullName || 'Applicant').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  document.getElementById('app-modal-title').textContent = `Artisan Application · ${app.fullName || 'Unnamed'}`;
+  document.getElementById('app-modal-sub').textContent = `Applied on ${app.createdAt ? new Date(app.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recently'}`;
+
+  document.getElementById('app-detail-name').textContent = app.fullName || '—';
+  
+  const phoneEl = document.getElementById('app-detail-phone');
+  phoneEl.textContent = app.phone || '—';
+  phoneEl.href = app.phone ? `tel:${app.phone}` : '#';
+
+  const emailEl = document.getElementById('app-detail-email');
+  emailEl.textContent = app.email || '—';
+  emailEl.href = app.email ? `mailto:${app.email}` : '#';
+
+  document.getElementById('app-detail-city-exp').textContent = `${app.city || '—'} · ${app.yearsExperience ?? 0} yrs experience`;
+  document.getElementById('app-detail-spec').textContent = app.specialization || 'Bridal & Traditional Marwari';
+
+  const { images, driveLinks, otherLinks } = extractAttachments(app);
+
+  const photoCountEl = document.getElementById('app-detail-photo-count');
+  photoCountEl.textContent = `${images.length} photo${images.length === 1 ? '' : 's'} attached`;
+
+  const galleryEl = document.getElementById('app-detail-gallery');
+  if (images.length > 0) {
+    const imagesJson = JSON.stringify(images).replace(/"/g, '&quot;');
+    galleryEl.innerHTML = images.map((img, idx) => {
+      const resImg = ShringarAdmin.resolveUploadUrl(img);
+      return `<div style="text-align:center;">
+        <img src="${resImg}" alt="Sample artwork ${idx+1}" style="max-height:160px;max-width:180px;border-radius:6px;object-fit:cover;cursor:pointer;border:2px solid #333;box-shadow:0 4px 10px rgba(0,0,0,0.3);transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="openAttachmentLightbox('${safeName}', ${imagesJson}, ${idx})" title="Click to view full size" />
+        <div style="font-size:10px;color:#aaa;margin-top:4px;">Photo ${idx+1} · Click to zoom</div>
+      </div>`;
+    }).join('');
+  } else {
+    galleryEl.innerHTML = `<div style="color:#aaa;font-size:12px;padding:12px;text-align:center;">
+      ${(app.message && app.message.includes('Attached Photos')) ? '📸 1 Sample artwork attached at submission (no direct cloud link)' : 'No sample artwork images attached.'}
+    </div>`;
+  }
+
+  const linksSection = document.getElementById('app-detail-links-section');
+  const linksEl = document.getElementById('app-detail-links');
+  if (driveLinks.length > 0 || otherLinks.length > 0) {
+    linksSection.style.display = 'block';
+    let linksHtml = '';
+    driveLinks.forEach(dl => {
+      linksHtml += `<a href="${dl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline" style="background:#fefbf2;border-color:var(--gold);color:var(--gold);font-weight:700;display:inline-flex;align-items:center;gap:6px;">📁 Open Google Drive Portfolio ↗</a>`;
+    });
+    otherLinks.forEach(ol => {
+      linksHtml += `<a href="${ol}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:6px;">🔗 Open External Portfolio ↗</a>`;
+    });
+    linksEl.innerHTML = linksHtml;
+  } else {
+    linksSection.style.display = 'none';
+    linksEl.innerHTML = '';
+  }
+
+  document.getElementById('app-detail-message').textContent = app.message || '(No extra notes submitted by applicant)';
+
+  const actionsEl = document.getElementById('app-modal-actions');
+  if (app.status === 'PENDING') {
+    actionsEl.innerHTML = `
+      <button class="btn btn-sm btn-danger" onclick="closeApplicationDetailsModal(); rejectApplication(${app.id})">Reject</button>
+      <button class="btn btn-sm btn-outline" onclick="closeApplicationDetailsModal(); quickApproveApplication(${app.id})">Quick Approve</button>
+      <button class="btn btn-sm btn-primary" onclick="closeApplicationDetailsModal(); approveAndAddArtist(${app.id})">✓ Approve & Add as Artist</button>
+    `;
+  } else if (app.status === 'APPROVED') {
+    actionsEl.innerHTML = `
+      <span class="badge badge-green" style="align-self:center;">✓ Approved</span>
+      <button class="btn btn-sm btn-primary" onclick="closeApplicationDetailsModal(); approveAndAddArtist(${app.id})">+ Add as Artist</button>
+    `;
+  } else {
+    actionsEl.innerHTML = `
+      <span class="badge badge-red" style="align-self:center;">✕ Rejected</span>
+      <button class="btn btn-sm btn-outline" onclick="closeApplicationDetailsModal(); reopenApplication(${app.id})">Re-open</button>
+    `;
+  }
+
+  document.getElementById('app-details-modal').classList.add('open');
+}
+
+function closeApplicationDetailsModal() {
+  document.getElementById('app-details-modal').classList.remove('open');
+}
+
 function closeAttachmentLightbox() {
   document.getElementById('attachment-lightbox-modal').classList.remove('open');
   document.getElementById('lightbox-img').src = '';
@@ -733,7 +835,11 @@ function renderApplicationsTable() {
     }
 
     if (!attachmentsHtml) {
-      attachmentsHtml = '<span style="color:var(--tl);font-size:11px;">None provided</span>';
+      if (app.message && app.message.toLowerCase().includes('attached photos')) {
+        attachmentsHtml = '<button class="btn btn-sm btn-outline" style="padding:2px 7px;font-size:10.5px;color:var(--m);border-color:var(--m);font-weight:600;margin-top:4px;" onclick="openApplicationDetailsModal(' + app.id + ')">📸 Attached Photo · View</button>';
+      } else {
+        attachmentsHtml = '<span style="color:var(--tl);font-size:11px;">None provided</span>';
+      }
     }
 
     // Clean user message
@@ -767,6 +873,7 @@ function renderApplicationsTable() {
       '<td>' + statusBadge + '</td>' +
       '<td>' +
         '<div class="row-actions" style="flex-wrap:wrap;gap:4px;">' +
+          '<button class="btn btn-sm btn-outline" onclick="openApplicationDetailsModal(' + app.id + ')" style="font-weight:700;display:inline-flex;align-items:center;gap:4px;">👁️ View Details</button>' +
           (app.status === 'PENDING'
             ? '<button class="btn btn-sm btn-primary" onclick="approveAndAddArtist(' + app.id + ')">✓ Approve & Add</button>' +
               '<button class="btn btn-sm btn-outline" onclick="quickApproveApplication(' + app.id + ')">Quick Approve</button>' +
@@ -1266,6 +1373,76 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="modal-footer" style="justify-content:space-between;">
       <a id="lightbox-open-external" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="font-size:12px;">↗ Open Original in New Tab</a>
       <button class="btn btn-primary" onclick="closeAttachmentLightbox()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ APPLICATION DETAILS & PORTFOLIO MODAL ══ -->
+<div class="modal-overlay" id="app-details-modal" onclick="if(event.target===this)closeApplicationDetailsModal()">
+  <div class="modal-box" style="max-width:680px;width:95%;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="app-modal-title">Artisan Application Details</div>
+        <div class="modal-subtitle" id="app-modal-sub" style="font-size:12px;color:var(--tl);margin-top:2px;">Review artist background, sample artwork, and portfolio</div>
+      </div>
+      <button class="modal-close" onclick="closeApplicationDetailsModal()">×</button>
+    </div>
+    <div class="modal-body" style="padding:18px;">
+      <!-- Applicant Info Grid -->
+      <div style="background:var(--cream-light);border:1px solid var(--cb);border-radius:10px;padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;font-size:12px;margin-bottom:16px;">
+        <div>
+          <span style="color:var(--tl);display:block;font-size:11px;text-transform:uppercase;font-weight:600;">Applicant Name</span>
+          <strong id="app-detail-name" style="font-size:13px;color:var(--td);">—</strong>
+        </div>
+        <div>
+          <span style="color:var(--tl);display:block;font-size:11px;text-transform:uppercase;font-weight:600;">Contact Phone</span>
+          <a id="app-detail-phone" href="#" style="font-weight:700;color:var(--m);font-size:13px;">—</a>
+        </div>
+        <div>
+          <span style="color:var(--tl);display:block;font-size:11px;text-transform:uppercase;font-weight:600;">Email Address</span>
+          <a id="app-detail-email" href="#" style="color:var(--tl);font-size:12px;">—</a>
+        </div>
+        <div>
+          <span style="color:var(--tl);display:block;font-size:11px;text-transform:uppercase;font-weight:600;">City & Experience</span>
+          <span id="app-detail-city-exp" style="font-weight:600;color:var(--td);">—</span>
+        </div>
+        <div style="grid-column:1/-1;">
+          <span style="color:var(--tl);display:block;font-size:11px;text-transform:uppercase;font-weight:600;">Primary Specialization</span>
+          <span id="app-detail-spec" style="font-weight:700;color:var(--green);font-size:12.5px;">—</span>
+        </div>
+      </div>
+
+      <!-- Artwork Attachments Section -->
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:700;font-size:12.5px;color:var(--td);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+          <span>📸 Sample Artwork Attachments</span>
+          <span id="app-detail-photo-count" style="font-size:11px;color:var(--tl);font-weight:normal;">0 photos</span>
+        </div>
+        <div id="app-detail-gallery" style="display:flex;gap:10px;flex-wrap:wrap;background:#181818;border-radius:8px;padding:12px;min-height:90px;align-items:center;justify-content:center;">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Portfolio & Drive Links -->
+      <div id="app-detail-links-section" style="margin-bottom:16px;display:none;">
+        <div style="font-weight:700;font-size:12.5px;color:var(--td);margin-bottom:6px;">🔗 Portfolio & Cloud Drives</div>
+        <div id="app-detail-links" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Applicant Message / Notes -->
+      <div>
+        <div style="font-weight:700;font-size:12.5px;color:var(--td);margin-bottom:6px;">📝 Applicant Note / Cover Message</div>
+        <div id="app-detail-message" style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;color:var(--td);white-space:pre-wrap;max-height:140px;overflow-y:auto;">
+          —
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn btn-outline" onclick="closeApplicationDetailsModal()">Close</button>
+      <div style="display:flex;gap:8px;" id="app-modal-actions">
+        <!-- Injected dynamically: Approve & Add, Reject -->
+      </div>
     </div>
   </div>
 </div>
