@@ -16,11 +16,21 @@ public class DesignController {
 
     private final DesignService designService;
 
-    /** GET /api/designs — all active designs (home page grid). ?sortBy=popularity sorts by clicks descending. */
+    /** GET /api/designs — all active designs (home page grid). ?category=Bridal filters by category. ?sortBy=popularity sorts by clicks descending. */
     @GetMapping
     public ResponseEntity<ApiResponse<List<DesignResponse>>> getAll(
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) String sortBy) {
+        if (category != null && !category.isBlank()) {
+            return ResponseEntity.ok(ApiResponse.success(designService.getByCategory(category)));
+        }
         return ResponseEntity.ok(ApiResponse.success(designService.getAllDesigns(sortBy)));
+    }
+
+    /** GET /api/designs/popular — returns popular designs sorted by engagement/popularity */
+    @GetMapping("/popular")
+    public ResponseEntity<ApiResponse<List<DesignResponse>>> getPopular() {
+        return ResponseEntity.ok(ApiResponse.success(designService.getAllDesigns("popularity")));
     }
 
     /**

@@ -27,6 +27,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import BecomeArtistPage from './pages/BecomeArtistPage';
 import CustomDesignPage from './pages/CustomDesignPage';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Dynamic Site & Favicon Sync from Admin Settings
 function SiteSettingsSync() {
@@ -161,8 +162,8 @@ export default function App() {
                   <Route path="/login" element={<LoginPage />} />
 
                   {/* Customer Orders & Profile */}
-                  <Route path="/orders" element={<OrdersPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                   <Route path="/help" element={<HelpPage />} />
 
                   {/* Royal Admin Dashboard */}

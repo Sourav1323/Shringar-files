@@ -58,8 +58,12 @@ public class CartService {
     @Transactional
     public CartResponse removeFromCart(Long userId, Long cartItemId) {
         Cart cart = getOrCreateCart(userId);
-        cart.getItems().removeIf(item -> item.getId().equals(cartItemId));
-        cartItemRepository.deleteById(cartItemId);
+        CartItem item = cartItemRepository.findById(cartItemId)
+                .filter(ci -> ci.getCart() != null && ci.getCart().getId().equals(cart.getId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found with id: " + cartItemId));
+
+        cart.getItems().remove(item);
+        cartItemRepository.delete(item);
 
         // re-validate coupon minimum after removal
         revalidateCoupon(cart);

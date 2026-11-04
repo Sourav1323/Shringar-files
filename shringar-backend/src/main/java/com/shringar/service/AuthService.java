@@ -44,7 +44,7 @@ public class AuthService {
         boolean emailVerified = otpService.isRecentlyVerified(request.getEmail(), "EMAIL");
         boolean phoneVerified = request.getPhone() != null && !request.getPhone().isBlank() && otpService.isRecentlyVerified(request.getPhone(), "PHONE");
 
-        if (!emailVerified && !phoneVerified) {
+        if (!emailVerified && !phoneVerified && !otpService.isDevSimulationFallback()) {
             throw new BadRequestException("Please verify your email address before creating an account.");
         }
 
@@ -130,7 +130,7 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         // identifier can be email or any phone representation (+91, without +91, 10 digits, etc.)
         User user = findUserByIdentifier(request.getIdentifier())
-                .orElseThrow(() -> new BadRequestException("Invalid email/phone or password"));
+                .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid email/phone or password"));
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(user.getEmail(), request.getPassword())
@@ -287,6 +287,8 @@ public class AuthService {
         java.util.Map<String, Boolean> map = new java.util.HashMap<>();
         map.put("emailExists", emailExists);
         map.put("phoneExists", phoneExists);
+        map.put("email", emailExists);
+        map.put("phone", phoneExists);
         return map;
     }
 

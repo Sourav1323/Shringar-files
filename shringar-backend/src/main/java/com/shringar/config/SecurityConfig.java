@@ -100,6 +100,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/bookings/*/submit-upi-payment").permitAll()
                 .requestMatchers("/custom-requests", "/custom-requests/**").permitAll()
                 .requestMatchers("/support", "/support/**").permitAll()
+                .requestMatchers("/concern", "/concern/**", "/concerns", "/concerns/**").permitAll()
+                .requestMatchers("/artist-applications", "/artist-applications/**").permitAll()
                 .requestMatchers("/payments/webhook").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Admin-only
