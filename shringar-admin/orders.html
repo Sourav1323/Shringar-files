@@ -26,6 +26,7 @@
       <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
       <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
       <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="artists.html#applications" class="nav-link" data-nav-link><span class="icon">📋</span> Applications</a>
       <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
       <a href="concerns.html" class="nav-link" data-nav-link><span class="icon">🙋</span> Concerns</a>
       <a href="feedback.html" class="nav-link" data-nav-link><span class="icon">💬</span> Feedback Inbox</a>
@@ -224,14 +225,20 @@ async function loadOrders(btn) {
               : '<span class="badge badge-gray">Not paid</span>'}
           <div class="cell-sub">${ShringarAdmin.formatINR(o.advanceAmount)}</div>
           ${o.paymentScreenshotUrl ? `
-            <button class="btn btn-sm btn-outline" style="margin-top:6px;padding:3px 8px;font-size:11px;display:inline-flex;align-items:center;gap:4px;" onclick="viewProof('${o.bookingReference}', '${(o.paymentScreenshotUrl||'').replace(/'/g, "\\'")}', ${o.id}, ${o.isAdvancePaid})">
-              📸 Screenshot
-            </button>` : ''}
+            <div style="margin-top:6px;display:flex;align-items:center;gap:6px;">
+              <img src="${ShringarAdmin.resolveUploadUrl(o.paymentScreenshotUrl)}" alt="Proof thumbnail" style="width:28px;height:28px;border-radius:4px;object-fit:cover;border:1px solid var(--cd);cursor:pointer;" onclick="viewProof('${o.bookingReference}', '${(o.paymentScreenshotUrl||'').replace(/'/g, "\\'")}', ${o.id}, ${o.isAdvancePaid}, '${(o.upiTransactionRef||'').replace(/'/g, "\\'")}', ${o.advanceAmount||0}, '${(o.customerName||'').replace(/'/g, "\\'")}')" />
+              <button class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:11px;display:inline-flex;align-items:center;gap:4px;" onclick="viewProof('${o.bookingReference}', '${(o.paymentScreenshotUrl||'').replace(/'/g, "\\'")}', ${o.id}, ${o.isAdvancePaid}, '${(o.upiTransactionRef||'').replace(/'/g, "\\'")}', ${o.advanceAmount||0}, '${(o.customerName||'').replace(/'/g, "\\'")}')">
+                📸 Proof
+              </button>
+            </div>` : (!o.isAdvancePaid && o.upiPaymentSubmitted ? `<div class="cell-sub" style="color:var(--amber);margin-top:4px;font-size:10.5px;">⚠️ No file attached</div>` : '')}
         </td>
         <td>${STATUS_BADGE[o.status] || o.status}${getRefundBadge(o)}</td>
         <td>
           ${!o.isAdvancePaid && o.upiPaymentSubmitted
-            ? `<button class="btn btn-sm btn-primary" onclick="confirmUpiPayment(${o.id})">Confirm Payment</button>`
+            ? `<div style="display:flex;gap:4px;flex-direction:column;">
+                 ${o.paymentScreenshotUrl ? `<button class="btn btn-sm btn-outline" onclick="viewProof('${o.bookingReference}', '${(o.paymentScreenshotUrl||'').replace(/'/g, "\\'")}', ${o.id}, ${o.isAdvancePaid}, '${(o.upiTransactionRef||'').replace(/'/g, "\\'")}', ${o.advanceAmount||0}, '${(o.customerName||'').replace(/'/g, "\\'")}')">👁️ View Proof</button>` : ''}
+                 <button class="btn btn-sm btn-primary" onclick="confirmUpiPayment(${o.id})">✓ Confirm</button>
+               </div>`
             : '—'}
         </td>
       </tr>`).join('');
@@ -260,16 +267,50 @@ function changePage(delta) {
 }
 
 let currentProofBookingId = null;
+let ordersCache = {};
 
-function viewProof(ref, url, id, isPaid) {
+function viewProof(ref, url, id, isPaid, utr, amount, customer) {
   currentProofBookingId = id;
+  const resolvedUrl = ShringarAdmin.resolveUploadUrl(url);
   document.getElementById('proof-modal-title').textContent = `Payment Proof · ${ref}`;
-  document.getElementById('proof-modal-img').src = ShringarAdmin.resolveUploadUrl(url);
+  document.getElementById('proof-meta-customer').textContent = customer || 'Customer';
+  document.getElementById('proof-meta-amount').textContent = amount ? ShringarAdmin.formatINR(amount) : '—';
+  document.getElementById('proof-meta-utr').textContent = utr || 'None specified';
+  
+  const imgEl = document.getElementById('proof-modal-img');
+  const errEl = document.getElementById('proof-modal-err');
+  const openLink = document.getElementById('proof-modal-open-link');
+  
+  if (errEl) errEl.style.display = 'none';
+  imgEl.style.display = 'inline-block';
+  imgEl.src = resolvedUrl;
+  imgEl.onerror = () => {
+    imgEl.style.display = 'none';
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.innerHTML = `⚠️ Unable to preview image directly.<br/><a href="${resolvedUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--m);font-weight:700;text-decoration:underline;margin-top:6px;display:inline-block;">Click here to open attachment in a new tab ↗</a>`;
+    }
+  };
+
+  if (openLink) {
+    openLink.href = resolvedUrl;
+  }
+
   const confirmBtn = document.getElementById('proof-modal-confirm-btn');
   if (confirmBtn) {
     confirmBtn.style.display = isPaid ? 'none' : 'inline-flex';
   }
   document.getElementById('proof-modal').classList.add('open');
+}
+
+function copyModalUtr() {
+  const utr = document.getElementById('proof-meta-utr')?.textContent;
+  if (!utr || utr === 'None specified') return;
+  navigator.clipboard.writeText(utr).then(() => {
+    ShringarAdmin.toast('UTR copied to clipboard! ✓', 'success');
+  }).catch(() => {
+    ShringarAdmin.toast('Failed to copy UTR', 'error');
+  });
 }
 
 function closeProofModal() {
@@ -290,17 +331,35 @@ document.addEventListener('DOMContentLoaded', loadOrders);
 
 <!-- Screenshot Proof Modal -->
 <div class="modal-overlay" id="proof-modal" onclick="if(event.target===this)closeProofModal()">
-  <div class="modal-box" style="max-width:560px;">
+  <div class="modal-box" style="max-width:620px;width:95%;">
     <div class="modal-header">
-      <div class="modal-title" id="proof-modal-title">Payment Screenshot</div>
+      <div>
+        <div class="modal-title" id="proof-modal-title">Payment Screenshot</div>
+        <div style="font-size:12px;color:var(--tl);margin-top:2px;">UPI Payment Verification & Audit</div>
+      </div>
       <button class="modal-close" onclick="closeProofModal()">×</button>
     </div>
-    <div class="modal-body" style="text-align:center;">
-      <img id="proof-modal-img" src="" alt="Payment Screenshot" style="max-width:100%;max-height:60vh;border-radius:8px;border:1px solid var(--cd);box-shadow:0 4px 12px rgba(0,0,0,0.1);object-fit:contain;" />
+    <div class="modal-body" style="padding:16px;">
+      <div style="background:var(--cream-light);border:1px solid var(--cb);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+        <div><span style="color:var(--tl);">Customer:</span> <strong id="proof-meta-customer" style="color:var(--td);">—</strong></div>
+        <div><span style="color:var(--tl);">Advance Amount:</span> <strong id="proof-meta-amount" style="color:var(--green);font-weight:700;">—</strong></div>
+        <div style="grid-column:span 2;display:flex;align-items:center;gap:8px;">
+          <span style="color:var(--tl);">UTR / Ref:</span>
+          <code id="proof-meta-utr" style="background:#fff;padding:2px 8px;border-radius:4px;border:1px solid var(--cd);font-family:monospace;font-size:12px;font-weight:700;color:var(--m);">—</code>
+          <button class="btn btn-sm btn-outline" style="padding:1px 6px;font-size:10.5px;" onclick="copyModalUtr()">📋 Copy UTR</button>
+        </div>
+      </div>
+      <div style="text-align:center;background:#181818;border-radius:8px;padding:12px;min-height:200px;display:flex;align-items:center;justify-content:center;">
+        <img id="proof-modal-img" src="" alt="Payment Screenshot" style="max-width:100%;max-height:55vh;border-radius:6px;object-fit:contain;" />
+        <div id="proof-modal-err" style="display:none;color:#ff9b9b;padding:20px;font-size:13px;line-height:1.5;"></div>
+      </div>
     </div>
-    <div class="modal-footer" id="proof-modal-footer">
-      <button class="btn btn-outline" onclick="closeProofModal()">Close</button>
-      <button class="btn btn-primary" id="proof-modal-confirm-btn" onclick="confirmFromModal()">Confirm Payment</button>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <a id="proof-modal-open-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="font-size:12px;">↗ Open Original Image</a>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" onclick="closeProofModal()">Close</button>
+        <button class="btn btn-primary" id="proof-modal-confirm-btn" onclick="confirmFromModal()">✓ Confirm Payment</button>
+      </div>
     </div>
   </div>
 </div>

@@ -317,8 +317,9 @@ export default function BookingPage() {
         body: formData,
       });
       const data = await res.json();
-      if (data?.url) {
-        setPaymentScreenshotUrl(data.url);
+      const uploadedUrl = data?.url || data?.data?.url || (typeof data?.data === 'string' ? data.data : '');
+      if (uploadedUrl) {
+        setPaymentScreenshotUrl(uploadedUrl);
         toast.success('Payment screenshot uploaded successfully! ✓');
       } else {
         toast.error('Failed to upload screenshot. Please verify your UTR number.');

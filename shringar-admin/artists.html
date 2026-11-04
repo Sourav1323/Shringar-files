@@ -26,6 +26,7 @@
       <a href="dashboard.html" class="nav-link" data-nav-link><span class="icon">📊</span> Dashboard</a>
       <a href="designs.html" class="nav-link" data-nav-link><span class="icon">🎨</span> Designs</a>
       <a href="artists.html" class="nav-link" data-nav-link><span class="icon">👩‍🎨</span> Artists</a>
+      <a href="artists.html#applications" class="nav-link" id="nav-applications-link" onclick="switchView('applications')"><span class="icon">📋</span> Applications <span class="badge badge-amber" id="nav-app-count" style="display:none;font-size:10px;margin-left:auto;padding:2px 6px;">0</span></a>
       <a href="orders.html" class="nav-link" data-nav-link><span class="icon">📦</span> Orders</a>
       <a href="concerns.html" class="nav-link" data-nav-link><span class="icon">🙋</span> Concerns</a>
       <a href="feedback.html" class="nav-link" data-nav-link><span class="icon">💬</span> Feedback Inbox</a>
@@ -61,14 +62,14 @@
 
     <div class="content">
       <!-- VIEW TABS -->
-      <div style="display:flex;gap:10px;margin-bottom:16px;border-bottom:1px solid var(--cb);padding-bottom:12px;flex-wrap:wrap;">
-        <button class="btn btn-primary" id="view-artists-btn" onclick="switchView('artists')" style="font-weight:700;display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;gap:12px;margin-bottom:18px;border-bottom:2px solid var(--cb);padding-bottom:14px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="view-artists-btn" onclick="switchView('artists')" style="font-weight:700;display:flex;align-items:center;gap:8px;padding:9px 18px;font-size:13px;border-radius:8px;">
           <span>👩‍🎨 All Artists</span>
-          <span class="badge badge-gold" id="badge-artist-count" style="font-size:11px;">0</span>
+          <span class="badge badge-gold" id="badge-artist-count" style="font-size:11.5px;padding:2px 8px;">0</span>
         </button>
-        <button class="btn btn-outline" id="view-applications-btn" onclick="switchView('applications')" style="font-weight:700;display:flex;align-items:center;gap:8px;">
-          <span>📋 Artist Applications</span>
-          <span class="badge badge-amber" id="badge-app-count" style="font-size:11px;">0 Pending</span>
+        <button class="btn btn-outline" id="view-applications-btn" onclick="switchView('applications')" style="font-weight:700;display:flex;align-items:center;gap:8px;padding:9px 18px;font-size:13px;border-radius:8px;">
+          <span>📋 Artist Applications (Requests)</span>
+          <span class="badge badge-amber" id="badge-app-count" style="font-size:11.5px;padding:2px 8px;">0 Pending</span>
         </button>
       </div>
 
@@ -320,7 +321,19 @@ function switchView(view) {
   document.getElementById('applications-panel').style.display = isArtists ? 'none' : 'block';
   document.getElementById('view-artists-btn').className = isArtists ? 'btn btn-primary' : 'btn btn-outline';
   document.getElementById('view-applications-btn').className = isArtists ? 'btn btn-outline' : 'btn btn-primary';
+  try {
+    history.replaceState(null, null, isArtists ? '#artists' : '#applications');
+  } catch (e) {}
 }
+
+function checkHashRouting() {
+  if (window.location.hash === '#applications') {
+    switchView('applications');
+  } else if (window.location.hash === '#artists') {
+    switchView('artists');
+  }
+}
+window.addEventListener('hashchange', checkHashRouting);
 
 async function loadAreaSuggestions() {
   const cityInput = document.getElementById('f-city').value.trim();
@@ -379,6 +392,12 @@ async function loadArtists(btn) {
     if (appBadge) {
       appBadge.textContent = `${pendingAppsCount} Pending`;
       appBadge.className = pendingAppsCount > 0 ? 'badge badge-amber' : 'badge badge-green';
+    }
+
+    const navAppBadge = document.getElementById('nav-app-count');
+    if (navAppBadge) {
+      navAppBadge.textContent = pendingAppsCount;
+      navAppBadge.style.display = pendingAppsCount > 0 ? 'inline-block' : 'none';
     }
 
     renderTable();
@@ -525,6 +544,113 @@ function onAppSearchChange() {
   renderApplicationsTable();
 }
 
+// Lightbox state for artist application sample artworks
+let currentLightboxImages = [];
+let currentLightboxIndex = 0;
+let currentLightboxApplicant = '';
+
+function openAttachmentLightbox(applicantName, images, index) {
+  if (!images || !images.length) return;
+  currentLightboxImages = images;
+  currentLightboxIndex = index || 0;
+  currentLightboxApplicant = applicantName || 'Applicant';
+  renderLightboxImage();
+  document.getElementById('attachment-lightbox-modal').classList.add('open');
+}
+
+function renderLightboxImage() {
+  const total = currentLightboxImages.length;
+  const currUrl = currentLightboxImages[currentLightboxIndex];
+  const resolved = ShringarAdmin.resolveUploadUrl(currUrl);
+
+  document.getElementById('lightbox-title').textContent = `Artwork Sample ${currentLightboxIndex + 1} of ${total} · ${currentLightboxApplicant}`;
+  document.getElementById('lightbox-sub').textContent = 'Sample design submitted with Artist Application';
+
+  const imgEl = document.getElementById('lightbox-img');
+  imgEl.src = resolved;
+
+  const openLink = document.getElementById('lightbox-open-external');
+  if (openLink) openLink.href = resolved;
+
+  const thumbWrap = document.getElementById('lightbox-thumbnails');
+  if (thumbWrap) {
+    if (total > 1) {
+      thumbWrap.style.display = 'flex';
+      thumbWrap.innerHTML = currentLightboxImages.map((img, i) => {
+        const isSelected = i === currentLightboxIndex;
+        const resThumb = ShringarAdmin.resolveUploadUrl(img);
+        return `<img src="${resThumb}" alt="thumb ${i+1}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;cursor:pointer;border:2px solid ${isSelected ? 'var(--gold)' : 'transparent'};opacity:${isSelected ? '1' : '0.6'};transition:all 0.2s;" onclick="switchLightboxIndex(${i})" />`;
+      }).join('');
+    } else {
+      thumbWrap.style.display = 'none';
+      thumbWrap.innerHTML = '';
+    }
+  }
+}
+
+function switchLightboxIndex(idx) {
+  if (idx >= 0 && idx < currentLightboxImages.length) {
+    currentLightboxIndex = idx;
+    renderLightboxImage();
+  }
+}
+
+function closeAttachmentLightbox() {
+  document.getElementById('attachment-lightbox-modal').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+  currentLightboxImages = [];
+}
+
+function extractAttachments(app) {
+  const images = [];
+  const driveLinks = [];
+  const otherLinks = [];
+
+  const raw = `${app.portfolioLink || ''}\n${app.message || ''}`;
+
+  // 1. Scan for image URLs: /uploads/... or http(s)://...jpg|png|webp|jpeg|gif
+  const imgRegex = /(?:https?:\/\/[^\s"'<>]+\.(?:png|jpe?g|webp|gif)|\/uploads\/[^\s"'<>]+\.(?:png|jpe?g|webp|gif))/gi;
+  let match;
+  while ((match = imgRegex.exec(raw)) !== null) {
+    const url = match[0].trim();
+    if (!images.includes(url)) images.push(url);
+  }
+
+  // 2. Scan for Drive links
+  const driveRegex = /(?:https?:\/\/)?(?:drive|docs)\.google\.com\/[^\s"'<>]+/gi;
+  while ((match = driveRegex.exec(raw)) !== null) {
+    let url = match[0].trim();
+    if (!url.startsWith('http')) url = 'https://' + url;
+    if (!driveLinks.includes(url)) driveLinks.push(url);
+  }
+
+  // 3. Scan for other portfolio / instagram links
+  const webRegex = /(?:https?:\/\/[^\s"'<>]+|(?:www\.)?(?:instagram\.com|behance\.net|pinterest\.com)[^\s"'<>]+)/gi;
+  while ((match = webRegex.exec(raw)) !== null) {
+    let url = match[0].trim();
+    if (!url.startsWith('http') && !url.startsWith('/')) url = 'https://' + url;
+    if (!driveLinks.includes(url) && !images.includes(url) && !otherLinks.includes(url)) {
+      otherLinks.push(url);
+    }
+  }
+
+  // Check direct portfolioLink if it was a plain drive link without schema
+  if (app.portfolioLink) {
+    const pl = String(app.portfolioLink).trim();
+    if (pl.includes('drive.google.com') && !driveLinks.includes(pl)) {
+      driveLinks.push(pl.startsWith('http') ? pl : 'https://' + pl);
+    } else if (pl.match(/\.(png|jpe?g|webp|gif)$/i) && !images.includes(pl)) {
+      images.push(pl);
+    } else if (!pl.startsWith('/uploads') && !driveLinks.includes(pl) && !images.includes(pl) && !otherLinks.includes(pl)) {
+      if (pl.startsWith('http') || pl.includes('.')) {
+        otherLinks.push(pl.startsWith('http') ? pl : 'https://' + pl);
+      }
+    }
+  }
+
+  return { images, driveLinks, otherLinks };
+}
+
 function renderApplicationsTable() {
   const tbody = document.getElementById('applications-table-body');
   if (!tbody) return;
@@ -555,13 +681,67 @@ function renderApplicationsTable() {
         : '<span class="badge badge-amber">● Pending Review</span>');
 
     const createdStr = app.createdAt ? new Date(app.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    const safeName = (app.fullName || 'Applicant').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
-    let portfolioHtml = '<span style="color:var(--tl);font-size:11px;">None provided</span>';
-    if (app.portfolioLink) {
-      portfolioHtml = '<a href="' + app.portfolioLink + '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;">🔗 View Portfolio / Drive</a>';
+    const { images, driveLinks, otherLinks } = extractAttachments(app);
+
+    let attachmentsHtml = '';
+
+    // Attached Sample Artwork Photos (with interactive thumbnails & lightbox)
+    if (images.length > 0) {
+      const imagesJson = JSON.stringify(images).replace(/"/g, '&quot;');
+      const thumbs = images.slice(0, 3).map((img, idx) => {
+        const resImg = ShringarAdmin.resolveUploadUrl(img);
+        return `<img src="${resImg}" alt="Artwork" style="width:34px;height:34px;border-radius:5px;object-fit:cover;border:1px solid var(--cd);cursor:pointer;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" onclick="openAttachmentLightbox('${safeName}', ${imagesJson}, ${idx})" title="Click to preview artwork" />`;
+      }).join('');
+
+      attachmentsHtml += `
+        <div style="margin-top:6px;background:var(--cream-light);padding:6px 8px;border-radius:6px;border:1px solid var(--cb);">
+          <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+            <span>📸 ${images.length} Artwork Photo${images.length > 1 ? 's' : ''}</span>
+          </div>
+          <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+            ${thumbs}
+            <button class="btn btn-sm btn-outline" style="padding:2px 7px;font-size:10.5px;font-weight:600;" onclick="openAttachmentLightbox('${safeName}', ${imagesJson}, 0)">
+              👁️ View All (${images.length})
+            </button>
+          </div>
+        </div>
+      `;
     }
 
-    const safeName = (app.fullName || 'Applicant').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    // Google Drive links
+    if (driveLinks.length > 0) {
+      attachmentsHtml += driveLinks.map(dl => `
+        <div style="margin-top:4px;">
+          <a href="${dl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;background:#fefbf2;border-color:var(--gold);color:var(--gold);font-weight:600;">
+            📁 Google Drive Folder ↗
+          </a>
+        </div>
+      `).join('');
+    }
+
+    // Other links (Instagram, Portfolio)
+    if (otherLinks.length > 0) {
+      attachmentsHtml += otherLinks.map(ol => `
+        <div style="margin-top:4px;">
+          <a href="${ol}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;">
+            🔗 View Portfolio ↗
+          </a>
+        </div>
+      `).join('');
+    }
+
+    if (!attachmentsHtml) {
+      attachmentsHtml = '<span style="color:var(--tl);font-size:11px;">None provided</span>';
+    }
+
+    // Clean user message
+    let displayMessage = (app.message || '(No notes attached)')
+      .replace(/📸 Attached Sample Artwork Photos [^\n]+(?:\n\/uploads\/[^\n]+)*/g, '')
+      .replace(/📂 Google Drive Portfolio Link: [^\n]+/g, '')
+      .trim();
+    if (!displayMessage) displayMessage = 'Sample artwork submitted.';
 
     return '<tr>' +
       '<td>' +
@@ -576,11 +756,11 @@ function renderApplicationsTable() {
       '</td>' +
       '<td>' +
         '<div style="font-weight:600;font-size:12px;">' + (app.specialization || 'General Henna / Bridal') + '</div>' +
-        '<div style="margin-top:6px;">' + portfolioHtml + '</div>' +
+        '<div style="margin-top:4px;">' + attachmentsHtml + '</div>' +
       '</td>' +
-      '<td style="max-width:220px;">' +
+      '<td style="max-width:240px;">' +
         '<div style="font-size:11.5px;color:var(--td);white-space:pre-wrap;max-height:80px;overflow-y:auto;background:var(--cream-light);padding:6px 8px;border-radius:6px;border:1px solid var(--cb);line-height:1.4;">' +
-          (app.message || '(No notes attached)') +
+          displayMessage +
         '</div>' +
         (app.adminNotes ? '<div style="font-size:11px;color:var(--tl);margin-top:4px;"><strong>Admin note:</strong> ' + app.adminNotes + '</div>' : '') +
       '</td>' +
@@ -1061,7 +1241,34 @@ async function restoreArtist(id) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', loadArtists);
+document.addEventListener('DOMContentLoaded', () => {
+  checkHashRouting();
+  loadArtists();
+});
 </script>
+
+<!-- ══ ATTACHMENT LIGHTBOX MODAL ══ -->
+<div class="modal-overlay" id="attachment-lightbox-modal" onclick="if(event.target===this)closeAttachmentLightbox()">
+  <div class="modal-box" style="max-width:760px;width:95%;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="lightbox-title">Sample Artwork Attachment</div>
+        <div class="modal-subtitle" id="lightbox-sub" style="font-size:12px;color:var(--tl);margin-top:2px;">Applicant portfolio preview</div>
+      </div>
+      <button class="modal-close" onclick="closeAttachmentLightbox()">×</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:16px;">
+      <div style="background:#141414;border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:center;min-height:320px;max-height:60vh;overflow:hidden;">
+        <img id="lightbox-img" src="" alt="Artwork attachment" style="max-width:100%;max-height:55vh;object-fit:contain;border-radius:6px;" />
+      </div>
+      <div id="lightbox-thumbnails" style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;max-height:85px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <a id="lightbox-open-external" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="font-size:12px;">↗ Open Original in New Tab</a>
+      <button class="btn btn-primary" onclick="closeAttachmentLightbox()">Close</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

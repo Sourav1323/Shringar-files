@@ -46,7 +46,7 @@ export default function BecomeArtistPage() {
       }
       try {
         const uploaded = await ArtistApplicationsAPI.uploadImage(file);
-        const serverUrl = uploaded?.url || '';
+        const serverUrl = uploaded?.url || uploaded?.data?.url || (typeof uploaded === 'string' ? uploaded : '');
         setSampleImages((prev) => [
           ...prev,
           {
@@ -100,13 +100,13 @@ export default function BecomeArtistPage() {
 
     setSubmitting(true);
     try {
-      const combinedPortfolio = formData.driveLink
-        ? (formData.portfolioLink ? `${formData.portfolioLink} (Drive: ${formData.driveLink})` : formData.driveLink)
-        : formData.portfolioLink;
-
       const uploadedUrls = sampleImages
         .map((img) => img.serverUrl || img.url)
         .filter((u) => u && !u.startsWith('data:image'));
+
+      const combinedPortfolio = formData.driveLink
+        ? (formData.portfolioLink ? `${formData.portfolioLink} (Drive: ${formData.driveLink})` : formData.driveLink)
+        : (formData.portfolioLink || (uploadedUrls.length ? uploadedUrls[0] : ''));
 
       const combinedMessage = [
         formData.message || '',
